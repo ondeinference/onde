@@ -1,0 +1,26 @@
+[package]
+name = "onde-ruby"
+version = "0.1.0"
+edition = "2021"
+authors = ["Seto Elkahfi <setoelkahfi@gmail.com>"]
+publish = false
+
+[lib]
+name = "onde_ruby"
+crate-type = ["cdylib"]
+
+[dependencies]
+magnus = { version = "0.7" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+
+# The onde crate — referenced via relative path from the monorepo.
+# We only pull in the pure-Rust surface (hf_cache, inference::models,
+# inference::types) so we do NOT enable the `whisper` feature or any
+# platform-specific mistralrs re-exports that require GPU SDKs.
+#
+# NOTE: onde's Cargo.toml gates mistralrs behind cfg(target_os = …) so on
+# the host OS (macOS/Linux) it will be pulled in automatically. If this
+# causes build issues in CI, consider adding a `ruby` feature to the onde
+# crate that disables the heavy deps.
+onde = { path = "../../../", default-features = false }

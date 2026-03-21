@@ -1,0 +1,6 @@
+[bindings.kotlin]
+package_name = "com.ondeinference.onde"
+cdylib_name = "onde"
+
+[bindings.python]
+cdylib_name = "onde"

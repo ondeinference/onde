@@ -1,0 +1,14 @@
+[target.aarch64-apple-ios]
+rustflags = ["-C", "target-feature=+fp16"]
+
+[target.aarch64-apple-ios-sim]
+rustflags = ["-C", "target-feature=+fp16"]
+
+[target.aarch64-apple-tvos]
+rustflags = ["-C", "target-feature=+fp16"]
+
+[target.aarch64-apple-tvos-sim]
+rustflags = ["-C", "target-feature=+fp16"]
+
+[target.x86_64-apple-tvos]
+rustflags = ["-C", "target-feature=+fp16"]

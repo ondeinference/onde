@@ -1,0 +1,68 @@
+[package]
+name = "onde-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "onde inference engine compiled to WASM — Whisper speech-to-text via candle-transformers"
+license = "MIT"
+repository = "https://github.com/ondeinference/onde"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# ── Core inference ────────────────────────────────────────────────────────────
+# Pinned to the same candle rev already in the workspace lockfile (c3bb5bf).
+# candle-transformers ships a pure-Rust Whisper implementation that compiles
+# cleanly to wasm32-unknown-unknown — no C FFI, no platform intrinsics.
+candle-core         = { git = "https://github.com/huggingface/candle.git", rev = "c3bb5bf" }
+candle-nn           = { git = "https://github.com/huggingface/candle.git", rev = "c3bb5bf" }
+candle-transformers = { git = "https://github.com/huggingface/candle.git", rev = "c3bb5bf" }
+
+# ── Tokenizer ─────────────────────────────────────────────────────────────────
+# `default-features = false` is essential — it eliminates onig_sys (C bindings
+# to oniguruma) and esaxx-rs (C++ suffix array) which cannot compile to WASM.
+# `unstable_wasm` is an additional feature that switches remaining regex paths
+# to a WASM-safe fallback. Both flags together are required.
+# Version aligned with the candle c3bb5bf workspace (tokenizers 0.22.0).
+tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
+
+# ── Serialisation ─────────────────────────────────────────────────────────────
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+# Aligned with candle workspace (safetensors 0.7.0).
+safetensors = "0.7"
+
+# ── Audio decoding ────────────────────────────────────────────────────────────
+# hound reads 16-bit PCM WAV files — pure Rust, WASM-safe.
+hound = "3.5"
+
+# ── Error handling ────────────────────────────────────────────────────────────
+anyhow = "1"
+
+# ── Numeric utilities ─────────────────────────────────────────────────────────
+num-traits = "0.2"
+# Aligned with candle workspace (rand 0.9.0).
+rand = "0.9"
+
+# ── WASM / JS bridge ──────────────────────────────────────────────────────────
+wasm-bindgen         = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys               = "0.3"
+# console_error_panic_hook turns Rust panics into readable browser console errors.
+console_error_panic_hook = { version = "0.1", optional = true }
+# wasm-logger bridges the `log` facade to browser console.{log,warn,error}.
+wasm-logger = "0.2"
+log         = "0.4"
+
+# ── WASM-specific entropy source ──────────────────────────────────────────────
+# getrandom must opt in to the JS entropy source on wasm32; otherwise rand
+# and anything that seeds a PRNG will fail to compile.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[features]
+default = ["console_error_panic_hook"]
+
+# ── wasm-pack build profile ───────────────────────────────────────────────────
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]

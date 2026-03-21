@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- No permissions required by the library itself.
+         Apps consuming this library should declare INTERNET permission
+         if they need to download models from HuggingFace Hub. -->
+</manifest>

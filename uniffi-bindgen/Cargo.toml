@@ -1,0 +1,12 @@
+[package]
+name = "onde-uniffi-bindgen"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+uniffi = { version = "=0.31.0", features = ["cli"] }

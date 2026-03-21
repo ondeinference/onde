@@ -1,0 +1,8 @@
+# Build artefacts produced by wasm-pack
+pkg/
+
+# Model assets downloaded by build.sh --download-assets
+assets/
+
+# Rust build cache
+target/

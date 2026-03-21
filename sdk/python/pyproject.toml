@@ -1,0 +1,43 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0", "uniffi-bindgen==0.31.0"]
+build-backend = "maturin"
+
+[project]
+name = "onde-inference"
+version = "0.1.0"
+description = "On-device AI inference for Python — run LLMs and speech-to-text locally with automatic model management. Powered by Rust."
+license = "MIT OR Apache-2.0"
+authors = [
+    { name = "Seto Elkahfi", email = "setoelkahfi@gmail.com" },
+    { name = "Onde Inference" },
+]
+homepage = "https://ondeinference.com"
+repository = "https://github.com/ondeinference/onde"
+documentation = "https://docs.rs/onde"
+keywords = ["inference", "on-device", "whisper", "llm", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+readme = "README.md"
+requires-python = ">=3.9"
+
+[tool.maturin]
+bindings = "uniffi"
+manifest-path = "../Cargo.toml"
+uniffi-bindgen-path = "../uniffi-bindgen/target/release/uniffi-bindgen"
+module-name = "onde_inference._native"
+python-source = "python"
+compatibility = "manylinux2014"
+features = []
+strip = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

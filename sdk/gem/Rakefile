@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+require 'bundler/gem_tasks'
+require 'rb_sys/extensiontask'
+
+task build: :compile
+
+GEMSPEC = Gem::Specification.load('onde.gemspec')
+
+RbSys::ExtensionTask.new('onde-ruby', GEMSPEC) do |ext|
+  ext.lib_dir = 'lib/onde'
+end
+
+task default: :compile
