@@ -15,16 +15,13 @@ BINDGEN="$ROOT_DIR/uniffi-bindgen/target/release/uniffi-bindgen"
 
 mkdir -p "$DIST_DIR" "$PACKAGE_DIR/Sources/Onde" "$HEADERS_DIR"
 
-cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
+cargo +1.92.0 build --manifest-path uniffi-bindgen/Cargo.toml --release
 
 # Build staticlibs only. Avoid the cdylib link step; the XCFramework consumes .a slices.
-cargo rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
-cargo rustc --target x86_64-apple-ios --release --lib --crate-type staticlib
-cargo rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
-cargo rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
-cargo rustc --target x86_64-apple-darwin --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos --release --lib --crate-type staticlib
-cargo +nightly rustc -Z build-std --target x86_64-apple-tvos --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --lib --crate-type staticlib
 
 "$BINDGEN" generate   "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a"   --language swift   --out-dir "$PACKAGE_DIR/Sources/Onde"
@@ -32,11 +29,11 @@ cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --li
 cp "$PACKAGE_DIR/Sources/Onde/ondeFFI.h" "$HEADERS_DIR/ondeFFI.h"
 cp "$PACKAGE_DIR/Sources/Onde/ondeFFI.modulemap" "$HEADERS_DIR/module.modulemap"
 
-lipo -create   "$ROOT_DIR/target/x86_64-apple-ios/release/libonde.a"   "$ROOT_DIR/target/aarch64-apple-ios-sim/release/libonde.a"   -output "$DIST_DIR/libonde-ios-sim.a"
+cp "$ROOT_DIR/target/aarch64-apple-ios-sim/release/libonde.a" "$DIST_DIR/libonde-ios-sim.a"
 
-lipo -create   "$ROOT_DIR/target/x86_64-apple-tvos/release/libonde.a"   "$ROOT_DIR/target/aarch64-apple-tvos-sim/release/libonde.a"   -output "$DIST_DIR/libonde-tvos-sim.a"
+cp "$ROOT_DIR/target/aarch64-apple-tvos-sim/release/libonde.a" "$DIST_DIR/libonde-tvos-sim.a"
 
-lipo -create   "$ROOT_DIR/target/aarch64-apple-darwin/release/libonde.a"   "$ROOT_DIR/target/x86_64-apple-darwin/release/libonde.a"   -output "$DIST_DIR/libonde-macos.a"
+cp "$ROOT_DIR/target/aarch64-apple-darwin/release/libonde.a" "$DIST_DIR/libonde-macos.a"
 
 xcodebuild -create-xcframework   -library "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-ios-sim.a" -headers "$HEADERS_DIR"   -library "$ROOT_DIR/target/aarch64-apple-tvos/release/libonde.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-tvos-sim.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-macos.a" -headers "$HEADERS_DIR"   -output "$FRAMEWORK_DIR"
 

@@ -13,19 +13,19 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.92.0
-          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
 
       - name: Install nightly Rust toolchain for tvOS
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-          targets: aarch64-apple-tvos
+          targets: aarch64-apple-tvos,aarch64-apple-tvos-sim
 
       - name: Verify Xcode
         run: xcodebuild -version
@@ -34,7 +34,7 @@ jobs:
         run: .github/scripts/build-swift-xcframework.sh
 
       - name: Upload XCFramework artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: onde-swift-xcframework
           path: |
