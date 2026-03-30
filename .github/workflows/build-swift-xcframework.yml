@@ -1,0 +1,53 @@
+name: Build Swift XCFramework
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-swift-xcframework:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.92.0
+          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Install nightly Rust toolchain for tvOS
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+          targets: aarch64-apple-tvos
+
+      - name: Verify Xcode
+        run: xcodebuild -version
+
+      - name: Build Swift XCFramework
+        run: .github/scripts/build-swift-xcframework.sh
+
+      - name: Upload XCFramework artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: onde-swift-xcframework
+          path: |
+            dist/swift/OndeFramework.xcframework.zip
+            dist/swift/OndeFramework.checksum.txt
+            dist/swift/version.txt
+            dist/swift/Package/Sources/Onde/onde.swift
+          if-no-files-found: error
+
+      - name: Upload release assets
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/swift/OndeFramework.xcframework.zip
+            dist/swift/OndeFramework.checksum.txt
