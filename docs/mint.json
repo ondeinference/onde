@@ -1,0 +1,77 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Onde",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://ondeinference.com"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0F172A",
+    "light": "#38BDF8",
+    "dark": "#0F172A"
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/ondeinference/onde"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/docs"
+  },
+  "anchors": [
+    {
+      "name": "crates.io",
+      "icon": "box",
+      "url": "https://crates.io/crates/onde"
+    },
+    {
+      "name": "docs.rs",
+      "icon": "book",
+      "url": "https://docs.rs/onde"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/ondeinference/onde"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "index",
+        "dev"
+      ]
+    },
+    {
+      "group": "SDKs",
+      "pages": [
+        "swift-package",
+        "ruby-gem"
+      ]
+    },
+    {
+      "group": "Publishing",
+      "pages": [
+        "distribution"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/ondeinference/onde",
+    "website": "https://ondeinference.com"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "modeToggle": {
+    "default": "dark"
+  },
+  "tabs": []
+}

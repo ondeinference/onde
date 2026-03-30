@@ -1,0 +1,70 @@
+[package]
+name = "onde"
+version = "0.1.0"
+edition = "2021"
+description = "On-device chat inference for cross-platform apps with automatic model management."
+license = "MIT"
+repository = "https://github.com/ondeinference/onde"
+homepage = "https://ondeinference.com"
+documentation = "https://docs.rs/onde"
+readme = "README.md"
+keywords = ["inference", "on-device", "chat", "llm", "mistral"]
+categories = ["science::ml", "api-bindings"]
+
+[lib]
+name = "onde"
+# "lib"        – normal Rust dependency for other crates.
+# "cdylib"     – shared library (.dylib / .so / .dll) consumed by UniFFI bindgen
+#                to generate Swift / Kotlin / Python bindings.
+# "staticlib"  – static library (.a) required for iOS targets where dynamic
+#                linking is not allowed.
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+anyhow = "1"
+home = "0.5.4"
+log = "^0.4"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt", "sync"] }
+tsync = "2"
+
+thiserror = "2"
+
+# Pinned to =0.31.0 — the versions MUST be identical across the crate and
+# the uniffi-bindgen binary crate.
+uniffi = { version = "=0.31.0", features = ["tokio"] }
+
+[build-dependencies]
+# Required for UniFFI scaffolding code generation at build time.
+uniffi = { version = "=0.31.0", features = ["build"] }
+# Used by build.rs to compile the tvOS ___chkstk_darwin assembly stub.
+cc = "1"
+
+# Android: CPU-only GGUF inference via candle; also needs hf-hub for explicit
+# cache path seeding (dirs::home_dir() panics in the Android sandbox).
+[target.'cfg(target_os = "android")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+
+# iOS: Metal-accelerated inference.
+[target.'cfg(target_os = "ios")'.dependencies]
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# tvOS: Metal-accelerated inference (Apple TV has Apple GPU).
+[target.'cfg(target_os = "tvos")'.dependencies]
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# macOS: Metal-accelerated inference.
+[target.'cfg(target_os = "macos")'.dependencies]
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# Windows: CPU-only baseline (no GPU features).
+# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
+[target.'cfg(target_os = "windows")'.dependencies]
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+
+# Linux: CPU-only baseline (no GPU features).
+# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
+[target.'cfg(target_os = "linux")'.dependencies]
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }

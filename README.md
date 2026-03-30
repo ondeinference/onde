@@ -18,7 +18,7 @@
 
 ## In production
 
-Onde already powers real apps on the App Store across multiple AI workloads.
+Onde already powers real apps on the App Store with on-device chat experiences.
 
 ### Chat completion
 - [Karokowe](https://apps.apple.com/se/app/karaoke-karokowe/id6756801861)
@@ -26,12 +26,6 @@ Onde already powers real apps on the App Store across multiple AI workloads.
 - [GT8](https://apps.apple.com/se/app/gt8-kord-gitar-tutorial/id6756177644)
 - [Splitfire](https://apps.apple.com/se/app/splitfire-bassndrums/id6751143237)
 - [Rumi – Lär dig persiska](https://apps.apple.com/se/app/rumi-l%C3%A4r-dig-persiska/id6753832408)
-
-### Image generation
-- [Reimagen](https://apps.apple.com/se/app/reimagen-ai-musik-till-konst/id6757844075)
-
-### Audio transcription
-- [Karokowe](https://apps.apple.com/se/app/karaoke-karokowe/id6756801861)
 
 ### AI coding agent (WIP)
 - [Sigit](https://apps.apple.com/se/app/sigit-git-client-code-editor/id6753018849)
