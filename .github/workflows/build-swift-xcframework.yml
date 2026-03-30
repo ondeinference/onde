@@ -25,7 +25,7 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-          targets: aarch64-apple-tvos
+          targets: aarch64-apple-tvos,x86_64-apple-tvos,aarch64-apple-tvos-sim
 
       - name: Verify Xcode
         run: xcodebuild -version

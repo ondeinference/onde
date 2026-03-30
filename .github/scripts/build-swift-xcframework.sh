@@ -15,14 +15,14 @@ BINDGEN="$ROOT_DIR/uniffi-bindgen/target/release/uniffi-bindgen"
 
 mkdir -p "$DIST_DIR" "$PACKAGE_DIR/Sources/Onde" "$HEADERS_DIR"
 
-cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
+cargo +1.92.0 build --manifest-path uniffi-bindgen/Cargo.toml --release
 
 # Build staticlibs only. Avoid the cdylib link step; the XCFramework consumes .a slices.
-cargo rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
-cargo rustc --target x86_64-apple-ios --release --lib --crate-type staticlib
-cargo rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
-cargo rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
-cargo rustc --target x86_64-apple-darwin --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target x86_64-apple-ios --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
+cargo +1.92.0 rustc --target x86_64-apple-darwin --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target x86_64-apple-tvos --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --lib --crate-type staticlib
