@@ -1,0 +1,53 @@
+<svg
+    width="512"
+    height="512"
+    viewBox="0 0 80 80"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient
+            id="onde-ring"
+            x1="14"
+            y1="10"
+            x2="68"
+            y2="70"
+            gradientUnits="userSpaceOnUse"
+        >
+      <stop offset="0" stop-color="#235843" />
+      <stop offset="1" stop-color="#89A89B" />
+    </linearGradient>
+    <linearGradient
+            id="onde-bg"
+            x1="10"
+            y1="8"
+            x2="69"
+            y2="74"
+            gradientUnits="userSpaceOnUse"
+        >
+      <stop offset="0" stop-color="#F9F7F1" />
+      <stop offset="1" stop-color="#E6E0D5" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="72" height="72" rx="24" fill="url(#onde-bg)" />
+  <path
+        d="M40 18C28.85 18 20 27.07 20 38.33C20 49.59 28.85 58.67 40 58.67C51.15 58.67 60 49.59 60 38.33C60 27.07 51.15 18 40 18Z"
+        stroke="url(#onde-ring)"
+        stroke-width="4.5"
+    />
+  <path
+        d="M15 40.5C20.4 32.3 29.16 27 40 27C50.84 27 59.6 32.3 65 40.5"
+        stroke="#235843"
+        stroke-width="3.5"
+        stroke-linecap="round"
+        opacity="0.92"
+    />
+  <path
+        d="M15 40.5C20.4 48.7 29.16 54 40 54C50.84 54 59.6 48.7 65 40.5"
+        stroke="#89A89B"
+        stroke-width="3.5"
+        stroke-linecap="round"
+        opacity="0.92"
+    />
+  <circle cx="40" cy="40.5" r="5.5" fill="#17211D" />
+</svg>

@@ -67,6 +67,6 @@ pub mod types;
 pub use engine::ChatEngine;
 pub use ffi::{OndeChatEngine, StreamChunkListener};
 pub use types::{
-    ChatMessage, ChatRole, EngineInfo, EngineStatus, GgufModelConfig, InferenceError, IsqModelConfig,
-    InferenceResult, SamplingConfig, StreamChunk,
+    ChatMessage, ChatRole, EngineInfo, EngineStatus, GgufModelConfig, InferenceError,
+    InferenceResult, IsqModelConfig, SamplingConfig, StreamChunk,
 };
