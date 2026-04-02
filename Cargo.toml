@@ -2,7 +2,7 @@
 name = "onde"
 version = "0.1.0"
 edition = "2021"
-description = "On-device chat inference for cross-platform apps with automatic model management."
+description = "On-device inference engine for Apple silicon."
 license = "MIT"
 repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"

@@ -88,9 +88,11 @@ use super::types::*;
     target_os = "linux",
     target_os = "android"
 ))]
-use mistralrs::{
-    GgufModelBuilder, IsqBits, Model, RequestBuilder, TextMessageRole, TextModelBuilder,
-};
+use mistralrs::{GgufModelBuilder, Model, RequestBuilder, TextMessageRole};
+
+// ISQ types are only used by load_isq_model, which is macOS-only.
+#[cfg(target_os = "macos")]
+use mistralrs::{IsqBits, TextModelBuilder};
 
 // ── Internals ────────────────────────────────────────────────────────────────
 
@@ -105,6 +107,7 @@ use mistralrs::{
 ))]
 enum LoadedModelConfig {
     Gguf(GgufModelConfig),
+    #[cfg(target_os = "macos")]
     Isq(IsqModelConfig),
 }
 
@@ -120,6 +123,7 @@ impl LoadedModelConfig {
     fn display_name(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.display_name,
+            #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.display_name,
         }
     }
@@ -127,6 +131,7 @@ impl LoadedModelConfig {
     fn approx_memory(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.approx_memory,
+            #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.approx_memory,
         }
     }
