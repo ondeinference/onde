@@ -45,7 +45,8 @@ onde/
 ├── .cargo/config.toml            # Target-specific rustflags (fp16, linker overrides)
 ├── Cargo.toml                    # Platform-conditional mistralrs deps
 ├── build.rs                      # tvOS ___chkstk_darwin assembly stub
-├── tvos_chkstk.s                 # No-op arm64 stub for missing tvOS symbol
+├── scripts/
+│   └── tvos_chkstk.s             # No-op arm64 stub for missing tvOS symbol
 ├── uniffi.toml                   # UniFFI binding config
 └── docs/
     ├── dev.md                    # Developer guide (build, architecture, platform table)
@@ -428,7 +429,7 @@ Tests that require model downloads are integration tests and not run by default 
 
 ### `___chkstk_darwin` linker error on tvOS
 
-`aws-lc-sys` (transitive via `reqwest → rustls → aws-lc-rs`) references `___chkstk_darwin`, a stack probing symbol that tvOS does not export. `build.rs` compiles `tvos_chkstk.s` (a no-op `ret` stub) via the `cc` crate to satisfy the linker. **Do not delete `tvos_chkstk.s`.**
+`aws-lc-sys` (transitive via `reqwest → rustls → aws-lc-rs`) references `___chkstk_darwin`, a stack probing symbol that tvOS does not export. `build.rs` compiles `scripts/tvos_chkstk.s` (a no-op `ret` stub) via the `cc` crate to satisfy the linker. **Do not delete `scripts/tvos_chkstk.s`.**
 
 Affects: tvOS only. macOS, iOS, Android, Windows, Linux are unaffected.
 
