@@ -243,6 +243,7 @@ fn list_revisions(model_dir: &PathBuf) -> Vec<String> {
 }
 
 /// Build a [`ModelDownloadProgress`] payload from raw byte counts.
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 fn make_progress(model_id: &str, downloaded: u64, total: u64, done: bool) -> ModelDownloadProgress {
     let progress = if total > 0 {
         (downloaded as f64 / total as f64).min(1.0)

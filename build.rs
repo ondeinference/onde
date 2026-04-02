@@ -19,7 +19,7 @@ fn main() {
 
     if target_os == "tvos" {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
-        let asm_path = std::path::Path::new(&manifest_dir).join("tvos_chkstk.s");
+        let asm_path = std::path::Path::new(&manifest_dir).join("scripts/tvos_chkstk.s");
 
         if asm_path.exists() {
             // Use the `cc` crate to assemble the stub into a static library
@@ -31,7 +31,7 @@ fn main() {
             // aws-lc-sys, ring, etc.), we use it directly.
             cc::Build::new().file(&asm_path).compile("tvos_chkstk");
 
-            println!("cargo:rerun-if-changed=tvos_chkstk.s");
+            println!("cargo:rerun-if-changed=scripts/tvos_chkstk.s");
         } else {
             println!(
                 "cargo:warning=tvos_chkstk.s not found at {} — \
