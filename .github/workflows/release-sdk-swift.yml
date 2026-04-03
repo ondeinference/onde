@@ -1,15 +1,16 @@
-name: Build Swift XCFramework
+name: Release SDK (Swift)
 
 on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: write
 
 jobs:
-  build-swift-xcframework:
+  build-and-release:
     runs-on: macos-15
 
     steps:
@@ -46,18 +47,14 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
 
-      # ── Validate release tag matches Cargo.toml version ─────────────────
-
-      - name: Validate version consistency
-        if: github.event_name == 'release'
+      - name: Validate tag matches Cargo.toml version
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           CARGO_VERSION: ${{ steps.meta.outputs.version }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.ref_name }}
         run: |
-          # Strip optional 'v' prefix from the release tag for comparison.
-          NORMALIZED_TAG="${RELEASE_TAG#v}"
-          if [ "$NORMALIZED_TAG" != "$CARGO_VERSION" ]; then
-            echo "::error::Release tag '$RELEASE_TAG' (normalized: '$NORMALIZED_TAG') does not match Cargo.toml version '$CARGO_VERSION'. Update Cargo.toml or re-tag the release."
+          if [ "$TAG" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match Cargo.toml version '$CARGO_VERSION'. Update Cargo.toml or re-tag."
             exit 1
           fi
           echo "Version check passed: $CARGO_VERSION"
@@ -75,36 +72,33 @@ jobs:
             dist/swift/Package/Sources/Onde/onde.swift
           if-no-files-found: error
 
-      # ── Attach assets to the GitHub Release (release trigger only) ───────
+      # ── Create GitHub Release and attach assets (tag push only) ──────────
 
-      - name: Upload release assets
-        if: github.event_name == 'release'
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
           files: |
             dist/swift/OndeFramework.xcframework.zip
             dist/swift/OndeFramework.checksum.txt
 
-      # ── Update onde-swift and push a matching tag (release trigger only) ─
+      # ── Update onde-swift (tag push only) ────────────────────────────────
 
       - name: Checkout onde-swift
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/checkout@v6
         with:
           repository: ondeinference/onde-swift
-          # A PAT with `contents: write` on the onde-swift repo.
-          # Create it at https://github.com/settings/tokens and store as
-          # a repository secret named ONDE_SWIFT_PAT on the onde repo.
           token: ${{ secrets.ONDE_SWIFT_PAT }}
           path: onde-swift
 
       - name: Rewrite Package.swift with release URL and checksum
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           CHECKSUM: ${{ steps.meta.outputs.checksum }}
-          # Use the actual GitHub release tag for the download URL — this is
-          # what GitHub uses to construct the asset download path.
-          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/OndeFramework.xcframework.zip
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/OndeFramework.xcframework.zip
         run: |
           python3 - <<'PY'
           import os, re, pathlib
@@ -115,9 +109,6 @@ jobs:
           url      = os.environ["RELEASE_URL"]
           checksum = os.environ["CHECKSUM"].strip()
 
-          # Replace any existing binaryTarget block (path: or url: form).
-          # The pattern matches from .binaryTarget( up to the closing ),
-          # anchored on the OndeFramework name so we don't touch other targets.
           pattern = re.compile(
               r'\.binaryTarget\(\s*name:\s*"OndeFramework".*?\)',
               re.DOTALL,
@@ -141,13 +132,13 @@ jobs:
           PY
 
       - name: Copy generated onde.swift into onde-swift
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           cp dist/swift/Package/Sources/Onde/onde.swift \
              onde-swift/Sources/Onde/onde.swift
 
       - name: Commit and tag onde-swift
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
@@ -156,17 +147,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Package.swift Sources/Onde/onde.swift
 
-          # Idempotent: skip commit if nothing changed (safe re-run).
           if git diff --cached --quiet; then
             echo "No changes to commit — Package.swift and onde.swift are already up to date."
           else
             git commit -m "Release $VERSION"
           fi
 
-          # Create or move the version tag to this commit.
-          # --force handles re-runs where the tag already exists.
           git tag -f "$VERSION"
-
-          # Push to the default branch explicitly (checkout is detached HEAD).
           git push origin HEAD:main
           git push origin "$VERSION" --force
