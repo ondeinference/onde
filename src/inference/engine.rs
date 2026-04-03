@@ -392,7 +392,7 @@ impl ChatEngine {
 
         let elapsed = start.elapsed();
 
-        let sampling = sampling.unwrap_or_else(SamplingConfig::default);
+        let sampling = sampling.unwrap_or_default();
 
         info!(
             "ChatEngine: ISQ model {} loaded in {} (sampling: temp={:?}, max_tokens={:?})",
@@ -569,7 +569,7 @@ impl ChatEngine {
             .message
             .content
             .as_ref()
-            .map(|c: &String| c.trim().to_string())
+            .map(|c| c.trim().to_string())
             .unwrap_or_else(|| "(empty response)".to_string());
 
         let finish_reason = response.choices[0].finish_reason.clone();
@@ -646,7 +646,7 @@ impl ChatEngine {
             .message
             .content
             .as_ref()
-            .map(|c: &String| c.trim().to_string())
+            .map(|c| c.trim().to_string())
             .unwrap_or_else(|| "(empty response)".to_string());
 
         let finish_reason = response.choices[0].finish_reason.clone();
