@@ -1,0 +1,158 @@
+name: Release SDK (Swift)
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout onde
+        uses: actions/checkout@v6
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.92.0
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
+
+      # tvOS targets are tier-3 — no prebuilt std libs available via rustup.
+      # The build script uses `cargo +nightly -Z build-std` which compiles std
+      # from source using the rust-src component. Do NOT list tvOS in targets:.
+      - name: Install nightly Rust toolchain for tvOS
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Verify Xcode
+        run: xcodebuild -version
+
+      - name: Build Swift XCFramework
+        run: .github/scripts/build-swift-xcframework.sh
+
+      # ── Read build outputs ────────────────────────────────────────────────
+
+      - name: Read version and checksum
+        id: meta
+        run: |
+          VERSION=$(cat dist/swift/version.txt)
+          CHECKSUM=$(cat dist/swift/OndeFramework.checksum.txt)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches Cargo.toml version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          CARGO_VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$TAG" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match Cargo.toml version '$CARGO_VERSION'. Update Cargo.toml or re-tag."
+            exit 1
+          fi
+          echo "Version check passed: $CARGO_VERSION"
+
+      # ── Upload CI artifacts (every run) ──────────────────────────────────
+
+      - name: Upload XCFramework artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: onde-swift-xcframework
+          path: |
+            dist/swift/OndeFramework.xcframework.zip
+            dist/swift/OndeFramework.checksum.txt
+            dist/swift/version.txt
+            dist/swift/Package/Sources/Onde/onde.swift
+          if-no-files-found: error
+
+      # ── Create GitHub Release and attach assets (tag push only) ──────────
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/swift/OndeFramework.xcframework.zip
+            dist/swift/OndeFramework.checksum.txt
+
+      # ── Update onde-swift (tag push only) ────────────────────────────────
+
+      - name: Checkout onde-swift
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/checkout@v6
+        with:
+          repository: ondeinference/onde-swift
+          token: ${{ secrets.ONDE_SWIFT_PAT }}
+          path: onde-swift
+
+      - name: Rewrite Package.swift with release URL and checksum
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          CHECKSUM: ${{ steps.meta.outputs.checksum }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/OndeFramework.xcframework.zip
+        run: |
+          python3 - <<'PY'
+          import os, re, pathlib
+
+          pkg = pathlib.Path("onde-swift/Package.swift")
+          src = pkg.read_text()
+
+          url      = os.environ["RELEASE_URL"]
+          checksum = os.environ["CHECKSUM"].strip()
+
+          pattern = re.compile(
+              r'\.binaryTarget\(\s*name:\s*"OndeFramework".*?\)',
+              re.DOTALL,
+          )
+
+          replacement = (
+              '.binaryTarget(\n'
+              '            name: "OndeFramework",\n'
+              f'            url: "{url}",\n'
+              f'            checksum: "{checksum}"\n'
+              '        )'
+          )
+
+          updated = pattern.sub(replacement, src)
+          if updated == src:
+              raise RuntimeError("binaryTarget pattern did not match — check Package.swift format")
+
+          pkg.write_text(updated)
+          print("Package.swift updated:")
+          print(updated)
+          PY
+
+      - name: Copy generated onde.swift into onde-swift
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cp dist/swift/Package/Sources/Onde/onde.swift \
+             onde-swift/Sources/Onde/onde.swift
+
+      - name: Commit and tag onde-swift
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          cd onde-swift
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Package.swift Sources/Onde/onde.swift
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit — Package.swift and onde.swift are already up to date."
+          else
+            git commit -m "Release $VERSION"
+          fi
+
+          git tag -f "$VERSION"
+          git push origin HEAD:main
+          git push origin "$VERSION" --force
