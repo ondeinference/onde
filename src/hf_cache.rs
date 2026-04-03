@@ -13,7 +13,10 @@ use {
     crate::inference::models::{SUPPORTED_MODELS, SUPPORTED_MODEL_INFO},
     log::{debug, info, warn},
     serde::{Deserialize, Serialize},
-    std::{fs, path::PathBuf},
+    std::{
+        fs,
+        path::{Path, PathBuf},
+    },
     tsync::tsync,
 };
 
@@ -222,7 +225,7 @@ fn format_size(bytes: u64) -> String {
 }
 
 /// List the snapshot revisions available for a cached model directory.
-fn list_revisions(model_dir: &PathBuf) -> Vec<String> {
+fn list_revisions(model_dir: &Path) -> Vec<String> {
     let snapshots_dir = model_dir.join("snapshots");
     if !snapshots_dir.is_dir() {
         return Vec::new();
@@ -564,9 +567,9 @@ pub fn repair_hf_cache_symlinks(model_id: &str) {
         Ok(entries) => entries
             .flatten()
             .filter(|e| e.path().is_dir())
-            .filter_map(|e| {
+            .map(|e| {
                 let rev = e.file_name().to_string_lossy().to_string();
-                Some((rev, e.path()))
+                (rev, e.path())
             })
             .collect(),
         Err(_) => return,
@@ -836,7 +839,7 @@ pub fn list_supported_hf_models() -> SupportedHfModelsResponse {
             let local_size = cache_path
                 .as_ref()
                 .filter(|p| p.exists())
-                .map(|p| dir_size(p))
+                .map(dir_size)
                 .unwrap_or(0);
 
             let has_cache = local_size > 0;
