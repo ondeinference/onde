@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="#in-production">In Production</a> · <a href="https://ondeinference.com/sdk">SDK</a> · <a href="https://ondeinference.com">Website</a>
+  <a href="https://github.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://ondeinference.com">Website</a>
 </p>
 
 ---
