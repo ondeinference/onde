@@ -43,7 +43,7 @@ cc = "1"
 # Android: CPU-only GGUF inference via candle; also needs hf-hub for explicit
 # cache path seeding (dirs::home_dir() panics in the Android sandbox).
 [target.'cfg(target_os = "android")'.dependencies]
-hf-hub = { version = "0.4", features = ["tokio"] }
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
 mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
 
