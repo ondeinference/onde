@@ -82,9 +82,9 @@ dependencies = [
 
 [[package]]
 name = "annotate-snippets"
-version = "0.12.13"
+version = "0.12.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74fc7650eedcb2fee505aad48491529e408f0e854c2d9f63eb86c1361b9b3f93"
+checksum = "22b669bf35e50f130e98212b486b0df78d93e285963344e58937692705e1a21a"
 dependencies = [
  "anstyle",
  "memchr",
@@ -693,9 +693,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.58"
+version = "1.2.59"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e928d4b69e3077709075a938a05ffbedfa53a84c8f766efbf8220bb1ff60e1"
+checksum = "b7a4d3ec6524d28a329fc53654bbadc9bdd7b0431f5d65f1a56ffb28a1ee5283"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -1523,9 +1523,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+checksum = "a043dc74da1e37d6afe657061213aa6f425f855399a11d3463c6ecccc4dfda1f"
 
 [[package]]
 name = "fax"
@@ -3077,7 +3077,7 @@ dependencies = [
 [[package]]
 name = "mistralrs"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3104,7 +3104,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-audio"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "anyhow",
  "apodize",
@@ -3115,7 +3115,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-core"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "ahash",
  "akin",
@@ -3212,7 +3212,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-macros"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "darling 0.23.0",
  "proc-macro2",
@@ -3223,7 +3223,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-mcp"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3243,7 +3243,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-paged-attn"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3259,7 +3259,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-quant"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -3288,7 +3288,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-vision"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#dcbfe0889958134e663005a9f9277929ecae0e96"
 dependencies = [
  "candle-core",
  "image",
@@ -4811,9 +4811,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.27"
+version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
+checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 dependencies = [
  "serde",
  "serde_core",
