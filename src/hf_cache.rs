@@ -907,7 +907,7 @@ where
     // It is harmless on non-sandboxed desktop builds (the cache simply
     // lives under the app data dir instead of ~/.cache).
     if let Some(ref data_dir) = app_data_dir {
-        let hf_home = data_dir.join("huggingface");
+        let hf_home = data_dir.join("models");
         let hf_hub_cache = hf_home.join("hub");
         fs::create_dir_all(&hf_hub_cache)
             .map_err(|e| format!("Cannot create HF cache dir: {e}"))?;
@@ -1084,7 +1084,7 @@ where
     let resolved_app_data = app_data_dir
         .ok_or_else(|| "app_data_dir is required on Android for HF cache resolution".to_string())?;
 
-    let hf_home = resolved_app_data.join("huggingface");
+    let hf_home = resolved_app_data.join("models");
     let hf_hub_cache = hf_home.join("hub");
 
     fs::create_dir_all(&hf_hub_cache)

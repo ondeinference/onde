@@ -59,8 +59,10 @@ uniffi::setup_scaffolding!();
 ))]
 pub use mistralrs;
 
-// Android-only re-exports needed for the GLOBAL_HF_CACHE workaround.
-#[cfg(target_os = "android")]
+// Re-exports needed for the GLOBAL_HF_CACHE workaround on sandboxed platforms.
+// On iOS/tvOS `~/.cache` is outside the container; on Android `dirs::home_dir()`
+// panics.  All three need `hf_hub::Cache` + `mistralrs_core::GLOBAL_HF_CACHE`.
+#[cfg(any(target_os = "android", target_os = "ios", target_os = "tvos"))]
 pub use hf_hub;
-#[cfg(target_os = "android")]
+#[cfg(any(target_os = "android", target_os = "ios", target_os = "tvos"))]
 pub use mistralrs_core;
