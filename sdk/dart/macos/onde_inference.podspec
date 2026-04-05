@@ -35,6 +35,8 @@ Pod::Spec.new do |s|
     }
   ]
 
+  s.frameworks = 'SystemConfiguration'
+
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'OTHER_LDFLAGS'  => '-force_load ${PODS_TARGET_SRCROOT}/libonde_inference_dart.a',

@@ -26,3 +26,6 @@ sdk/python/python/onde_inference/*.pyd
 sdk/python/**/__pycache__/
 sdk/python/**/*.egg-info/
 sdk/python/.pytest_cache/
+
+# Zed settings
+.zed

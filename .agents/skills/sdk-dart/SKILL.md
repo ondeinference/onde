@@ -1,3 +1,10 @@
+---
+name: sdk-dart
+description: Dart/Flutter SDK skill for the onde_inference pub.dev package. Covers flutter_rust_bridge v2 codegen, CocoaPods podspec patterns, ExternalLibrary.open init, .pubignore, Xcode 26 compatibility, Android NDK config, and pub.dev publishing. Apply to all Dart SDK edits.
+allowed-tools: Read, Write, Edit, Glob, Grep
+user-invocable: false
+---
+
 # SKILL: Dart / Flutter SDK with flutter_rust_bridge v2
 
 > Captured from: building `onde_inference` pub.dev package wrapping the `onde` Rust crate.
@@ -413,60 +420,180 @@ GgufModelConfig qwen251_5bConfig() => const GgufModelConfig(
 ## Dart Public API Pattern (`lib/src/engine.dart`)
 
 ```dart
-import 'frb_generated.dart' as frb;   // NO leading underscore
+import 'dart:async';
+import 'dart:io' show Platform;
+
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
+    show ExternalLibrary;
+
+import 'frb_generated.dart/frb_generated.dart' as frb;
+import 'frb_generated.dart/api.dart' as api;
 import 'types.dart';
-export 'frb_generated.dart' show RustLib;
 
-class OndeChatEngine {
-  final frb.OndeChatEngine _native;
-  OndeChatEngine._(this._native);
+export 'frb_generated.dart/frb_generated.dart' show RustLib;
+export 'frb_generated.dart/api.dart'
+    show OndeChatEngine, OndeError, OndeError_NoModelLoaded, /* ... */;
 
-  static Future<OndeChatEngine> create() async {
-    if (!frb.RustLib.isInitialized) await frb.RustLib.init();
-    return OndeChatEngine._(await frb.OndeChatEngine.new_());
-  }
+/// Extension on the FRB-generated OndeChatEngine opaque type.
+extension OndeChatEngineX on api.OndeChatEngine {
+  Future<double> loadDefaultModel({
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  }) =>
+      loadGgufModel(
+        config: api.defaultModelConfig(),
+        systemPrompt: systemPrompt,
+        sampling: sampling,
+      );
 
-  Stream<StreamChunk> streamMessage(String message) =>
-      _native.streamMessage(message: message);
+  Future<int> clearHistoryCount() async => (await clearHistory()).toInt();
 }
 
 abstract final class OndeInference {
-  static Future<void> init() => frb.RustLib.init();
-  static GgufModelConfig defaultModelConfig() => frb.defaultModelConfig();
-  static SamplingConfig deterministicSamplingConfig() => frb.deterministicSamplingConfig();
+  /// Initialises the Rust shared library.
+  ///
+  /// On macOS and iOS the Rust static library is force-loaded into the
+  /// onde_inference CocoaPods framework via OTHER_LDFLAGS in the podspec.
+  /// We must open that framework explicitly — DynamicLibrary.process()
+  /// (RTLD_DEFAULT) cannot resolve symbols inside a separately-loaded
+  /// framework.
+  static Future<void> init() async {
+    ExternalLibrary? lib;
+    if (Platform.isMacOS || Platform.isIOS) {
+      lib = ExternalLibrary.open(
+        'onde_inference.framework/onde_inference',
+      );
+    }
+    await frb.RustLib.init(externalLibrary: lib);
+  }
+
+  static GgufModelConfig defaultModelConfig() => api.defaultModelConfig();
+  static SamplingConfig deterministicSamplingConfig() => api.deterministicSamplingConfig();
 }
 ```
+
+### Why `ExternalLibrary.open(...)` and not `.process()`
+
+The `-force_load` linker flag embeds Rust symbols into the **pod framework**
+(`onde_inference.framework/onde_inference`), NOT into the main executable.
+`DynamicLibrary.process()` maps to `RTLD_DEFAULT`, which only searches the
+main executable and already-opened images in certain configurations.  On
+macOS/iOS with CocoaPods `use_frameworks!`, the pod framework is a separate
+Mach-O image — you must `dlopen` it by name.
+
+FRB 2.12's `ExternalLibrary.open(path)` calls `DynamicLibrary.open(path)`
+under the hood.  On non-Apple platforms (Android, Linux, Windows) the default
+`ExternalLibraryLoaderConfig` stem-based lookup works, so `lib` stays `null`
+and `RustLib.init()` handles it automatically.
+
+**Do NOT use `ExternalLibrary.process(iKnowHowToUseIt: true)`** — it will
+produce `Failed to lookup symbol 'frb_get_rust_content_hash': dlsym(RTLD_DEFAULT, ...)`.
 
 ---
 
 ## Platform Build Files
 
-### iOS podspec — key section
+### Dummy Swift Plugin Classes (required)
 
-```ruby
-s.script_phases = [{
-  :name => 'Build Rust bridge',
-  :script => <<~SHELL,
-    set -e
-    cd "${PODS_TARGET_SRCROOT}/../rust"
-    TARGET=$([[ "$PLATFORM_NAME" == "iphonesimulator" ]] && echo "aarch64-apple-ios-sim" || echo "aarch64-apple-ios")
-    cargo build --release --target "$TARGET" --lib --crate-type staticlib
-    cp "target/$TARGET/release/lib<crate>.a" "${BUILT_PRODUCTS_DIR}/lib<crate>.a"
-  SHELL
-  :execution_position => :before_compile,
-  :output_files => ["${BUILT_PRODUCTS_DIR}/lib<crate>.a"],
-}]
-s.xcconfig  = { 'OTHER_LDFLAGS' => '-l<crate>' }
-s.libraries = '<crate>'
+Both `macos/Classes/OndeInferencePlugin.swift` and `ios/Classes/OndeInferencePlugin.swift`
+**must exist** — they are no-op `FlutterPlugin` stubs.  Without them, CocoaPods
+has no source files to compile and won't produce a real `.framework` target.
+The Rust static library is force-loaded INTO this framework.
+
+```swift
+// macos/Classes/OndeInferencePlugin.swift
+import FlutterMacOS
+
+public class OndeInferencePlugin: NSObject, FlutterPlugin {
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        // No-op — all FFI symbols come from the Rust static library.
+    }
+}
 ```
 
-### macOS podspec — differs from iOS
+```swift
+// ios/Classes/OndeInferencePlugin.swift
+import Flutter  // NOT FlutterMacOS
+
+public class OndeInferencePlugin: NSObject, FlutterPlugin {
+    public static func register(with registrar: FlutterPluginRegistrar) {}
+}
+```
+
+### macOS podspec — full working version
 
 ```ruby
-s.dependency 'FlutterMacOS'   # NOT 'Flutter'
-s.platform   = :osx, '10.15'  # NOT :ios
-# Script: TARGET = "aarch64-apple-darwin"
-# No iphonesimulator check needed
+Pod::Spec.new do |s|
+  s.name             = 'onde_inference'
+  s.version          = '0.1.0'
+  s.summary          = 'On-device LLM inference SDK for Flutter (macOS).'
+  s.description      = 'Runs Qwen 2.5 models locally on macOS with Metal acceleration.'
+  s.homepage         = 'https://ondeinference.com'
+  s.license          = { :type => 'MIT', :file => '../LICENSE' }
+  s.author           = { 'Onde Inference' => 'hello@ondeinference.com' }
+  s.source           = { :path => '.' }
+  s.source_files     = 'Classes/**/*'
+  s.dependency 'FlutterMacOS'
+  s.platform = :osx, '10.15'
+  s.swift_version = '5.0'
+
+  s.script_phases = [
+    {
+      :name => 'Build Rust bridge (onde_inference_dart)',
+      :script => <<~SHELL,
+        set -e
+        RUST_DIR="${PODS_TARGET_SRCROOT}/../rust"
+        cd "$RUST_DIR"
+        ARCH=$(uname -m)
+        if [[ "$ARCH" == "arm64" ]]; then
+          TARGET="aarch64-apple-darwin"
+        else
+          TARGET="x86_64-apple-darwin"
+        fi
+        cargo build --release --target "$TARGET"
+        cp "target/$TARGET/release/libonde_inference_dart.a" \
+           "${PODS_TARGET_SRCROOT}/libonde_inference_dart.a"
+      SHELL
+      :execution_position => :before_compile,
+      :output_files => ["${PODS_TARGET_SRCROOT}/libonde_inference_dart.a"],
+    }
+  ]
+
+  # SystemConfiguration is required by Rust hyper_util (proxy detection)
+  s.frameworks = 'SystemConfiguration'
+
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'OTHER_LDFLAGS'  => '-force_load ${PODS_TARGET_SRCROOT}/libonde_inference_dart.a',
+  }
+  s.preserve_paths = '../rust/**/*'
+end
+```
+
+**Key points:**
+- `s.frameworks = 'SystemConfiguration'` — required because the Rust `hyper_util`
+  crate (transitive via `reqwest`) references `SCDynamicStoreCopyProxies`,
+  `SCNetworkReachabilityCreateWithName`, etc.  Without it you get
+  `ld: symbol(s) not found for architecture arm64`.
+- `-force_load` links ALL symbols from the `.a` into the pod framework.
+- `s.source_files = 'Classes/**/*'` picks up the dummy Swift plugin.
+
+### iOS podspec — differs from macOS
+
+```ruby
+  s.dependency 'Flutter'          # NOT 'FlutterMacOS'
+  s.platform = :ios, '13.0'      # NOT :osx
+
+  # Target selection differs:
+  #   iphonesimulator → aarch64-apple-ios-sim
+  #   iphoneos        → aarch64-apple-ios
+
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE'                        => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]'  => 'i386',
+    'OTHER_LDFLAGS'                         =>
+      '-force_load ${PODS_TARGET_SRCROOT}/libonde_inference_dart.a',
+  }
 ```
 
 ### Android `CMakeLists.txt` — key section
@@ -478,12 +605,39 @@ elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
   set(CARGO_TARGET "armv7-linux-androideabi")
 elseif(ANDROID_ABI STREQUAL "x86_64")
   set(CARGO_TARGET "x86_64-linux-android")
+elseif(ANDROID_ABI STREQUAL "x86")
+  set(CARGO_TARGET "i686-linux-android")
 endif()
 add_custom_command(OUTPUT "${LIB_OUTPUT}"
-  COMMAND cargo build --release --target ${CARGO_TARGET} --manifest-path ${RUST_DIR}/Cargo.toml)
-add_library(<crate> SHARED IMPORTED GLOBAL)
-set_target_properties(<crate> PROPERTIES IMPORTED_LOCATION ${LIB_OUTPUT})
+  COMMAND cargo build --release --target ${CARGO_TARGET}
+              --manifest-path "${RUST_DIR}/Cargo.toml"
+  WORKING_DIRECTORY ${RUST_DIR})
+add_library(onde_inference_dart SHARED IMPORTED GLOBAL)
+set_target_properties(onde_inference_dart PROPERTIES IMPORTED_LOCATION ${LIB_OUTPUT})
 ```
+
+Android uses CMake to invoke `cargo build` for the right NDK triple, producing
+a `.so` shared library (unlike Apple which uses `.a` staticlibs).
+
+### Android NDK Linker Config (`rust/.cargo/config.toml`)
+
+```toml
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android24-clang"
+
+[target.armv7-linux-androideabi]
+linker = "armv7a-linux-androideabi24-clang"
+
+[target.x86_64-linux-android]
+linker = "x86_64-linux-android24-clang"
+
+[target.i686-linux-android]
+linker = "i686-linux-android24-clang"
+```
+
+These short names require the NDK toolchain `bin/` to be on PATH.
+Flutter's Gradle + CMake integration typically handles this automatically
+during `flutter build apk` / `flutter run -d <android>`.
 
 ---
 
@@ -524,7 +678,7 @@ dart analyze lib/
 # 2. All tests pass
 dart test test/dart_test.dart
 
-# 3. Dry-run publish — must show "Package has 0 warnings"
+# 3. Dry-run publish — must show compressed size < 100 MB and minimal warnings
 dart pub publish --dry-run
 ```
 
@@ -534,6 +688,28 @@ Common pub.dev score deductions to avoid:
 - `description:` under 60 chars or over 180 chars → loses points
 - Library exports not documented → loses points
 - `library <name>;` directive → triggers lint
+
+### Pub.dev Upload Size (100 MB limit)
+
+`dart pub publish` bundles everything not excluded by `.pubignore` (or
+`.gitignore` if `.pubignore` doesn't exist).  The Rust `target/` dir alone
+can be **7+ GB**.  A `.pubignore` file is mandatory.
+
+**Files that MUST be included** (consumers build from source):
+- `rust/src/`, `rust/Cargo.toml`, `rust/Cargo.lock`
+- `ios/`, `macos/`, `android/`, `linux/`, `windows/` (build scripts, podspecs, CMakeLists)
+- `ios/Classes/`, `macos/Classes/` (dummy plugin Swift files)
+- `lib/` (all Dart code)
+
+**Files that MUST be excluded** (`.pubignore`):
+- `rust/target/` — multi-GB build artifacts
+- `**/*.a`, `**/*.so`, `**/*.dylib`, `**/*.dll` — precompiled binaries
+- `.dart_tool/`, `pubspec.lock`
+- `example/build/`, `example/.dart_tool/`
+- `logs/`, `.idea/`, `.vscode/`, `.DS_Store`
+
+After adding `.pubignore`, verify: `dart pub publish --dry-run` should report
+~280 KB compressed size, not hundreds of MB.
 
 ---
 
@@ -642,6 +818,64 @@ If they drift, generated code won't compile.  Always check both when upgrading.
 | `unnecessary_library_name` | `library <name>;` in barrel | Change to bare `library;` |
 | `OndeChatEngine.create() throws UnimplementedError` | Codegen not run yet | Run `flutter_rust_bridge_codegen generate` |
 | `flutter run` fails, missing Runner.xcodeproj | `flutter create` not run | Run `flutter create . --platforms=ios ...` in example dir |
+| `dlopen(onde_inference_dart.framework/...): no such file` | FRB default loader looks for wrong framework | Use `ExternalLibrary.open('onde_inference.framework/onde_inference')` in `init()` — see Dart Public API Pattern above |
+| `Failed to lookup symbol 'frb_get_rust_content_hash': dlsym(RTLD_DEFAULT, ...)` | Used `DynamicLibrary.process()` but symbols are in pod framework, not main executable | Switch from `ExternalLibrary.process()` to `ExternalLibrary.open('onde_inference.framework/onde_inference')` |
+| `ld: symbol(s) not found ... _kSCNetworkReachability...` | Missing `SystemConfiguration` framework in podspec | Add `s.frameworks = 'SystemConfiguration'` to macOS podspec |
+| `ld: error: unknown argument '-Xlinker'` / `-dynamiclib` / `-filelist` | Android NDK's `ld` (LLD) is on PATH — Xcode picks it up instead of Apple's linker | Remove `export LD=$TOOLCHAIN/bin/ld` and other NDK tool exports from `~/.zshrc` (see Xcode 26 section) |
+| `clang: error: invalid linker name in argument '-fuse-ld=classic'` | `ALTERNATE_LINKER = classic` set but clang doesn't support it | Remove `ALTERNATE_LINKER`; was only needed to work around the NDK-on-PATH issue — once that's fixed, Apple's ld-prime works fine |
+| `EntityTooLarge` on `dart pub publish` | Package > 100 MB (rust/target/ included) | Create `.pubignore` excluding `rust/target/`, `**/*.a`, `**/*.so`, etc. |
+
+## Xcode 26 Compatibility
+
+### The NDK-on-PATH Trap
+
+If your `~/.zshrc` (or similar) has **global** Android NDK toolchain exports:
+
+```bash
+# DANGEROUS — breaks ALL non-Android builds (Xcode, Rust for Apple, etc.)
+export TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64
+export LD=$TOOLCHAIN/bin/ld        # ← THIS HIJACKS XCODE'S LINKER
+export AR=$TOOLCHAIN/bin/llvm-ar
+export CXX=$TOOLCHAIN/bin/clang++
+export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+export STRIP=$TOOLCHAIN/bin/llvm-strip
+```
+
+Xcode reads `$LD` and invokes the Android NDK's LLD instead of Apple's linker.
+The errors look like Xcode 26 ld-prime incompatibility (`unknown argument '-Xlinker'`)
+but the root cause is the **wrong linker binary**.
+
+**Fix:** Comment out all NDK tool exports.  Keep only the env vars:
+
+```bash
+export NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
+export ANDROID_NDK="$NDK_HOME"
+export ANDROID_NDK_HOME="$NDK_HOME"
+# DO NOT export LD, AR, CXX, RANLIB, STRIP globally.
+# Cargo uses rust/.cargo/config.toml for Android linker selection.
+```
+
+### Does Xcode 26's ld-prime work with Flutter?
+
+**Yes** — once the NDK tool exports are removed, Apple's ld-prime handles all
+CocoaPods/Flutter linker flags correctly.  No `ALTERNATE_LINKER = classic` or
+`-ld_classic` workaround is needed for macOS builds.  The `-ld_classic`
+deprecation warning from iOS Podfiles is harmless.
+
+### iOS 26 Debug Mode Crash
+
+Flutter debug builds crash on iOS 26 beta with
+`NOTIFY_DEBUGGER_ABOUT_RX_PAGES was not intercepted as expected`
+([flutter#170416](https://github.com/flutter/flutter/issues/170416)).
+This is a Dart VM JIT issue — **not fixable in the SDK**.
+
+| Mode | iOS 26 Physical | iOS 26 Simulator | iOS 18.x |
+|------|----------------|-----------------|----------|
+| `--debug` | ❌ Dart VM crash | ❌ Dart VM crash | ✅ Works |
+| `--profile` | ✅ Works | ❌ Not supported on sim | ✅ Works |
+| `--release` | ⚠️ Use `flutter build ipa` | ❌ Not supported on sim | ✅ Works |
+
+**Workaround:** Use an iOS 18.x simulator runtime (download via Xcode Settings → Platforms).
 
 ---
 
@@ -656,35 +890,58 @@ flutter_rust_bridge.yaml
   ├── rust_input: "crate::api"   → rust/src/api.rs  (source of truth)
   └── dart_output: "lib/src/frb_generated.dart"  (codegen writes here)
 
+rust/Cargo.toml
+  ├── crate-type = ["cdylib", "staticlib"]
+  ├── flutter_rust_bridge = "=2.12.0"  (exact pin!)
+  └── onde = { path = "../../../" }     (the main onde crate)
+
+rust/.cargo/config.toml
+  └── Android NDK linker overrides (aarch64, armv7, x86_64, i686)
+
 rust/src/api.rs
   ├── imports onde::{ChatEngine, ...}   (path dep → ../../..)
   ├── declares mirror types             (ChatRole, ChatMessage, ...)
   ├── declares OndeChatEngine           (wraps ChatEngine)
   └── declares free functions           (default_model_config, ...)
 
-lib/src/frb_generated.dart  ← GENERATED (overwritten by codegen)
-  ├── pre-codegen: re-exports frb_generated_stub.dart
-  └── post-codegen: full dart:ffi implementation
-
-lib/src/frb_generated_stub.dart
-  ├── class RustLib        (init no-op)
-  ├── class OndeChatEngine (all methods throw UnimplementedError)
-  └── free functions       (return real hardcoded config/sampling values)
+lib/src/frb_generated.dart/           ← DIRECTORY (not a file!)
+  ├── api.dart                        ← generated API bindings
+  ├── api.freezed.dart                ← freezed union types (OndeError)
+  ├── frb_generated.dart              ← RustLib class, ExternalLibraryLoaderConfig
+  └── frb_generated.io.dart           ← RustLibWire, platform FFI glue
 
 lib/src/types.dart          ← hand-written, FRB-independent
   └── ChatRole, ChatMessage, SamplingConfig, GgufModelConfig,
       InferenceResult, StreamChunk, EngineStatus, EngineInfo, OndeException
 
-lib/src/engine.dart         ← hand-written, imports frb_generated.dart + types.dart
-  ├── class OndeChatEngine  (wraps frb.OndeChatEngine)
-  └── abstract class OndeInference  (static helpers)
+lib/src/engine.dart         ← hand-written, imports frb_generated.dart/ + types.dart
+  ├── extension OndeChatEngineX  (loadDefaultModel, clearHistoryCount)
+  └── abstract class OndeInference
+        ├── init()  → ExternalLibrary.open('onde_inference.framework/...') on Apple
+        ├── defaultModelConfig(), qwen2515bConfig(), qwen253bConfig(), ...
+        └── defaultSamplingConfig(), deterministicSamplingConfig(), mobileSamplingConfig()
 
-lib/<package>.dart (barrel)
+lib/onde_inference.dart (barrel)
   ├── export 'src/types.dart'
-  ├── export 'src/engine.dart'
-  └── export 'src/frb_generated.dart' show RustLib
+  └── export 'src/engine.dart'
+
+macos/
+  ├── Classes/OndeInferencePlugin.swift   ← dummy (required for CocoaPods framework)
+  └── onde_inference.podspec              ← script_phase + -force_load + SystemConfiguration
+
+ios/
+  ├── Classes/OndeInferencePlugin.swift   ← dummy (required for CocoaPods framework)
+  └── onde_inference.podspec              ← script_phase + -force_load
+
+android/
+  ├── CMakeLists.txt                      ← invokes cargo build per ABI
+  └── build.gradle                        ← externalNativeBuild → cmake
+
+.pubignore                                ← excludes rust/target/, *.a, *.so, etc.
+.gitignore                                ← excludes same + build artifacts
 ```
 
 ---
 
-*Last updated: April 2025 — based on implementing `onde_inference 0.1.0`.*
+*Last updated: July 2025 — Xcode 26 compatibility, ExternalLibrary.open pattern,
+SystemConfiguration framework, .pubignore for pub.dev, NDK PATH pitfall.*

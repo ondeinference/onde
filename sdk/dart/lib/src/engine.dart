@@ -1,6 +1,10 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:async';
+import 'dart:io' show Platform;
+
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
+    show ExternalLibrary;
 
 import 'frb_generated.dart/frb_generated.dart' as frb;
 import 'frb_generated.dart/api.dart' as api;
@@ -130,7 +134,24 @@ abstract final class OndeInference {
   ///
   /// Call this in `main()` or in a Flutter `initState` override before any
   /// user interaction that could trigger model loading.
-  static Future<void> init() => frb.RustLib.init();
+  ///
+  /// On macOS and iOS the Rust static library is force-loaded into the
+  /// application process by the CocoaPods podspec (`-force_load`), so the
+  /// symbols are available via [ffi.DynamicLibrary.process] rather than a
+  /// separate `.framework` bundle.
+  static Future<void> init() async {
+    ExternalLibrary? lib;
+    if (Platform.isMacOS || Platform.isIOS) {
+      // The Rust static library is force-loaded into the onde_inference
+      // CocoaPods framework via OTHER_LDFLAGS in the podspec.  We must open
+      // that framework explicitly — DynamicLibrary.process() (RTLD_DEFAULT)
+      // cannot resolve symbols inside a separately-loaded framework.
+      lib = ExternalLibrary.open(
+        'onde_inference.framework/onde_inference',
+      );
+    }
+    await frb.RustLib.init(externalLibrary: lib);
+  }
 
   // -------------------------------------------------------------------------
   // Model config factories
