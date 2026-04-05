@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    - prefer_const_constructors
+    - prefer_final_fields
+    - use_super_parameters
+
+analyzer:
+  exclude:
+    - lib/src/frb_generated.dart
+    - lib/src/frb_generated.io.dart
+    - lib/src/frb_generated.web.dart
