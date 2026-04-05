@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onde_inference/onde_inference.dart';
 

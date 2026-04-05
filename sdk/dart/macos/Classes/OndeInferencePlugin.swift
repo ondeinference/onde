@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 // OndeInferencePlugin.swift
 //
 // Native macOS plugin for onde_inference.

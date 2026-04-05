@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 /// Generated and convenience types for the Onde Inference SDK.
 ///
 /// All core data types ([ChatRole], [ChatMessage], [SamplingConfig],

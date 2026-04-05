@@ -1,4 +1,4 @@
-// Copyright 2024 Onde Inference (Splitfire AB). All rights reserved.
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
 // Use of this source code is governed by the MIT license.
 //
 // onde_inference_plugin.cpp
