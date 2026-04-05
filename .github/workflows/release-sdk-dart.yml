@@ -94,18 +94,22 @@ jobs:
 
       # ── Authenticate with pub.dev ─────────────────────────────────────────
       # PUB_CREDENTIALS must be a repository secret containing the full JSON
-      # content of ~/.pub-cache/credentials.json obtained from a machine that
-      # has already run `dart pub login` (or `flutter pub login`) and authorised
-      # the ondeinference pub.dev publisher account.
+      # content of the Dart pub credentials file obtained from a machine that
+      # has already run `dart pub login` and authorised the pub.dev publisher.
+      #
+      # The credentials file location depends on your OS:
+      #   macOS:  ~/Library/Application Support/dart/pub-credentials.json
+      #   Linux:  ~/.config/dart/pub-credentials.json   ($XDG_CONFIG_HOME/dart/)
+      #   Windows: %APPDATA%\dart\pub-credentials.json
       #
       # To obtain the credentials:
-      #   1. Run `dart pub login` on a local machine.
-      #   2. Copy the contents of ~/.pub-cache/credentials.json.
+      #   1. Run `dart pub login` on a local machine and authorise in the browser.
+      #   2. Copy the full JSON content of the credentials file for your OS above.
       #   3. Add it as a repository secret named PUB_CREDENTIALS.
       - name: Set up pub.dev credentials
         run: |
-          mkdir -p ~/.pub-cache
-          echo '${{ secrets.PUB_CREDENTIALS }}' > ~/.pub-cache/credentials.json
+          mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/dart"
+          echo '${{ secrets.PUB_CREDENTIALS }}' > "${XDG_CONFIG_HOME:-$HOME/.config}/dart/pub-credentials.json"
 
       # ── Publish ────────────────────────────────────────────────────────────
       - name: Publish onde_inference to pub.dev
