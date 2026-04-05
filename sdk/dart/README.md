@@ -1,12 +1,22 @@
-# onde_inference
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ondeinference/onde/main/assets/onde-inference-logo.svg" alt="Onde Inference" width="96">
+</p>
 
-[![pub.dev](https://img.shields.io/pub/v/onde_inference.svg)](https://pub.dev/packages/onde_inference)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ondeinference/onde/blob/main/sdk/dart/LICENSE)
-[![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20macOS%20%7C%20Android%20%7C%20Linux%20%7C%20Windows-lightgrey)](https://pub.dev/packages/onde_inference)
+<h1 align="center">Onde Inference</h1>
 
-**On-device LLM inference for Flutter & Dart.**
+<p align="center">
+  <strong>On-device LLM inference for Flutter & Dart — optimized for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
+</p>
 
-Run [Qwen 2.5](https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF) language models locally — no cloud, no API keys, no data leaving the device. Powered by the [Onde](https://ondeinference.com) Rust engine and [mistral.rs](https://github.com/EricLBuehler/mistral.rs), bridged to Flutter via [flutter_rust_bridge v2](https://pub.dev/packages/flutter_rust_bridge).
+<p align="center">
+  <a href="https://pub.dev/packages/onde_inference"><img src="https://img.shields.io/pub/v/onde_inference?style=flat-square&color=235843&labelColor=17211D&label=pub.dev" alt="pub.dev"></a>
+  <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+  <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="https://img.shields.io/badge/App%20Store-live-235843?style=flat-square&labelColor=17211D" alt="App Store"></a>
+</p>
+
+<p align="center">
+  <a href="https://crates.io/crates/onde">Rust SDK</a> · <a href="https://github.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://ondeinference.com">Website</a>
+</p>
 
 ---
 
@@ -37,67 +47,20 @@ Run [Qwen 2.5](https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF) langua
 
 ---
 
-## Getting started
+## Quick start
 
-### 1. Add the dependency
+### Add the dependency
 
 ```yaml
 dependencies:
   onde_inference: ^0.1.0
 ```
 
-### 2. Install Rust (required to build the native bridge)
+> **Note:** The native inference engine is written in Rust and compiled automatically during the Flutter build. A working [Rust toolchain](https://rustup.rs) is required. The first build compiles the full dependency tree (~5–10 minutes cold, <1 minute incremental).
 
-```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+### Initialize
 
-Add the targets for your platform(s):
-
-```sh
-# iOS
-rustup target add aarch64-apple-ios aarch64-apple-ios-sim
-
-# macOS
-rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-# Android (requires NDK r25+)
-rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-
-# Linux / Windows — already covered by the host toolchain
-```
-
-### 3. Run the code generator
-
-From your **Flutter project root** (not the package root):
-
-```sh
-dart pub get
-dart run flutter_rust_bridge_codegen generate
-```
-
-This reads `onde_inference`'s `rust/src/api.rs` and writes the FFI glue into
-`lib/src/rust/frb_generated.dart` inside the package. You only need to re-run
-this when the package is updated.
-
-### 4. Build the native library
-
-The native Rust library is compiled automatically as part of the normal Flutter
-build. On iOS and macOS it is driven by the CocoaPods script phase in the
-podspec; on Android by the CMake step in `android/build.gradle`; on Linux and
-Windows by the `add_custom_command` in the platform `CMakeLists.txt`.
-
-For the very first build, allow extra time for Cargo to compile the dependency
-tree (~5–10 minutes cold, <1 minute incremental).
-
----
-
-## Usage
-
-### Initialize the library
-
-Call `OndeInference.init()` **once** at application startup, before creating
-any `OndeChatEngine`:
+Call `OndeInference.init()` **once** at application startup, before creating any `OndeChatEngine`:
 
 ```dart
 import 'package:onde_inference/onde_inference.dart';
@@ -109,7 +72,7 @@ void main() async {
 }
 ```
 
-### Create an engine and load the default model
+### Load a model
 
 ```dart
 // Create the engine (synchronous — no model is loaded yet).
@@ -124,7 +87,7 @@ final elapsed = await engine.loadDefaultModel(
 print('Model loaded in ${elapsed.toStringAsFixed(1)} s');
 ```
 
-### Send a message (non-streaming)
+### Chat
 
 ```dart
 final result = await engine.sendMessage('What is Rust's ownership model?');
@@ -132,7 +95,7 @@ print(result.text);
 print('Generated in ${result.durationDisplay}');
 ```
 
-### Stream a response
+### Stream
 
 ```dart
 final buffer = StringBuffer();
@@ -229,7 +192,7 @@ await engine.loadGgufModel(
 
 ---
 
-## Sampling configuration
+## Sampling
 
 ```dart
 // All fields are optional — null means "use the engine default".
@@ -269,23 +232,29 @@ Common causes:
 
 ---
 
-## Running codegen
+## Sandboxed app setup (iOS / macOS)
 
-The Dart bindings are generated from the Rust source using
-`flutter_rust_bridge_codegen`. Run this command from the package root
-whenever `rust/src/api.rs` changes:
+```dart
+import 'package:onde_inference/onde_inference.dart';
+import 'package:path_provider/path_provider.dart';
 
-```sh
-# From onde/sdk/dart/
-dart pub get
-dart run flutter_rust_bridge_codegen generate
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await OndeInference.init();
+
+  // Resolve shared App Group container (iOS/macOS) or private sandbox (Android).
+  String? fallback;
+  if (Platform.isIOS || Platform.isAndroid) {
+    final dir = await getApplicationSupportDirectory();
+    fallback = dir.path;
+  }
+  await OndeInference.setupCacheDir(fallbackDir: fallback);
+
+  runApp(const MyApp());
+}
 ```
 
-The generated output is committed to `lib/src/frb_generated.dart` (and
-platform-specific siblings). A hand-written stub at
-`lib/src/frb_generated_stub.dart` stands in for the generated code before
-the first codegen run, allowing the package to be compiled and the type
-system to be checked without a built Rust binary.
+> On iOS and macOS, `setupCacheDir()` first tries the App Group shared container (`group.com.ondeinference.apps`) so all Onde-powered apps share downloaded models. If unavailable, it falls back to the app's private directory.
 
 ---
 
@@ -306,3 +275,7 @@ Please open an issue before submitting a pull request for significant changes.
 ## License
 
 MIT © [Splitfire AB](https://splitfire.se) — see [LICENSE](LICENSE).
+
+<p align="center">
+  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a></sub>
+</p>

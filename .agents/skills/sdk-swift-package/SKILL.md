@@ -1,6 +1,6 @@
 ---
 name: sdk-swift-package
-description: Build the Onde Swift package (XCFramework) from Rust source using UniFFI and distribute it via a remote-binary Package.swift for Swift Package Index. Use when working on Swift SDK distribution, xcframework assembly, or the onde-kit release workflow.
+description: Build the Onde Swift package (XCFramework) from Rust source using UniFFI and distribute it via a remote-binary Package.swift for Swift Package Index. Covers xcframework assembly, App Group shared container, models/hub cache convention, and the onde-swift release workflow.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 user-invocable: true
 ---
@@ -43,7 +43,9 @@ onde/
 | tvOS linker | `___chkstk_darwin` is missing from tvOS libSystem. `build.rs` compiles `tvos_chkstk.s` as a no-op stub. This is automatic — do not remove it. |
 | `cargo-swift` | **Not required.** The project owns its own `uniffi-bindgen` binary. Use it directly (same as `build-kotlin.sh` does for Android). |
 | `.xcframework` in `Package.swift` | Published `Package.swift` must use **remote** `url:` + `checksum:` — never a local `path:`. |
-| Swift package name | `Onde` (PascalCase). Git repo slug: `onde-kit` under the `ondeinference` org. |
+| Swift package name | `Onde` (PascalCase). Git repo slug: `onde-swift` under the `ondeinference` org. |
+| App Group ID | `group.com.ondeinference.apps` — shared across all Onde-powered apps (Flutter, Tauri, native Swift). |
+| HF cache subdirectory | `<container>/models/hub/` — NOT `huggingface/hub/`. Must match the Tauri and Dart SDK convention. |
 
 ---
 
@@ -264,6 +266,71 @@ assistantMessage(content:)
 
 ---
 
+## App Group Shared Container & Cache Convention
+
+All Onde-powered apps use the App Group `group.com.ondeinference.apps` to share
+downloaded models.  The cache layout inside the shared container is:
+
+```
+<group container>/
+├── models/          ← HF_HOME
+│   └── hub/         ← HF_HUB_CACHE (GGUF files live here)
+└── tmp/             ← TMPDIR (iOS sandbox restricts system TMPDIR)
+```
+
+**Important:** The subdirectory is `models/`, NOT `huggingface/`.  This was
+chosen to be user-friendly when browsing the container in Finder/Files.  All
+SDKs (Rust, Swift, Dart) and all app types (Tauri, Flutter, native) must use
+the same path or models won't be shared.
+
+### Swift setup (called once at app launch)
+
+```swift
+import Foundation
+
+func setupInferenceEnvironment() {
+    guard let container = FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: "group.com.ondeinference.apps"
+    ) else {
+        // Fall back to app-private Application Support if App Group is unavailable.
+        let appSupport = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        setupHfCache(at: appSupport)
+        return
+    }
+    setupHfCache(at: container)
+}
+
+private func setupHfCache(at base: URL) {
+    let hfHome = base.appendingPathComponent("models")
+    let hfHub  = hfHome.appendingPathComponent("hub")
+    try? FileManager.default.createDirectory(at: hfHub, withIntermediateDirectories: true)
+
+    setenv("HF_HOME",      hfHome.path, 1)
+    setenv("HF_HUB_CACHE", hfHub.path,  1)
+
+    let tmp = base.appendingPathComponent("tmp")
+    try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+    setenv("TMPDIR", tmp.path, 1)
+}
+```
+
+### Entitlements required
+
+Both iOS and macOS targets need the App Group entitlement:
+
+```xml
+<key>com.apple.security.application-groups</key>
+<array>
+    <string>group.com.ondeinference.apps</string>
+</array>
+```
+
+The App Group must also be registered in the Apple Developer Portal under
+**Identifiers → App Groups** before Xcode can provision it.
+
+---
+
 ## Local development (Xcode)
 
 Use the **local path** form during development — the remote binary form is only
@@ -282,11 +349,15 @@ In Xcode: **File → Add Package Dependencies → Add Local** → select `sdk/On
 
 | Pitfall | Fix |
 |---|---|
-| Local `path:` in published `Package.swift` | Always `url:` + `checksum:` in `onde-kit` |
+| Local `path:` in published `Package.swift` | Always `url:` + `checksum:` in `onde-swift` |
 | Stale checksum after rebuild | Always recompute `shasum -a 256` — never hardcode |
 | Missing simulator slice | lipo `x86_64` + `aarch64-sim` before passing to `xcodebuild` |
 | UniFFI version drift | Keep `uniffi = "=0.31.0"` in both `Cargo.toml` and `uniffi-bindgen/Cargo.toml` |
 | tvOS build with stable toolchain | tvOS targets are tier-3; always use `cargo +nightly -Z build-std` |
-| Empty `Sources/` in `onde-kit` | Copy the generated `onde.swift` (and header) into the repo on every release |
+| Empty `Sources/` in `onde-swift` | Copy the generated `onde.swift` (and header) into the repo on every release |
 | `___chkstk_darwin` linker error | Ensure `tvos_chkstk.s` exists at crate root; `build.rs` compiles it automatically |
 | Missing Metal toolchain (Xcode 26+) | Run `xcodebuild -downloadComponent MetalToolchain`, then `cargo clean -p mistralrs-quant` |
+| Cache path mismatch (`huggingface/` vs `models/`) | All SDKs MUST use `<container>/models/hub/` — using `huggingface/hub/` means models are not shared across apps |
+| App Group not working | Register `group.com.ondeinference.apps` in Apple Developer Portal → Identifiers → App Groups; enable App Groups capability on the App ID; add entitlement to the target |
+| `CODE_SIGN_IDENTITY = "-"` blocks App Groups | Remove ad-hoc signing from project-level build settings; App Groups require a real development certificate |
+| Android NDK `LD` on PATH breaks Xcode | Never `export LD=$TOOLCHAIN/bin/ld` globally — it hijacks Xcode's linker. Use Cargo's `.cargo/config.toml` for Android linker config |

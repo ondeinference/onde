@@ -40,8 +40,10 @@ flutter:
         ffiPlugin: true
       ios:
         ffiPlugin: true
+        pluginClass: OndeInferencePlugin
       macos:
         ffiPlugin: true
+        pluginClass: OndeInferencePlugin
       linux:
         ffiPlugin: true
       windows:

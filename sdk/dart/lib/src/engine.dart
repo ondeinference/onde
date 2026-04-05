@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
     show ExternalLibrary;
 
@@ -20,7 +21,8 @@ export 'frb_generated.dart/api.dart'
         OndeError_ModelBuild,
         OndeError_Inference,
         OndeError_Cancelled,
-        OndeError_Other;
+        OndeError_Other,
+        configureCacheDir;
 
 // ---------------------------------------------------------------------------
 // OndeChatEngine convenience wrapper
@@ -135,22 +137,84 @@ abstract final class OndeInference {
   /// Call this in `main()` or in a Flutter `initState` override before any
   /// user interaction that could trigger model loading.
   ///
-  /// On macOS and iOS the Rust static library is force-loaded into the
-  /// application process by the CocoaPods podspec (`-force_load`), so the
-  /// symbols are available via [ffi.DynamicLibrary.process] rather than a
-  /// separate `.framework` bundle.
+  /// On macOS the Rust static library is force-loaded into the
+  /// `onde_inference.framework` CocoaPods dynamic framework — we must
+  /// `dlopen` that framework by name.
+  ///
+  /// On iOS the pod is statically linked into the Runner executable
+  /// (no separate `.framework` file exists at runtime), so we use
+  /// `DynamicLibrary.process()` (`RTLD_DEFAULT`) which searches the
+  /// main executable and all loaded images.
+  ///
+  /// On Android / Linux / Windows the default FRB stem-based loader
+  /// finds the `.so` / `.dll` automatically — no override needed.
   static Future<void> init() async {
     ExternalLibrary? lib;
-    if (Platform.isMacOS || Platform.isIOS) {
-      // The Rust static library is force-loaded into the onde_inference
-      // CocoaPods framework via OTHER_LDFLAGS in the podspec.  We must open
-      // that framework explicitly — DynamicLibrary.process() (RTLD_DEFAULT)
-      // cannot resolve symbols inside a separately-loaded framework.
+    if (Platform.isMacOS) {
+      // CocoaPods + use_frameworks! → pod is a dynamic framework.
+      // DynamicLibrary.process() can't resolve symbols inside it.
       lib = ExternalLibrary.open(
         'onde_inference.framework/onde_inference',
       );
+    } else if (Platform.isIOS) {
+      // CocoaPods on iOS statically links the pod into the Runner
+      // binary via -force_load.  Symbols live in the main executable.
+      lib = ExternalLibrary.process(iKnowHowToUseIt: true);
     }
     await frb.RustLib.init(externalLibrary: lib);
+  }
+
+  // -------------------------------------------------------------------------
+  // Sandbox / cache setup
+  // -------------------------------------------------------------------------
+
+  /// Method channel shared with the native iOS/macOS plugin.
+  static const _channel = MethodChannel('com.ondeinference.onde_inference');
+
+  /// Configures the HuggingFace model cache for sandboxed platforms.
+  ///
+  /// On **iOS and macOS** this first tries to resolve the App Group shared
+  /// container (`group.com.ondeinference.apps`) via a native method channel
+  /// so all Onde-powered apps share downloaded models.  If the App Group is
+  /// unavailable (entitlement missing, group not registered), it falls back
+  /// to [fallbackDir] if provided.
+  ///
+  /// On **Android** there is no App Group equivalent — pass [fallbackDir]
+  /// (e.g. from `getApplicationSupportDirectory().path`).
+  ///
+  /// On **desktop Linux / Windows** this is a no-op — the default
+  /// `~/.cache/huggingface` works without intervention.
+  ///
+  /// Call **once** at startup, after [init] and before any model load:
+  ///
+  /// ```dart
+  /// await OndeInference.init();
+  /// await OndeInference.setupCacheDir();
+  /// // or with explicit fallback:
+  /// final dir = await getApplicationSupportDirectory();
+  /// await OndeInference.setupCacheDir(fallbackDir: dir.path);
+  /// ```
+  static Future<void> setupCacheDir({String? fallbackDir}) async {
+    // 1. Apple platforms — try the shared App Group container.
+    if (Platform.isIOS || Platform.isMacOS) {
+      try {
+        final String? groupPath = await _channel.invokeMethod<String>(
+          'getAppGroupContainerPath',
+        );
+        if (groupPath != null && groupPath.isNotEmpty) {
+          api.configureCacheDir(appDataDir: groupPath);
+          return;
+        }
+      } catch (_) {
+        // Method channel not available (e.g. plugin not registered).
+        // Fall through to fallbackDir.
+      }
+    }
+
+    // 2. Fallback — use the caller-provided directory (app sandbox).
+    if (fallbackDir != null && fallbackDir.isNotEmpty) {
+      api.configureCacheDir(appDataDir: fallbackDir);
+    }
   }
 
   // -------------------------------------------------------------------------

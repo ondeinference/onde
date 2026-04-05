@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2058074152;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2049740590;
 
 // Section: executor
 
@@ -850,6 +850,36 @@ fn wire__crate__api__OndeChatEngine_unload_model_impl(
         },
     )
 }
+fn wire__crate__api__configure_cache_dir_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "configure_cache_dir",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_app_data_dir = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, crate::api::OndeError>((move || {
+                let output_ok = crate::api::configure_cache_dir(api_app_data_dir)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__default_model_config_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -1493,14 +1523,15 @@ fn pde_ffi_dispatcher_sync_impl(
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
         8 => wire__crate__api__OndeChatEngine_new_impl(ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__default_model_config_impl(ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__default_sampling_config_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__deterministic_sampling_config_impl(ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__mobile_sampling_config_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__qwen25_1_5b_config_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__qwen25_3b_config_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__qwen25_coder_1_5b_config_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__qwen25_coder_3b_config_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__configure_cache_dir_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__default_model_config_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__default_sampling_config_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__deterministic_sampling_config_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__mobile_sampling_config_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__qwen25_1_5b_config_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__qwen25_3b_config_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__qwen25_coder_1_5b_config_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__qwen25_coder_3b_config_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

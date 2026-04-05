@@ -510,3 +510,63 @@ pub fn deterministic_sampling_config() -> SamplingConfig {
 pub fn mobile_sampling_config() -> SamplingConfig {
     OndeSamplingConfig::mobile().into()
 }
+
+/// Seed the HuggingFace cache environment for sandboxed platforms.
+///
+/// On iOS (and Android), the default `~/.cache/huggingface/hub` path is outside
+/// the app sandbox and writes fail with `Operation not permitted (os error 1)`.
+///
+/// Call this **once** at startup — before any `load_gguf_model` or
+/// `download_model` — with the app's writable data directory.
+///
+/// # Dart usage
+///
+/// ```dart
+/// import 'package:path_provider/path_provider.dart';
+///
+/// final dir = await getApplicationSupportDirectory();
+/// configureCacheDir(appDataDir: dir.path);
+/// ```
+///
+/// Internally this:
+/// 1. Creates `<app_data_dir>/huggingface/hub/` if it doesn't exist.
+/// 2. Sets the `HF_HOME` and `HF_HUB_CACHE` environment variables.
+/// 3. Seeds `mistralrs_core::GLOBAL_HF_CACHE` so the model loader never
+///    falls back to `Cache::default()`.
+#[frb(sync)]
+pub fn configure_cache_dir(app_data_dir: String) -> Result<(), OndeError> {
+    use std::fs;
+    use std::path::PathBuf;
+
+    let data_dir = PathBuf::from(&app_data_dir);
+    let hf_home = data_dir.join("models");
+    let hf_hub_cache = hf_home.join("hub");
+
+    fs::create_dir_all(&hf_hub_cache).map_err(|e| OndeError::Other {
+        reason: format!(
+            "Cannot create HF cache dir {}: {}",
+            hf_hub_cache.display(),
+            e
+        ),
+    })?;
+
+    // Set env vars BEFORE any hf-hub or mistralrs call.  Both libraries
+    // read these to resolve the cache directory — no need to touch
+    // GLOBAL_HF_CACHE directly (that's seeded lazily by load_gguf_model
+    // on Android/iOS when it reads HF_HOME back).
+    std::env::set_var("HF_HOME", &hf_home);
+    std::env::set_var("HF_HUB_CACHE", &hf_hub_cache);
+
+    // Pre-create tmp dir — iOS sandbox also restricts the system TMPDIR.
+    let tmp_dir = data_dir.join("tmp");
+    let _ = fs::create_dir_all(&tmp_dir);
+    std::env::set_var("TMPDIR", &tmp_dir);
+
+    log::info!(
+        "HF cache configured: HF_HOME={}, HF_HUB_CACHE={}",
+        hf_home.display(),
+        hf_hub_cache.display(),
+    );
+
+    Ok(())
+}

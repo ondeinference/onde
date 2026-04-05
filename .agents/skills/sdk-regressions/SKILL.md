@@ -173,11 +173,17 @@ candle's Metal/NEON kernels.
 | `target_os` | `mistralrs` features | Extra deps | GPU | Default model |
 |-------------|---------------------|------------|-----|---------------|
 | `macos` | `["metal"]` | — | Metal | Qwen 2.5 3B |
-| `ios` | `["metal"]` | — | Metal | Qwen 2.5 1.5B |
-| `tvos` | `["metal"]` | — | Metal | Qwen 2.5 1.5B |
+| `ios` | `["metal"]` | `hf-hub`, `mistralrs-core` | Metal | Qwen 2.5 1.5B |
+| `tvos` | `["metal"]` | `hf-hub`, `mistralrs-core` | Metal | Qwen 2.5 1.5B |
 | `android` | `[]` | `hf-hub`, `mistralrs-core` | CPU | Qwen 2.5 1.5B |
 | `windows` | `[]` | — | CPU | Qwen 2.5 3B |
 | `linux` | `[]` | — | CPU | Qwen 2.5 3B |
+
+`hf-hub` and `mistralrs-core` are required on all **sandboxed** platforms
+(iOS, tvOS, Android) for the `GLOBAL_HF_CACHE` workaround — `~/.cache` is
+outside the app container on iOS/tvOS, and `dirs::home_dir()` panics on Android.
+The re-exports in `src/lib.rs` (`pub use hf_hub; pub use mistralrs_core;`) are
+gated to `#[cfg(any(target_os = "android", target_os = "ios", target_os = "tvos"))]`.
 
 ---
 
@@ -266,5 +272,37 @@ The fix: comment out the tool exports, use Cargo's
 
 ---
 
-*Last updated: July 2025 — based on onde 0.2.x with Xcode 26, Rust 1.92–1.94,
-nightly for tvOS.*
+## Cache Path Consistency (Cross-SDK)
+
+All Onde-powered apps share downloaded models via the App Group
+`group.com.ondeinference.apps`.  The cache layout inside the shared container
+**must be identical** across every SDK and app type:
+
+```
+<group container>/
+├── models/          ← HF_HOME
+│   └── hub/         ← HF_HUB_CACHE (GGUF files live here)
+└── tmp/             ← TMPDIR (iOS sandbox restricts system TMPDIR)
+```
+
+**The subdirectory is `models/`, NOT `huggingface/`.**
+
+Files that set this path (all must agree):
+
+| File | Variable | Expected value |
+|------|----------|----------------|
+| `onde/sdk/dart/rust/src/api.rs` (`configure_cache_dir`) | `hf_home` | `data_dir.join("models")` |
+| `onde/src/hf_cache.rs` (`download_model` — general) | `hf_home` | `data_dir.join("models")` |
+| `onde/src/hf_cache.rs` (`download_model` — Android) | `hf_home` | `resolved_app_data.join("models")` |
+| Tauri apps (`setup_application_filesystem.rs`) | `models_home` | `container_dir.join("models")` |
+| `onde/src/hf_cache.rs` (`hf_cache_dir` — fallback) | default | `~/.cache/huggingface/hub` (non-sandboxed only, OK to differ) |
+
+**Regression check:** `grep -rn 'join("huggingface")' src/hf_cache.rs sdk/dart/rust/src/api.rs`
+should return **only** the non-sandboxed fallback in `hf_cache_dir()` (line ~164).
+Any other match means a sandboxed path is using the wrong subdirectory.
+
+---
+
+*Last updated: July 2025 — added hf-hub/mistralrs-core iOS/tvOS deps,
+cache path consistency checks, App Group convention.*
+

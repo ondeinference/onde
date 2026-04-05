@@ -14,8 +14,11 @@
 
 import 'dart:async';
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:onde_inference/onde_inference.dart';
+import 'package:path_provider/path_provider.dart' show getApplicationSupportDirectory;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -24,6 +27,24 @@ import 'package:onde_inference/onde_inference.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await OndeInference.init();
+
+  // Resolve the model cache directory for sandboxed platforms.
+  //
+  // On iOS/macOS this tries the App Group shared container first
+  // (group.com.ondeinference.apps) so all Onde-powered apps share
+  // downloaded models.  If the App Group is unavailable it falls back
+  // to the app's private Application Support directory.
+  //
+  // On Android there is no App Group — the fallback is always used.
+  //
+  // On desktop Linux/Windows this is a no-op (default ~/.cache works).
+  String? fallback;
+  if (Platform.isIOS || Platform.isAndroid) {
+    final dir = await getApplicationSupportDirectory();
+    fallback = dir.path;
+  }
+  await OndeInference.setupCacheDir(fallbackDir: fallback);
+
   runApp(const OndeInferenceApp());
 }
 

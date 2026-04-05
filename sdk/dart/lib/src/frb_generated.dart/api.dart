@@ -47,6 +47,31 @@ SamplingConfig deterministicSamplingConfig() =>
 SamplingConfig mobileSamplingConfig() =>
     RustLib.instance.api.crateApiMobileSamplingConfig();
 
+/// Seed the HuggingFace cache environment for sandboxed platforms.
+///
+/// On iOS (and Android), the default `~/.cache/huggingface/hub` path is outside
+/// the app sandbox and writes fail with `Operation not permitted (os error 1)`.
+///
+/// Call this **once** at startup — before any `load_gguf_model` or
+/// `download_model` — with the app's writable data directory.
+///
+/// # Dart usage
+///
+/// ```dart
+/// import 'package:path_provider/path_provider.dart';
+///
+/// final dir = await getApplicationSupportDirectory();
+/// configureCacheDir(appDataDir: dir.path);
+/// ```
+///
+/// Internally this:
+/// 1. Creates `<app_data_dir>/huggingface/hub/` if it doesn't exist.
+/// 2. Sets the `HF_HOME` and `HF_HUB_CACHE` environment variables.
+/// 3. Seeds `mistralrs_core::GLOBAL_HF_CACHE` so the model loader never
+///    falls back to `Cache::default()`.
+void configureCacheDir({required String appDataDir}) =>
+    RustLib.instance.api.crateApiConfigureCacheDir(appDataDir: appDataDir);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OndeChatEngine>>
 abstract class OndeChatEngine implements RustOpaqueInterface {
   /// Clear the conversation history while keeping the model loaded.
