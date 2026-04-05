@@ -1,3 +1,10 @@
+## 0.1.1
+
+* CI/CD: `release-sdk-dart.yml` publishes `onde_inference` to pub.dev on tag push.
+* Copyright headers on all hand-written source files (`engine.dart`, `types.dart`, `dart_test.dart`, iOS and macOS Swift plugin classes).
+* Example app README rewritten — branding, platform notes, and an SDK quick reference.
+* `android/local.properties` gitignored; local SDK paths no longer pollute diffs.
+
 ## 0.1.0
 
 * Initial MVP release.
