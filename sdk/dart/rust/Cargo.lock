@@ -3258,7 +3258,8 @@ dependencies = [
 [[package]]
 name = "mistralrs"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bb0a83340b4492ebba9760ba6845364de369c7e10c1f91af8733d574c7405fa"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3285,7 +3286,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-audio"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ac5d36f634c7c20c45845bc995be3b6387ab01048410386a5b180cfeaf89c72"
 dependencies = [
  "anyhow",
  "apodize",
@@ -3296,7 +3298,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-core"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2b8b9e5c94491d9ceeded3a30291cb6af6ae74810a5776dd55e3bbb8b3429d4"
 dependencies = [
  "ahash",
  "akin",
@@ -3393,7 +3396,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-macros"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa9b4794322d3f89fe61d21f33f67be494c16d5bd869604b111218f32544d32"
 dependencies = [
  "darling 0.23.0",
  "proc-macro2",
@@ -3404,7 +3408,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-mcp"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fa97d4e3189ed80ebbc730b7da5b2356df0ae004ab489066249340c33c089ab"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3424,7 +3429,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-paged-attn"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e53ddf1537426997b46abdadbe6ca8a7ce7668004ed2b7cf00115016558bae8"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3440,7 +3446,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-quant"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "980715493d252e9aaf0779c4c101576d67ef4dd9812bfd77a54987f6f17526f4"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -3469,7 +3476,8 @@ dependencies = [
 [[package]]
 name = "mistralrs-vision"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10046a3da2de5b702d3e829b5ddef7aa829ad454819dcc4876dea481a6cb5456"
 dependencies = [
  "candle-core",
  "image",
