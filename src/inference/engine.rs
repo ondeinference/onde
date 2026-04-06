@@ -237,23 +237,27 @@ impl ChatEngine {
             config.model_id, config.files
         );
 
-        // ── Android: seed GLOBAL_HF_CACHE ────────────────────────────────
+        // ── Sandboxed platforms: seed GLOBAL_HF_CACHE ────────────────────
         //
-        // On Android, `dirs::home_dir()` returns `None`, so
-        // `hf_hub::Cache::default()` panics with "Cache directory cannot be
-        // found".  The `get_paths_gguf!` macro in mistralrs falls back to
+        // On sandboxed platforms the default `~/.cache/huggingface/hub` path
+        // is either inaccessible or non-existent:
+        //   - Android: `dirs::home_dir()` returns `None` → `Cache::default()` panics.
+        //   - iOS/tvOS: `~/.cache` is outside the app container → os error 1.
+        //
+        // The `get_paths_gguf!` macro in mistralrs falls back to
         // `Cache::default()` when `GLOBAL_HF_CACHE` (a OnceLock) is empty.
         //
-        // `HF_HOME` is always set by `setup_hf_home()` before any command
-        // runs, so we read it here.  `get_or_init` is a no-op if already
-        // seeded by `download_model` — safe to call repeatedly.
-        #[cfg(target_os = "android")]
+        // `HF_HOME` must be set by the host app (via `configure_cache_dir`
+        // or `download_model(app_data_dir:)`) before any model load.
+        // `get_or_init` is a no-op if already seeded — safe to call repeatedly.
+        #[cfg(any(target_os = "android", target_os = "ios", target_os = "tvos"))]
         {
             let hf_home = std::env::var("HF_HOME")
                 .map(std::path::PathBuf::from)
                 .map_err(|_| InferenceError::ModelBuild {
-                    reason: "HF_HOME is not set — cannot initialise HF cache on Android. \
-                             Ensure setup_hf_home() ran before load_gguf_model()."
+                    reason: "HF_HOME is not set — cannot initialise HF cache. \
+                             On iOS/tvOS/Android, call configure_cache_dir() or \
+                             download_model(app_data_dir:) before load_gguf_model()."
                         .to_string(),
                 })?;
             let hf_hub_cache = hf_home.join("hub");

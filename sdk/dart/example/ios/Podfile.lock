@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - onde_inference (0.1.0):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - onde_inference (from `.symlinks/plugins/onde_inference/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  onde_inference:
+    :path: ".symlinks/plugins/onde_inference/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  onde_inference: ae09386bb943bed458d530d3af9cf1442634e5d1
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.16.2

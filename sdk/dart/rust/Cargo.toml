@@ -1,0 +1,15 @@
+[package]
+name = "onde_inference_dart"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+flutter_rust_bridge = "=2.12.0"
+onde = { path = "../../../" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+thiserror = "2"
+log = "0.4"

@@ -1,0 +1,117 @@
+name: Release SDK Dart
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Validate (every run) ──────────────────────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.x"
+          channel: stable
+          cache: true
+
+      # ── Read version ───────────────────────────────────────────────────────
+
+      - name: Read version from pubspec.yaml
+        id: meta
+        working-directory: sdk/dart
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Dart SDK version: $VERSION"
+
+      # ── Validate tag = pubspec version (tag push only) ─────────────────────
+
+      - name: Validate tag matches pubspec.yaml version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          PUBSPEC_VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$TAG" != "$PUBSPEC_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match pubspec.yaml version '$PUBSPEC_VERSION'. Update pubspec.yaml or re-tag."
+            exit 1
+          fi
+          echo "Version check passed: $PUBSPEC_VERSION"
+
+      # ── Lint & dry-run ────────────────────────────────────────────────────
+
+      - name: Install dependencies
+        working-directory: sdk/dart
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: sdk/dart
+        # --no-fatal-infos: flutter_rust_bridge codegen files emit infos that
+        # are intentionally excluded from analysis_options.yaml but the glob
+        # does not cover the frb_generated.dart/ directory structure.
+        run: flutter analyze --no-fatal-infos
+
+      - name: Dry-run publish
+        working-directory: sdk/dart
+        run: flutter pub publish --dry-run
+
+  # ── Publish to pub.dev (tag push only) ────────────────────────────────────
+  publish:
+    name: Publish to pub.dev
+    needs: validate
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.27.x"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: sdk/dart
+        run: flutter pub get
+
+      # ── Authenticate with pub.dev ─────────────────────────────────────────
+      # PUB_CREDENTIALS must be a repository secret containing the full JSON
+      # content of the Dart pub credentials file obtained from a machine that
+      # has already run `dart pub login` and authorised the pub.dev publisher.
+      #
+      # The credentials file location depends on your OS:
+      #   macOS:  ~/Library/Application Support/dart/pub-credentials.json
+      #   Linux:  ~/.config/dart/pub-credentials.json   ($XDG_CONFIG_HOME/dart/)
+      #   Windows: %APPDATA%\dart\pub-credentials.json
+      #
+      # To obtain the credentials:
+      #   1. Run `dart pub login` on a local machine and authorise in the browser.
+      #   2. Copy the full JSON content of the credentials file for your OS above.
+      #   3. Add it as a repository secret named PUB_CREDENTIALS.
+      - name: Set up pub.dev credentials
+        run: |
+          mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/dart"
+          echo '${{ secrets.PUB_CREDENTIALS }}' > "${XDG_CONFIG_HOME:-$HOME/.config}/dart/pub-credentials.json"
+
+      # ── Publish ────────────────────────────────────────────────────────────
+      - name: Publish onde_inference to pub.dev
+        working-directory: sdk/dart
+        run: flutter pub publish --force

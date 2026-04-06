@@ -1,4 +1,4 @@
-name: Release SDK (Swift)
+name: Release SDK Swift
 
 on:
   push:

@@ -1,0 +1,61 @@
+# ──────────────────────────────────────────────────────────
+# .pubignore — files excluded from `dart pub publish`
+#
+# pub.dev enforces a 100 MB upload limit.
+# The Rust source (rust/src/, rust/Cargo.toml, rust/Cargo.lock)
+# MUST be included — the podspecs and CMake/Gradle build scripts
+# compile from source on the consumer's machine.
+# ──────────────────────────────────────────────────────────
+
+# Rust build artifacts (often multi-GB)
+rust/target/
+
+# Precompiled static libraries (built from source via podspec/cmake)
+**/*.a
+**/*.so
+**/*.dylib
+**/*.dll
+**/*.lib
+
+# Flutter / Dart tooling caches
+.dart_tool/
+.packages
+pubspec.lock
+
+# Example app build outputs
+example/build/
+example/.dart_tool/
+example/android/.gradle/
+example/android/build/
+example/android/app/build/
+example/ios/Pods/
+example/ios/.symlinks/
+example/ios/Flutter/Flutter.framework
+example/ios/Flutter/Flutter.podspec
+example/macos/Pods/
+example/macos/.symlinks/
+example/macos/Flutter/
+example/linux/flutter/
+example/windows/flutter/
+
+# Platform build directories that may accumulate artifacts
+android/build/
+ios/build/
+macos/build/
+linux/build/
+windows/build/
+
+# Dev logs
+logs/
+
+# IDE / editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# macOS metadata
+.DS_Store
+**/.DS_Store

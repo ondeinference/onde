@@ -1,0 +1,37 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by `dart pub`
+.dart_tool/
+
+# Avoid committing pubspec.lock for library packages; see
+# https://dart.dev/guides/libraries/private-files#pubspeclock.
+pubspec.lock
+
+# Rust build artifacts (multi-GB)
+rust/target/
+
+# Precompiled static libraries — built from source via podspec / CMake / Gradle
+ios/*.a
+macos/*.a
+**/*.so
+**/*.dylib
+**/*.dll
+**/*.lib
+
+# Flutter example app build outputs
+example/build/
+example/.dart_tool/
+
+# Dev logs
+logs/
+
+# IDE / editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# macOS metadata
+.DS_Store
+**/.DS_Store

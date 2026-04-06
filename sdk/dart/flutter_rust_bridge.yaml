@@ -1,0 +1,22 @@
+# flutter_rust_bridge codegen configuration
+# Run from the package root (onde/sdk/dart/):
+#   flutter_rust_bridge_codegen generate
+
+# Rust crate root (relative to this config file)
+rust_root: "rust"
+
+# Module path syntax required by FRB 2.x
+rust_input: "crate::api"
+
+# Generated Dart output — replaces the pre-codegen stub
+dart_output: "lib/src/frb_generated.dart"
+
+# Dart entrypoint class name used by RustLib.init()
+dart_entrypoint_class_name: RustLib
+
+# Suppress lint warnings in generated Dart code
+dart_preamble: |
+  // ignore_for_file: type=lint, unused_import, unnecessary_import
+
+# Web is not supported — on-device LLM inference requires native system access
+web: false
