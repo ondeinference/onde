@@ -9,7 +9,7 @@ homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
 readme = "README.md"
 keywords = ["inference", "on-device", "chat", "llm", "mistral"]
-categories = ["science::ml", "api-bindings"]
+categories = ["artificial-intelligence", "api-bindings"]
 
 [lib]
 name = "onde"
@@ -45,33 +45,33 @@ cc = "1"
 # in the Android sandbox).
 [target.'cfg(target_os = "android")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+mistralrs = { version = "0.8.1", features = [] }
+mistralrs-core = { version = "0.8.1", features = [] }
 
 # iOS: Metal-accelerated inference; hf-hub + mistralrs-core needed for
 # GLOBAL_HF_CACHE sandbox workaround (~/.cache is outside the container).
 [target.'cfg(target_os = "ios")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { version = "0.8.1", features = ["metal"] }
 
 # tvOS: Metal-accelerated inference (Apple TV has Apple GPU); hf-hub +
 # mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
 [target.'cfg(target_os = "tvos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { version = "0.8.1", features = ["metal"] }
 
 # macOS: Metal-accelerated inference.
 [target.'cfg(target_os = "macos")'.dependencies]
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.1", features = ["metal"] }
 
 # Windows: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
 [target.'cfg(target_os = "windows")'.dependencies]
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+mistralrs = { version = "0.8.1" }
 
 # Linux: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
 [target.'cfg(target_os = "linux")'.dependencies]
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+mistralrs = { version = "0.8.1" }
