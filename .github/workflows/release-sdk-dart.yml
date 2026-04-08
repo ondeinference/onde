@@ -25,7 +25,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.27.x"
+          flutter-version-file: sdk/dart/.flutter-version
           channel: stable
           cache: true
 
@@ -84,7 +84,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.27.x"
+          flutter-version-file: sdk/dart/.flutter-version
           channel: stable
           cache: true
 
