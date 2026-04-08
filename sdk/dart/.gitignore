@@ -21,6 +21,12 @@ macos/*.a
 example/build/
 example/.dart_tool/
 
+# Flutter-generated plugin registration files — regenerated on every `flutter pub get`
+example/**/GeneratedPluginRegistrant.java
+example/**/GeneratedPluginRegistrant.swift
+example/**/GeneratedPluginRegistrant.m
+example/**/GeneratedPluginRegistrant.h
+
 # Dev logs
 logs/
 
