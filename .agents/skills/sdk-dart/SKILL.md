@@ -161,6 +161,61 @@ analyzer:
 
 ---
 
+### 11. Flutter version is a single source of truth — never hardcode it in CI
+
+The CI workflow reads the Flutter version from `sdk/dart/.flutter-version` via
+`subosito/flutter-action`'s `flutter-version-file:` parameter.  **Never
+hardcode `flutter-version: "x.y.z"` directly in the workflow YAML.**
+
+```
+sdk/dart/.flutter-version   ← only place the Flutter version is written
+```
+
+```yaml
+# .github/workflows/release-sdk-dart.yml (both jobs)
+- name: Set up Flutter
+  uses: subosito/flutter-action@v2
+  with:
+    flutter-version-file: sdk/dart/.flutter-version   # reads .flutter-version
+    channel: stable
+    cache: true
+```
+
+**Why this matters:** Each Flutter release ships a specific Dart SDK version.
+Dev dependencies like `freezed` have minimum Dart SDK requirements that advance
+faster than Flutter stable releases.  When you bump a Flutter-sensitive dep,
+you must also bump the Flutter version used in CI — and `.flutter-version` is
+the one place to do that.
+
+**Rule: when bumping a dep that constrains the Dart SDK** (e.g. `freezed`,
+`flutter_rust_bridge`, `build_runner`):
+
+1. Run `flutter pub get` locally — a version-solving failure tells you
+   immediately if the Dart SDK shipped with the current Flutter is too old.
+2. Find the Flutter release that ships the required Dart SDK version
+   (see https://docs.flutter.dev/release/archive).
+3. Update `sdk/dart/.flutter-version` to that version.
+4. Tighten `pubspec.yaml`'s `environment.sdk` lower bound to match — it must
+   honestly reflect what your deps need, not what you originally wrote.
+
+**`pubspec.yaml` environment constraint must be accurate:**
+
+```yaml
+# WRONG — lying lower bound causes CI to pass locally but fail on old runners
+environment:
+  sdk: ">=3.3.0 <4.0.0"   # freezed ^3.2.x actually requires >=3.8.0
+
+# CORRECT
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.32.0"
+```
+
+An inaccurate `sdk:` lower bound is invisible locally (you're already on a
+newer SDK) but breaks any runner or user on the stated minimum.
+
+---
+
 ## Package Structure Reference
 
 ```
@@ -222,8 +277,8 @@ homepage: https://ondeinference.com
 issue_tracker: https://github.com/ondeinference/onde/issues
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: '>=3.8.0 <4.0.0'    # must reflect the actual minimum required by deps
+  flutter: '>=3.32.0'       # Flutter 3.32 ships Dart 3.8; update .flutter-version too
 
 dependencies:
   flutter:
@@ -824,6 +879,7 @@ If they drift, generated code won't compile.  Always check both when upgrading.
 | `ld: error: unknown argument '-Xlinker'` / `-dynamiclib` / `-filelist` | Android NDK's `ld` (LLD) is on PATH — Xcode picks it up instead of Apple's linker | Remove `export LD=$TOOLCHAIN/bin/ld` and other NDK tool exports from `~/.zshrc` (see Xcode 26 section) |
 | `clang: error: invalid linker name in argument '-fuse-ld=classic'` | `ALTERNATE_LINKER = classic` set but clang doesn't support it | Remove `ALTERNATE_LINKER`; was only needed to work around the NDK-on-PATH issue — once that's fixed, Apple's ld-prime works fine |
 | `EntityTooLarge` on `dart pub publish` | Package > 100 MB (rust/target/ included) | Create `.pubignore` excluding `rust/target/`, `**/*.a`, `**/*.so`, etc. |
+| `Because <pkg> requires SDK version >=X.Y.0 ... version solving failed` | `pubspec.yaml` `environment.sdk` lower bound is too old; CI Flutter version too old | 1. Update `sdk/dart/.flutter-version` to a Flutter that ships the required Dart SDK. 2. Tighten `environment.sdk` in `pubspec.yaml` to the real minimum. See Hard-Won Lesson 11. |
 
 ## Xcode 26 Compatibility
 
