@@ -1,3 +1,10 @@
+## 0.1.2
+
+* **Engine:** Switched all platform-specific `mistralrs` and `mistralrs-core` dependencies to the `setoelkahfi/mistral.rs` fork (branch `fix/all-platform-fixes`), picking up cross-platform stability fixes ahead of the upstream merge.
+* **License:** Dual-licensed under MIT OR Apache-2.0; added `LICENSE-APACHE` alongside the existing `LICENSE-MIT` for pub.dev compliance.
+* **Dependencies:** Upgraded `freezed_annotation` to `^3.1.0` and `freezed` to `^3.2.5`.
+* Removed a stale `ignore_for_file` directive from the generated Flutter Rust Bridge glue code.
+
 ## 0.1.1
 
 * CI/CD: `release-sdk-dart.yml` publishes `onde_inference` to pub.dev on tag push.
