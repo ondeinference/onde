@@ -237,9 +237,8 @@ Use these verbatim. Do not paraphrase.
 
 ```yaml
 description: >-
-  On-device LLM inference SDK for Flutter & Dart. Runs Qwen 2.5 models locally
-  with Metal (Apple silicon) and CPU acceleration — no cloud, no data leaving
-  the device. Powered by the Onde Rust engine and mistral.rs.
+  On-device LLM inference for Flutter & Dart. Run Qwen 2.5 models locally
+  with Metal on iOS and macOS, CPU on Android and desktop. No cloud, no API key.
 repository: https://github.com/ondeinference/onde/
 homepage: https://ondeinference.com
 issue_tracker: https://github.com/ondeinference/onde/issues

@@ -3258,7 +3258,7 @@ dependencies = [
 [[package]]
 name = "mistralrs"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3285,7 +3285,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-audio"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "anyhow",
  "apodize",
@@ -3296,7 +3296,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-core"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "ahash",
  "akin",
@@ -3393,7 +3393,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-macros"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "darling 0.23.0",
  "proc-macro2",
@@ -3404,7 +3404,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-mcp"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3424,7 +3424,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-paged-attn"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3440,7 +3440,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-quant"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -3469,7 +3469,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-vision"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#4541811996402560f67d93d434885320d9c8516b"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
 dependencies = [
  "candle-core",
  "image",
@@ -3792,7 +3792,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "onde"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "cc",
