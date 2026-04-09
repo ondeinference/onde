@@ -18,7 +18,7 @@ jobs:
   # ── Formatting ────────────────────────────────────────────────────────────
   fmt:
     name: Format
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -29,7 +29,7 @@ jobs:
   # ── Lint ──────────────────────────────────────────────────────────────────
   clippy:
     name: Clippy (macOS)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -41,7 +41,7 @@ jobs:
   # ── Tests (macOS — the only platform where tests run natively) ────────────
   test:
     name: Test (macOS)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -51,7 +51,7 @@ jobs:
   # ── Cross-compile checks for all Apple platforms ──────────────────────────
   check-ios:
     name: Check (iOS device)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -64,7 +64,7 @@ jobs:
 
   check-ios-sim:
     name: Check (iOS simulator)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -77,7 +77,7 @@ jobs:
 
   check-tvos:
     name: Check (tvOS device)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -90,7 +90,7 @@ jobs:
 
   check-tvos-sim:
     name: Check (tvOS simulator)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -103,7 +103,7 @@ jobs:
 
   check-visionos:
     name: Check (visionOS device)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -116,7 +116,7 @@ jobs:
 
   check-visionos-sim:
     name: Check (visionOS simulator)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -126,3 +126,29 @@ jobs:
         with:
           key: visionos-sim
       - run: cargo +nightly check -Z build-std --target aarch64-apple-visionos-sim
+
+  check-watchos:
+    name: Check (watchOS device)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: watchos
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-watchos
+
+  check-watchos-sim:
+    name: Check (watchOS simulator)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: watchos-sim
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-watchos-sim

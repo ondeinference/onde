@@ -61,6 +61,7 @@
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -72,6 +73,7 @@ use std::sync::Arc;
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -87,6 +89,7 @@ use super::types::*;
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -105,6 +108,7 @@ use mistralrs::{IsqBits, TextModelBuilder};
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -120,6 +124,7 @@ enum LoadedModelConfig {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -148,6 +153,7 @@ impl LoadedModelConfig {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -185,6 +191,7 @@ struct LoadedModel {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -198,6 +205,7 @@ pub struct ChatEngine {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -262,7 +270,8 @@ impl ChatEngine {
             target_os = "android",
             target_os = "ios",
             target_os = "tvos",
-            target_os = "visionos"
+            target_os = "visionos",
+            target_os = "watchos"
         ))]
         {
             let hf_home = std::env::var("HF_HOME")
@@ -320,6 +329,7 @@ impl ChatEngine {
                 target_os = "ios",
                 target_os = "tvos",
                 target_os = "visionos",
+                target_os = "watchos",
                 target_os = "android"
             )) {
                 SamplingConfig::mobile()
@@ -829,6 +839,7 @@ impl ChatEngine {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -849,6 +860,7 @@ impl Default for ChatEngine {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -881,6 +893,7 @@ fn build_request(loaded: &LoadedModel, user_message: &str) -> RequestBuilder {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -916,6 +929,7 @@ fn apply_sampling(mut req: RequestBuilder, sampling: &SamplingConfig) -> Request
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -950,6 +964,7 @@ fn truncate_for_log(s: &str, max_len: usize) -> String {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -961,6 +976,7 @@ pub struct ChatEngine;
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -1048,6 +1064,7 @@ impl ChatEngine {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"
@@ -1156,6 +1173,7 @@ impl GgufModelConfig {
             target_os = "ios",
             target_os = "tvos",
             target_os = "visionos",
+            target_os = "watchos",
             target_os = "android"
         )) {
             Self::qwen25_coder_1_5b()

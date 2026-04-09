@@ -251,6 +251,7 @@ fn list_revisions(model_dir: &Path) -> Vec<String> {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "android"
 ))]
 fn make_progress(model_id: &str, downloaded: u64, total: u64, done: bool) -> ModelDownloadProgress {
@@ -888,7 +889,8 @@ pub fn list_supported_hf_models() -> SupportedHfModelsResponse {
     target_os = "macos",
     target_os = "ios",
     target_os = "tvos",
-    target_os = "visionos"
+    target_os = "visionos",
+    target_os = "watchos"
 ))]
 pub async fn download_model<F>(
     model_id: String,
@@ -1197,6 +1199,7 @@ where
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
+    target_os = "watchos",
     target_os = "android"
 )))]
 pub async fn download_model<F>(
