@@ -1,3 +1,7 @@
+## 0.1.3
+
+* **Platform:** Added support for watchOS and visionOS.
+
 ## 0.1.2
 
 * **Engine:** Switched all platform-specific `mistralrs` and `mistralrs-core` dependencies to the `setoelkahfi/mistral.rs` fork (branch `fix/all-platform-fixes`), picking up cross-platform stability fixes ahead of the upstream merge.

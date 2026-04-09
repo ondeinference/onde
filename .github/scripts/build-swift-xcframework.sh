@@ -23,6 +23,10 @@ cargo +1.92.0 rustc --target aarch64-apple-ios-sim --release --lib --crate-type 
 cargo +1.92.0 rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-visionos --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-visionos-sim --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-watchos --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-watchos-sim --release --lib --crate-type staticlib
 
 "$BINDGEN" generate   "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a"   --language swift   --out-dir "$PACKAGE_DIR/Sources/Onde"
 
@@ -33,9 +37,23 @@ cp "$ROOT_DIR/target/aarch64-apple-ios-sim/release/libonde.a" "$DIST_DIR/libonde
 
 cp "$ROOT_DIR/target/aarch64-apple-tvos-sim/release/libonde.a" "$DIST_DIR/libonde-tvos-sim.a"
 
+cp "$ROOT_DIR/target/aarch64-apple-visionos-sim/release/libonde.a" "$DIST_DIR/libonde-visionos-sim.a"
+
+cp "$ROOT_DIR/target/aarch64-apple-watchos-sim/release/libonde.a" "$DIST_DIR/libonde-watchos-sim.a"
+
 cp "$ROOT_DIR/target/aarch64-apple-darwin/release/libonde.a" "$DIST_DIR/libonde-macos.a"
 
-xcodebuild -create-xcframework   -library "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-ios-sim.a" -headers "$HEADERS_DIR"   -library "$ROOT_DIR/target/aarch64-apple-tvos/release/libonde.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-tvos-sim.a" -headers "$HEADERS_DIR"   -library "$DIST_DIR/libonde-macos.a" -headers "$HEADERS_DIR"   -output "$FRAMEWORK_DIR"
+xcodebuild -create-xcframework \
+  -library "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-ios-sim.a" -headers "$HEADERS_DIR" \
+  -library "$ROOT_DIR/target/aarch64-apple-tvos/release/libonde.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-tvos-sim.a" -headers "$HEADERS_DIR" \
+  -library "$ROOT_DIR/target/aarch64-apple-visionos/release/libonde.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-visionos-sim.a" -headers "$HEADERS_DIR" \
+  -library "$ROOT_DIR/target/aarch64-apple-watchos/release/libonde.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-watchos-sim.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-macos.a" -headers "$HEADERS_DIR" \
+  -output "$FRAMEWORK_DIR"
 
 export FRAMEWORK_DIR ZIP_PATH
 python3 - <<'ZIP'

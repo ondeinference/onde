@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - name: Checkout onde
@@ -153,6 +153,17 @@ jobs:
             git commit -m "Release $VERSION"
           fi
 
-          git tag -f "$VERSION"
+          # Push the commit to main first so the tag points to the latest HEAD
           git push origin HEAD:main
-          git push origin "$VERSION" --force
+
+          # Create an annotated tag only if it doesn't already exist on the remote.
+          # Never force-overwrite — SPM caches the resolved commit SHA per tag,
+          # so moving a tag silently breaks every consumer's Package.resolved.
+          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "refs/tags/$VERSION"; then
+            echo "::warning::Tag $VERSION already exists on onde-swift — skipping tag push."
+            echo "To re-release this version, delete the remote tag first:"
+            echo "  git push origin :refs/tags/$VERSION"
+          else
+            git tag -a "$VERSION" -m "Release $VERSION"
+            git push origin "refs/tags/$VERSION"
+          fi
