@@ -246,7 +246,13 @@ fn list_revisions(model_dir: &Path) -> Vec<String> {
 }
 
 /// Build a [`ModelDownloadProgress`] payload from raw byte counts.
-#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "android"
+))]
 fn make_progress(model_id: &str, downloaded: u64, total: u64, done: bool) -> ModelDownloadProgress {
     let progress = if total > 0 {
         (downloaded as f64 / total as f64).min(1.0)
@@ -878,7 +884,12 @@ pub fn list_supported_hf_models() -> SupportedHfModelsResponse {
 
 // ── Apple (macOS + iOS): Metal-accelerated, all model types ─────────────────
 
-#[cfg(any(target_os = "macos", target_os = "ios"))]
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos"
+))]
 pub async fn download_model<F>(
     model_id: String,
     on_progress: F,
@@ -1181,7 +1192,13 @@ where
 
 // ── Other platforms: no-op ────────────────────────────────────────────────
 
-#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
+#[cfg(not(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "android"
+)))]
 pub async fn download_model<F>(
     model_id: String,
     _on_progress: F,

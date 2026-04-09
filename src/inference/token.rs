@@ -37,6 +37,7 @@
     target_os = "macos",
     target_os = "ios",
     target_os = "tvos",
+    target_os = "visionos",
     target_os = "windows",
     target_os = "android"
 ))]
@@ -58,6 +59,7 @@ const BUILD_TIME_HF_TOKEN: Option<&str> = option_env!("HF_TOKEN");
     target_os = "macos",
     target_os = "ios",
     target_os = "tvos",
+    target_os = "visionos",
     target_os = "windows",
     target_os = "android"
 ))]
@@ -92,6 +94,7 @@ mod tests {
         target_os = "macos",
         target_os = "ios",
         target_os = "tvos",
+        target_os = "visionos",
         target_os = "windows",
         target_os = "android"
     ))]

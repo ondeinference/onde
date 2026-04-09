@@ -68,6 +68,17 @@ mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/a
 # mistralrs-core = { version = "0.8.1", features = ["metal"] }
 mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
 
+# visionOS: Metal-accelerated inference (Apple Vision Pro has M2 GPU);
+# hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
+[target.'cfg(target_os = "visionos")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+# mistralrs-core = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+
+
 # macOS: Metal-accelerated inference.
 [target.'cfg(target_os = "macos")'.dependencies]
 # mistralrs = { version = "0.8.1", features = ["metal"] }

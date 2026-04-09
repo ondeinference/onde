@@ -886,6 +886,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -976,15 +985,17 @@ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "crossterm"
-version = "0.25.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
+checksum = "d8b9f2e4c67f833b660cdb0a3523065869fb35570177239812ed4c905aeff87b"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.11.0",
  "crossterm_winapi",
- "libc",
- "mio 0.8.11",
+ "derive_more",
+ "document-features",
+ "mio",
  "parking_lot",
+ "rustix",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -1251,6 +1262,7 @@ version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "799a97264921d8623a957f6c3b9011f3b5492f557bbb7a5a19b7fa6d06ba8dcb"
 dependencies = [
+ "convert_case 0.10.0",
  "proc-macro2",
  "quote",
  "rustc_version",
@@ -1335,6 +1347,15 @@ name = "doctest-file"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2db04e74f0a9a93103b50e90b96024c9b2bdca8bce6a632ec71b88736d3d359"
+
+[[package]]
+name = "document-features"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61"
+dependencies = [
+ "litrs",
+]
 
 [[package]]
 name = "dtoa"
@@ -2621,9 +2642,9 @@ dependencies = [
 
 [[package]]
 name = "interprocess"
-version = "2.4.0"
+version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6be5e5c847dbdb44564bd85294740d031f4f8aeb3464e5375ef7141f7538db69"
+checksum = "d941b405bd2322993887859a8ee6ac9134945a24ec5ec763a8a962fc64dfec2d"
 dependencies = [
  "doctest-file",
  "libc",
@@ -2805,6 +2826,12 @@ name = "litemap"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
+
+[[package]]
+name = "litrs"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 
 [[package]]
 name = "llguidance"
@@ -3053,23 +3080,12 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c"
-dependencies = [
- "libc",
- "log",
- "wasi",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "mio"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50b7e5b27aa02a74bac8c3f23f448f8d87ff11f92d3aac1a6ed369ee08cc56c1"
 dependencies = [
  "libc",
+ "log",
  "wasi",
  "windows-sys 0.61.2",
 ]
@@ -3077,7 +3093,7 @@ dependencies = [
 [[package]]
 name = "mistralrs"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3104,7 +3120,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-audio"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "anyhow",
  "apodize",
@@ -3115,7 +3131,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-core"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "ahash",
  "akin",
@@ -3212,7 +3228,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-macros"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "darling 0.23.0",
  "proc-macro2",
@@ -3223,7 +3239,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-mcp"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3243,7 +3259,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-paged-attn"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -3259,7 +3275,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-quant"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -3288,7 +3304,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-vision"
 version = "0.8.1"
-source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#8c2daf9f82e5d4c912d18f4f2b3ad61c9c9a1e29"
+source = "git+https://github.com/setoelkahfi/mistral.rs?branch=fix%2Fall-platform-fixes#a0e354d85c478c642f2559125f59e5fb4c7d6f0b"
 dependencies = [
  "candle-core",
  "image",
@@ -5033,7 +5049,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b75a19a7a740b25bc7944bdee6172368f988763b744e3d4dfe753f6b4ece40cc"
 dependencies = [
  "libc",
- "mio 0.8.11",
+ "mio",
  "signal-hook",
 ]
 
@@ -5771,7 +5787,7 @@ checksum = "2bd1c4c0fc4a7ab90fc15ef6daaa3ec3b893f004f915f2392557ed23237820cd"
 dependencies = [
  "bytes",
  "libc",
- "mio 1.2.0",
+ "mio",
  "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
@@ -5950,8 +5966,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 [[package]]
 name = "tqdm"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b316d5c2ac649ca856dacd487d0ebb94f3b746bada51355d93dd2c007ab62a2e"
+source = "git+https://github.com/setoelkahfi/tqdm?branch=deps%2Fbump-crossterm#41e4182829136e6dadbdd1c36af824d19219147a"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -6041,7 +6056,7 @@ version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fc20a25899c5ae43735253244214f3d5eb75dd28d9cc8491732294a985adb8c"
 dependencies = [
- "convert_case",
+ "convert_case 0.6.0",
  "proc-macro2",
  "quote",
  "state",
@@ -6918,15 +6933,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75283be5efb2831d37ea142365f009c02ec203cd29a3ebecbc093d52315b66d0"
 dependencies = [
  "windows-targets 0.42.2",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.48.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9"
-dependencies = [
- "windows-targets 0.48.5",
 ]
 
 [[package]]
