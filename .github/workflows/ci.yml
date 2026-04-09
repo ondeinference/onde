@@ -126,3 +126,29 @@ jobs:
         with:
           key: visionos-sim
       - run: cargo +nightly check -Z build-std --target aarch64-apple-visionos-sim
+
+  check-watchos:
+    name: Check (watchOS device)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: watchos
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-watchos
+
+  check-watchos-sim:
+    name: Check (watchOS simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: watchos-sim
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-watchos-sim

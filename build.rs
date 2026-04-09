@@ -17,7 +17,7 @@ fn main() {
     // instruction — only when targeting tvOS.
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    if target_os == "tvos" || target_os == "visionos" {
+    if target_os == "tvos" || target_os == "visionos" || target_os == "watchos" {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
         let asm_path = std::path::Path::new(&manifest_dir).join("scripts/tvos_chkstk.s");
 

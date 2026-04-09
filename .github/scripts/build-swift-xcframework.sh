@@ -25,6 +25,8 @@ cargo +nightly rustc -Z build-std --target aarch64-apple-tvos --release --lib --
 cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-visionos --release --lib --crate-type staticlib
 cargo +nightly rustc -Z build-std --target aarch64-apple-visionos-sim --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-watchos --release --lib --crate-type staticlib
+cargo +nightly rustc -Z build-std --target aarch64-apple-watchos-sim --release --lib --crate-type staticlib
 
 "$BINDGEN" generate   "$ROOT_DIR/target/aarch64-apple-ios/release/libonde.a"   --language swift   --out-dir "$PACKAGE_DIR/Sources/Onde"
 
@@ -37,6 +39,8 @@ cp "$ROOT_DIR/target/aarch64-apple-tvos-sim/release/libonde.a" "$DIST_DIR/libond
 
 cp "$ROOT_DIR/target/aarch64-apple-visionos-sim/release/libonde.a" "$DIST_DIR/libonde-visionos-sim.a"
 
+cp "$ROOT_DIR/target/aarch64-apple-watchos-sim/release/libonde.a" "$DIST_DIR/libonde-watchos-sim.a"
+
 cp "$ROOT_DIR/target/aarch64-apple-darwin/release/libonde.a" "$DIST_DIR/libonde-macos.a"
 
 xcodebuild -create-xcframework \
@@ -46,6 +50,8 @@ xcodebuild -create-xcframework \
   -library "$DIST_DIR/libonde-tvos-sim.a" -headers "$HEADERS_DIR" \
   -library "$ROOT_DIR/target/aarch64-apple-visionos/release/libonde.a" -headers "$HEADERS_DIR" \
   -library "$DIST_DIR/libonde-visionos-sim.a" -headers "$HEADERS_DIR" \
+  -library "$ROOT_DIR/target/aarch64-apple-watchos/release/libonde.a" -headers "$HEADERS_DIR" \
+  -library "$DIST_DIR/libonde-watchos-sim.a" -headers "$HEADERS_DIR" \
   -library "$DIST_DIR/libonde-macos.a" -headers "$HEADERS_DIR" \
   -output "$FRAMEWORK_DIR"
 
