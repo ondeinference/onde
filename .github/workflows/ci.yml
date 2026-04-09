@@ -100,3 +100,29 @@ jobs:
         with:
           key: tvos-sim
       - run: cargo +nightly check -Z build-std --target aarch64-apple-tvos-sim
+
+  check-visionos:
+    name: Check (visionOS device)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: visionos
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-visionos
+
+  check-visionos-sim:
+    name: Check (visionOS simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: visionos-sim
+      - run: cargo +nightly check -Z build-std --target aarch64-apple-visionos-sim
