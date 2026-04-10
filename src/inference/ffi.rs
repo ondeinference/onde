@@ -87,7 +87,7 @@ pub struct OndeChatEngine {
     inner: ChatEngine,
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 impl OndeChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
@@ -248,7 +248,7 @@ impl OndeChatEngine {
 ///     listener: MyHandler()
 /// )
 /// ```
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 pub async fn stream_chat_message(
     engine: Arc<OndeChatEngine>,
     message: String,

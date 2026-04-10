@@ -217,6 +217,75 @@ On iOS/macOS, the equivalent paths are inside the App Group container at
 `<group.com.ondeinference.apps>/models/hub/`. On Android, there is no app group
 mechanism, so each app gets its own `filesDir`.
 
+### Cross-platform model sharing comparison
+
+| Platform | Mechanism | Shared across apps? | How it works |
+|---|---|---|---|
+| iOS / tvOS / macOS | App Groups (`group.com.ondeinference.apps`) | Yes — all apps signed by the same team that declare the same App Group entitlement share a single container directory | OS provides a shared `containerURL(forSecurityApplicationGroupIdentifier:)` path; all Onde apps read and write the same `models/hub/` within it |
+| Android | Per-app `filesDir` sandbox | No — each app gets its own isolated copy | Linux UID isolation prevents one app from reading another's internal storage; no entitlement or manifest flag can opt in to sharing |
+
+### Why Android can't do App Groups
+
+Android's security model assigns each app a unique Linux UID at install time.
+The kernel enforces file permissions — app A literally cannot open a file
+descriptor inside app B's `/data/data/com.B/files/`. There is no platform
+primitive to override this the way iOS App Groups do. The approaches that
+_don't_ work:
+
+- **`android:sharedUserId`** — deprecated in API 29, removed in API 33. Dead end.
+- **`MANAGE_EXTERNAL_STORAGE`** — lets you write to `/sdcard/onde/models/` but Google Play rejects apps that use it unless they are file managers or antivirus tools.
+- **SAF (Storage Access Framework)** — requires the user to manually pick a directory every time. Not viable for a background model load.
+
+### What we do today
+
+Each Onde-powered Android app downloads its own copy of the model (~941 MB for
+Qwen 2.5 1.5B). This is what every major Android ML SDK does (TensorFlow Lite,
+MediaPipe, ML Kit). Android devices typically ship with 128–256 GB storage, so
+1 GB per app is tolerable. The SDK caches after first download, so the user only
+pays the bandwidth cost once per app.
+
+### Future: ContentProvider model manager
+
+The Android-idiomatic way to share data across apps without special permissions
+is a `ContentProvider`. The plan (not yet implemented):
+
+1. The first Onde-powered app installed acts as the **model host**. It downloads
+   models into its own `filesDir` as it does today.
+2. It registers a `ContentProvider` at a well-known authority
+   (e.g. `com.ondeinference.models`) that serves model files via
+   `ParcelFileDescriptor`.
+3. Other Onde-powered apps query the provider first. If a model is already
+   cached by any sibling app, they get a read-only file descriptor — no
+   download, no copy.
+4. If the provider is not installed (no sibling app on the device), the app
+   falls back to downloading its own copy.
+
+```kotlin
+// In the host app — exposes cached models to sibling apps
+class OndeModelProvider : ContentProvider() {
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
+        // uri = content://com.ondeinference.models/qwen25-1.5b
+        val modelFile = File(context!!.filesDir, "models/hub/${uri.lastPathSegment}")
+        if (!modelFile.exists()) return null
+        return ParcelFileDescriptor.open(modelFile, ParcelFileDescriptor.MODE_READ_ONLY)
+    }
+}
+
+// In any Onde-powered app — checks for a cached model before downloading
+val uri = Uri.parse("content://com.ondeinference.models/qwen25-1.5b")
+val pfd = contentResolver.openFileDescriptor(uri, "r")
+if (pfd != null) {
+    // model already downloaded by a sibling app — read from file descriptor
+} else {
+    // no sibling app has the model — download our own copy
+}
+```
+
+No special permissions required, works on all API levels, no Google Play policy
+issues. The only requirement is that at least one Onde app is installed on the
+device. This is tracked but not yet implemented — ship with per-app caching for
+now and add the provider when multiple production apps exist.
+
 ---
 
 ## Kotlin Public API

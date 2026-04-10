@@ -25,7 +25,7 @@ anyhow = "1"
 home = "0.5.4"
 log = "^0.4"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt", "sync"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tsync = "2"
 
 thiserror = "2"
