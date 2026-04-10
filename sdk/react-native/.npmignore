@@ -1,0 +1,26 @@
+# Example app
+example/
+
+# Rust build artifacts
+rust/target/
+rust/Cargo.lock
+
+# Scripts (build-rust.sh is in files[] but consumers don't need it)
+# Keep scripts/ included for source builds — remove this line if you want to exclude them
+
+# Development files
+.github/
+.vscode/
+.zed/
+*.log
+
+# TypeScript source (compiled output is in build/)
+src/
+
+# Config files not needed at runtime
+tsconfig.json
+CHANGELOG.md
+
+# OS files
+.DS_Store
+Thumbs.db
