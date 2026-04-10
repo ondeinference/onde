@@ -1,12 +1,12 @@
 # Example app
 example/
 
-# Rust build artifacts
+# Rust build artifacts — target/ is huge, never publish it
 rust/target/
-rust/Cargo.lock
 
-# Scripts (build-rust.sh is in files[] but consumers don't need it)
-# Keep scripts/ included for source builds — remove this line if you want to exclude them
+# iOS intermediate staging dirs — only the XCFramework is needed by CocoaPods
+ios/rust/device/
+ios/rust/simulator/
 
 # Development files
 .github/

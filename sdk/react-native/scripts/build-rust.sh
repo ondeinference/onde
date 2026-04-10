@@ -10,7 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RUST_DIR="$SCRIPT_DIR/../rust"
-IOS_OUT="$SCRIPT_DIR/../ios/rust"
+IOS_XCFRAMEWORK_OUT="$SCRIPT_DIR/../ios/rust/OndeReactNative.xcframework"
 ANDROID_OUT="$SCRIPT_DIR/../android/src/main/jniLibs"
 
 build_ios() {
@@ -26,21 +26,15 @@ build_ios() {
     cargo build --manifest-path "$RUST_DIR/Cargo.toml" \
         --target aarch64-apple-ios-sim --release
 
-    # Copy both device and simulator staticlibs to ios/rust/{device,simulator}/
-    mkdir -p "$IOS_OUT/device" "$IOS_OUT/simulator"
-    cp "$RUST_DIR/target/aarch64-apple-ios/release/libonde_react_native.a" \
-       "$IOS_OUT/device/libonde_react_native.a"
-    cp "$RUST_DIR/target/aarch64-apple-ios-sim/release/libonde_react_native.a" \
-       "$IOS_OUT/simulator/libonde_react_native.a"
-
-    # Create an XCFramework that bundles both slices. CocoaPods picks the
-    # correct one automatically based on the target SDK.
+    # Build the XCFramework directly from the cargo output — no staging dirs needed.
+    # CocoaPods picks the correct slice (device vs simulator) automatically.
     echo "  → Creating XCFramework"
-    rm -rf "$IOS_OUT/OndeReactNative.xcframework"
+    rm -rf "$IOS_XCFRAMEWORK_OUT"
+    mkdir -p "$(dirname "$IOS_XCFRAMEWORK_OUT")"
     xcodebuild -create-xcframework \
-        -library "$IOS_OUT/device/libonde_react_native.a" \
-        -library "$IOS_OUT/simulator/libonde_react_native.a" \
-        -output "$IOS_OUT/OndeReactNative.xcframework"
+        -library "$RUST_DIR/target/aarch64-apple-ios/release/libonde_react_native.a" \
+        -library "$RUST_DIR/target/aarch64-apple-ios-sim/release/libonde_react_native.a" \
+        -output "$IOS_XCFRAMEWORK_OUT"
 
     echo "  ✓ iOS XCFramework created at ios/rust/OndeReactNative.xcframework"
 }

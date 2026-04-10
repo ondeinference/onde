@@ -29,7 +29,7 @@
   "homepage": "https://ondeinference.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ondeinference/onde",
+    "url": "git+https://github.com/ondeinference/onde.git",
     "directory": "sdk/react-native"
   },
   "bugs": {
@@ -49,7 +49,9 @@
   },
   "files": [
     "build/",
-    "ios/",
+    "ios/OndeInference.podspec",
+    "ios/OndeInferenceModule.swift",
+    "ios/rust/OndeReactNative.xcframework",
     "android/",
     "rust/Cargo.toml",
     "rust/Cargo.lock",
