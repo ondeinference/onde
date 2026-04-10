@@ -51,7 +51,10 @@
     "build/",
     "ios/",
     "android/",
-    "rust/",
+    "rust/Cargo.toml",
+    "rust/Cargo.lock",
+    "rust/build.rs",
+    "rust/src/",
     "scripts/",
     "expo-module.config.json"
   ]
