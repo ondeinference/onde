@@ -27,8 +27,12 @@ in a single commit before tagging.**
 | 1 | `Cargo.toml` (root) | `version` | `version = "0.1.3"` |
 | 2 | `sdk/dart/pubspec.yaml` | `version` | `version: 0.1.3` |
 | 3 | `sdk/dart/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file |
-| 4 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
-| 5 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
+| 4 | `sdk/react-native/package.json` | `version` | `"version": "0.1.3"` |
+| 5 | `sdk/react-native/rust/Cargo.toml` | `version` | `version = "0.1.3"` |
+| 6 | `sdk/react-native/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file |
+| 7 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
+| 8 | `sdk/react-native/rust/Cargo.lock` | `onde` package version | Run `cd sdk/react-native/rust && cargo update -p onde` |
+| 9 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
 
 ### Files you do NOT manually edit
 
@@ -43,18 +47,25 @@ in a single commit before tagging.**
 # 1. Edit Cargo.toml version (manual)
 # 2. Edit sdk/dart/pubspec.yaml version (manual)
 # 3. Prepend new section to sdk/dart/CHANGELOG.md (manual)
+# 4. Edit sdk/react-native/package.json version (manual)
+# 5. Edit sdk/react-native/rust/Cargo.toml version (manual)
+# 6. Prepend new section to sdk/react-native/CHANGELOG.md (manual)
 
-# 4. Sync lockfiles
+# 7. Sync lockfiles
 cargo check                              # updates root Cargo.lock
 cd sdk/dart/rust && cargo update -p onde  # updates Dart SDK's Cargo.lock
+cd sdk/react-native/rust && cargo update -p onde   # updates React Native SDK's Cargo.lock
 
-# 5. Verify
-grep '^version' Cargo.toml               # "0.1.3"
-grep '^version:' sdk/dart/pubspec.yaml    # 0.1.3
-grep 'name = "onde"' -A1 Cargo.lock      # version = "0.1.3"
-grep 'name = "onde"' -A1 sdk/dart/rust/Cargo.lock  # version = "0.1.3"
+# 8. Verify
+grep '^version' Cargo.toml                          # "0.1.3"
+grep '^version:' sdk/dart/pubspec.yaml               # 0.1.3
+grep '"version"' sdk/react-native/package.json                # "0.1.3"
+grep '^version' sdk/react-native/rust/Cargo.toml              # "0.1.3"
+grep 'name = "onde"' -A1 Cargo.lock                  # version = "0.1.3"
+grep 'name = "onde"' -A1 sdk/dart/rust/Cargo.lock    # version = "0.1.3"
+grep 'name = "onde"' -A1 sdk/react-native/rust/Cargo.lock     # version = "0.1.3"
 
-# 6. Commit and tag
+# 9. Commit and tag
 git add -A
 git commit -m "0.1.3"
 git tag 0.1.3
@@ -232,6 +243,7 @@ All four must match. If any pair diverges, the relevant CI job fails.
 |--------|---------|---------|
 | `ONDE_SWIFT_PAT` | `release-sdk-swift.yml` | Push commits + tags to `ondeinference/onde-swift`. Must be a PAT (not `GITHUB_TOKEN`) so it triggers workflows on `onde-swift`. Needs `contents: write` scope. |
 | `PUB_CREDENTIALS` | `release-sdk-dart.yml` | Authenticate with pub.dev for `flutter pub publish`. Full JSON from `~/.config/dart/pub-credentials.json`. |
+| `NPM_TOKEN` | `release-sdk-npm.yml` | Authenticate with npm for `npm publish`. Granular access token scoped to the `@ondeinference` org with read+write packages. Create at npmjs.com → Access Tokens. |
 
 ---
 
@@ -240,11 +252,17 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | Pitfall | Symptom | Fix |
 |---------|---------|-----|
 | Forgot to bump `pubspec.yaml` | Dart CI fails: "Tag '0.1.3' does not match pubspec.yaml version '0.1.2'" | Bump `sdk/dart/pubspec.yaml`, amend commit, re-tag |
+| Forgot to bump `sdk/react-native/package.json` | npm CI fails: "Tag '0.1.3' does not match package.json version '0.1.2'" | Bump `sdk/react-native/package.json`, amend commit, re-tag |
+| Forgot to bump `sdk/react-native/rust/Cargo.toml` | npm SDK's Rust bridge crate version drifts from the main crate | Bump `sdk/react-native/rust/Cargo.toml`, run `cd sdk/react-native/rust && cargo update -p onde` |
 | Forgot to update `sdk/dart/rust/Cargo.lock` | Dart SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/dart/rust && cargo update -p onde` |
+| Forgot to update `sdk/react-native/rust/Cargo.lock` | npm SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/react-native/rust && cargo update -p onde` |
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
+| Forgot to update `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Tag has `v` prefix (`v0.1.3`) | CI does not trigger — tag pattern requires bare semver | Delete the tag, re-tag without `v` |
 | `ONDE_SWIFT_PAT` expired | `onde-swift` push fails with 403 | Regenerate PAT at github.com/settings/tokens, update repo secret |
 | `PUB_CREDENTIALS` expired | `flutter pub publish` fails with 401 | Run `dart pub login` locally, copy new credentials JSON to repo secret |
+| `NPM_TOKEN` expired | `npm publish` fails with 401/403 | Regenerate token at npmjs.com → Access Tokens, update repo secret |
+| npm version already published | `npm publish` exits with "already exists" | npm does not allow re-publishing the same version — bump to the next version |
 | `onde-swift` tag already exists | Tag push skipped (warning emitted) | Delete remote tag first: `git push origin :refs/tags/0.1.3` |
 | Force-pushed a tag on `onde-swift` | SPM users get stale `Package.resolved` | Never force-push. Delete + re-create instead. Advise consumers to run `swift package resolve` |
 | XCFramework URL 404 | `swift package resolve` fails on consumer side | Ensure the `onde` GitHub Release was created BEFORE the `onde-swift` tag was pushed (the workflow handles this order automatically) |
@@ -327,6 +345,72 @@ step order within the workflow.
 | crates.io | `onde` | `onde = "0.x"` | Manual `cargo publish` |
 | Swift Package Index | `onde-swift` (org: `ondeinference`) | `import Onde` | `release-sdk-swift.yml` → `onde-swift/release.yml` |
 | pub.dev | `onde_inference` | `import 'package:onde_inference/onde_inference.dart'` | `release-sdk-dart.yml` |
+| npm | `@ondeinference/react-native` | `import { OndeChatEngine } from "@ondeinference/react-native"` | Manual `npm publish --access public` |
+
+---
+
+---
+
+## React Native npm SDK
+
+**Package:** `@ondeinference/react-native` (scoped under `@ondeinference` org on npm)
+**Location:** `sdk/react-native/`
+**Architecture:** Expo native module wrapping Rust via C FFI
+
+### How it works
+
+```
+TypeScript (React Native)
+  │  import { OndeChatEngine } from "@ondeinference/react-native"
+  ▼
+Expo Module (Swift / Kotlin)
+  │  OndeInferenceModule — calls C FFI functions via @_silgen_name (iOS) / JNI (Android)
+  ▼
+Rust C FFI bridge (sdk/react-native/rust/)
+  │  extern "C" functions with JSON serialization, global tokio::Runtime
+  ▼
+onde crate (src/)
+  │  ChatEngine — tokio::sync::Mutex, mistral.rs inference
+  ▼
+mistral.rs → Metal (iOS) / CPU (Android)
+```
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `sdk/react-native/package.json` | npm package — `@ondeinference/react-native` |
+| `sdk/react-native/expo-module.config.json` | Expo autolinking config |
+| `sdk/react-native/src/index.ts` | Public TypeScript API — `OndeChatEngine`, free functions, JSON ↔ camelCase conversion |
+| `sdk/react-native/src/types.ts` | TypeScript type definitions mirroring Rust types |
+| `sdk/react-native/src/OndeInferenceModule.ts` | `requireNativeModule("OndeInference")` bridge |
+| `sdk/react-native/rust/src/lib.rs` | C FFI exports (`extern "C"`) + Android JNI wrappers |
+| `sdk/react-native/ios/OndeInferenceModule.swift` | Swift Expo module — calls Rust via `@_silgen_name` |
+| `sdk/react-native/android/.../OndeInferenceModule.kt` | Kotlin Expo module — calls Rust via JNI `external fun` |
+| `sdk/react-native/scripts/build-rust.sh` | Cross-compile Rust for iOS (staticlib) + Android (cdylib) |
+
+### Building native libraries
+
+```bash
+# iOS (requires rustup targets: aarch64-apple-ios, aarch64-apple-ios-sim)
+cd sdk/react-native && ./scripts/build-rust.sh ios
+
+# Android (requires ANDROID_NDK_HOME)
+cd sdk/react-native && ./scripts/build-rust.sh android
+
+# Both
+cd sdk/react-native && ./scripts/build-rust.sh all
+```
+
+### Publishing to npm
+
+```bash
+cd sdk/react-native
+npm run build          # TypeScript → build/
+npm publish --access public
+```
+
+The `--access public` flag is required for scoped packages on first publish.
 
 ---
 

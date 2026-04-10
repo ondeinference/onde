@@ -1,0 +1,19 @@
+[package]
+name = "onde-react-native"
+version = "0.1.3"
+edition = "2021"
+publish = false
+
+[lib]
+name = "onde_react_native"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+onde = { path = "../../.." }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
