@@ -1,0 +1,116 @@
+name: Release SDK npm
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Validate (every run) ──────────────────────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      # ── Read version ───────────────────────────────────────────────────────
+
+      - name: Read version from package.json
+        id: meta
+        working-directory: sdk/react-native
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "npm SDK version: $VERSION"
+
+      # ── Validate tag = package.json version (tag push only) ────────────────
+
+      - name: Validate tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          PKG_VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$TAG" != "$PKG_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match package.json version '$PKG_VERSION'. Update package.json or re-tag."
+            exit 1
+          fi
+          echo "Version check passed: $PKG_VERSION"
+
+      # ── Build & dry-run ────────────────────────────────────────────────────
+
+      - name: Install dependencies
+        working-directory: sdk/react-native
+        run: npm install
+
+      - name: Build TypeScript
+        working-directory: sdk/react-native
+        run: npm run build
+
+      - name: Dry-run publish
+        working-directory: sdk/react-native
+        run: npm publish --dry-run --access public
+
+  # ── Publish to npm (tag push only) ────────────────────────────────────────
+  publish:
+    name: Publish to npm
+    needs: validate
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        working-directory: sdk/react-native
+        run: npm install
+
+      - name: Build TypeScript
+        working-directory: sdk/react-native
+        run: npm run build
+
+      # ── Publish ────────────────────────────────────────────────────────────
+      # NPM_TOKEN must be a repository secret containing an npm access token
+      # with publish permissions for the @ondeinference scope.
+      #
+      # To obtain the token:
+      #   1. Log in to https://www.npmjs.com as a member of the @ondeinference org.
+      #   2. Go to Access Tokens → Generate New Token → Granular Access Token.
+      #   3. Scope it to the @ondeinference org with read+write packages.
+      #   4. Add it as a repository secret named NPM_TOKEN on the onde repo.
+      - name: Publish @ondeinference/react-native to npm
+        working-directory: sdk/react-native
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm_package_name=$(node -p "require('./package.json').name")
+          npm_package_version=$(node -p "require('./package.json').version")
+
+          if npm view "${npm_package_name}@${npm_package_version}" version >/dev/null 2>&1; then
+            echo "${npm_package_name}@${npm_package_version} already exists on npm, skipping publish"
+            exit 0
+          fi
+
+          npm publish --access public

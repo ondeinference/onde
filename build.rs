@@ -5,19 +5,31 @@ fn main() {
     // build-dep on `uniffi` with `features = ["build"]` is exercised and
     // keeps compatibility if we ever switch to UDL-based generation.
 
-    // ── tvOS: provide missing ___chkstk_darwin symbol ────────────────────
+    // ── Apple: provide missing ___chkstk_darwin symbol ───────────────────
     //
-    // On macOS and iOS, `___chkstk_darwin` is exported by libSystem as a
-    // stack probing function.  On arm64, the kernel grows the stack via
-    // guard pages so the probe is effectively a no-op.  tvOS does NOT
-    // export this symbol, but `aws-lc-sys` assembly (pulled in transitively
-    // via reqwest → rustls → aws-lc-rs) references it unconditionally.
+    // On macOS, `___chkstk_darwin` is exported by libSystem as a stack
+    // probing function.  On arm64 the kernel grows the stack via guard
+    // pages so the probe is effectively a no-op `ret`.
     //
-    // We compile a tiny assembly stub that provides the symbol as a `ret`
-    // instruction — only when targeting tvOS.
+    // tvOS, visionOS, and watchOS do NOT export this symbol at all.
+    //
+    // iOS exports it in libSystem, but deployment-target mismatches
+    // between dependencies (e.g. onig_sys built for iOS 26.0 linked
+    // against a min-target of iOS 10.0) can cause the linker to fail
+    // to resolve it.  Providing the stub on iOS is harmless — if
+    // libSystem already has the symbol the linker prefers it; if not,
+    // our stub satisfies the reference.
+    //
+    // `aws-lc-sys` assembly (transitive via reqwest → rustls → aws-lc-rs)
+    // references ___chkstk_darwin unconditionally, so we compile a tiny
+    // `ret` stub for all non-macOS Apple targets.
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
-    if target_os == "tvos" || target_os == "visionos" || target_os == "watchos" {
+    if target_os == "ios"
+        || target_os == "tvos"
+        || target_os == "visionos"
+        || target_os == "watchos"
+    {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
         let asm_path = std::path::Path::new(&manifest_dir).join("scripts/tvos_chkstk.s");
 
