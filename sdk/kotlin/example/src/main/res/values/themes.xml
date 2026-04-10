@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!-- Compose owns all theming at runtime via OndeExampleTheme.
+         This just gives the Activity a bare window with no action bar
+         while Compose sets up. No MDC or Material3 XML dep needed. -->
+    <style
+        name="Theme.OndeExample"
+        parent="android:Theme.Material.Light.NoActionBar"
+    />
+</resources>

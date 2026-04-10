@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Onde Inference Android SDK
+         Library manifest — no activities, services, or permissions are declared
+         here. The host application must declare INTERNET permission to allow
+         model downloads from Hugging Face Hub. -->
+</manifest>
