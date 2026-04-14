@@ -1,3 +1,8 @@
+## 0.1.4
+
+* Added Qwen 3 4B GGUF model (`bartowski/Qwen_Qwen3-4B-GGUF`) with full OpenAI-compatible tool calling support.
+* Added `qwen3_4b()` model config and registered it in the supported model list.
+
 ## 0.1.3
 
 * Initial release of the React Native Expo module.
