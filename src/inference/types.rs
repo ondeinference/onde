@@ -374,6 +374,60 @@ pub fn format_duration(d: std::time::Duration) -> String {
     }
 }
 
+// ── Tool calling types (Rust-only) ──────────────────────────────────────────
+//
+// These types are intentionally NOT annotated with `uniffi::Record` /
+// `uniffi::Enum` — they are for Rust consumers only.  The UniFFI surface
+// area (Swift / Kotlin) remains unchanged.
+
+/// Definition of a tool the model can invoke.
+#[derive(Debug, Clone)]
+pub struct ToolDefinition {
+    /// Tool function name (e.g. `"get_weather"`).
+    pub name: String,
+    /// Human-readable description of what the tool does.
+    pub description: String,
+    /// JSON Schema for function parameters, as a serialised JSON string.
+    pub parameters_schema: String,
+}
+
+/// A tool call requested by the model.
+#[derive(Debug, Clone)]
+pub struct ToolCallRequest {
+    /// Unique identifier for this tool call (used to correlate results).
+    pub id: String,
+    /// Name of the function the model wants to invoke.
+    pub function_name: String,
+    /// JSON string of the function arguments.
+    pub arguments: String,
+}
+
+/// Result of executing a tool, to send back to the model.
+#[derive(Debug, Clone)]
+pub struct ToolResult {
+    /// The `id` from the corresponding [`ToolCallRequest`].
+    pub tool_call_id: String,
+    /// The tool's output (plain text or JSON).
+    pub content: String,
+}
+
+/// Result from a tool-aware inference call (Rust-only, not UniFFI-exported).
+#[derive(Debug, Clone)]
+pub struct ToolAwareResult {
+    /// Text content of the assistant reply (may be empty when the model
+    /// decides to call tools instead of responding with text).
+    pub text: String,
+    /// Tool calls requested by the model.  Empty when the model responds
+    /// with text only.
+    pub tool_calls: Vec<ToolCallRequest>,
+    /// Wall-clock inference duration in seconds.
+    pub duration_secs: f64,
+    /// Human-readable duration string (e.g. `"1.3s"`).
+    pub duration_display: String,
+    /// Finish reason reported by the model (e.g. `"stop"`, `"tool_calls"`).
+    pub finish_reason: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

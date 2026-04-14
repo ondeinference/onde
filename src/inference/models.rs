@@ -63,12 +63,33 @@ pub const QWEN25_3B_GGUF_FILE: &str = "Qwen2.5-3B-Instruct-Q4_K_M.gguf";
 /// Base model repo used for the HF tokenizer (tokenizer.json + tokenizer_config.json).
 pub const QWEN25_3B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-3B-Instruct";
 
+/// Pre-quantized Qwen 3 4B (GGUF Q4_K_M) — tool-calling-capable coding model (~2.7 GB).
+///
+/// Qwen 3 is the first Qwen family supported by mistral.rs for structured tool calling
+/// (via the `<tool_call>` / `</tool_call>` XML format). The 4B variant offers a good
+/// balance of tool-calling reliability and memory footprint for macOS desktops.
+///
+/// bartowski's GGUF embeds the full tokenizer and chat template.
+pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
+/// The specific GGUF filename to download from the bartowski Qwen3 4B repo.
+pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
+
+/// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
+///
+/// Smallest Qwen 3 variant with tool calling support. Suitable for mobile devices
+/// where the 4B model would be too large.
+pub const BARTOWSKI_QWEN3_1_7B_GGUF: &str = "bartowski/Qwen_Qwen3-1.7B-GGUF";
+/// The specific GGUF filename for the Qwen3 1.7B repo.
+pub const QWEN3_1_7B_GGUF_FILE: &str = "Qwen_Qwen3-1.7B-Q4_K_M.gguf";
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
 pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
+    BARTOWSKI_QWEN3_4B_GGUF,
+    BARTOWSKI_QWEN3_1_7B_GGUF,
 ];
 
 /// Rich metadata for a supported model, used by the frontend to display
@@ -116,5 +137,21 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         // Qwen2.5-3B-Instruct-Q4_K_M.gguf from bartowski repo.
         // Exact file size from HuggingFace API siblings[].size.
         expected_size_bytes: 1_929_903_264,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_4B_GGUF,
+        name: "Qwen 3 4B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Tool-calling-capable model for macOS — balanced quality and size (~2.7 GB). \
+             First Qwen family with structured tool calling support in mistral.rs.",
+        expected_size_bytes: 2_600_000_000,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_1_7B_GGUF,
+        name: "Qwen 3 1.7B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Lightweight tool-calling model for mobile (~1.3 GB). \
+             Smallest Qwen 3 variant with tool calling support.",
+        expected_size_bytes: 1_282_439_584,
     },
 ];

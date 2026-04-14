@@ -3628,6 +3628,7 @@ dependencies = [
  "mistralrs",
  "mistralrs-core",
  "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tsync",
