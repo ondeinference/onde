@@ -1161,6 +1161,21 @@ impl GgufModelConfig {
         }
     }
 
+    /// Qwen 3 4B Instruct (GGUF Q4_K_M) — ~2.7 GB.
+    ///
+    /// Full OpenAI-compatible tool calling with extended thinking mode.
+    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
+    /// consume 300–400 tokens before the real response begins.
+    pub fn qwen3_4b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 4B (Q4_K_M)".into(),
+            approx_memory: "~2.7 GB".into(),
+        }
+    }
+
     /// Return the platform-appropriate default **coding** model config.
     ///
     /// - iOS / Android → Qwen 2.5 Coder 1.5B (~941 MB, fits mobile memory budgets)

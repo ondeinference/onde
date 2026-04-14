@@ -63,12 +63,24 @@ pub const QWEN25_3B_GGUF_FILE: &str = "Qwen2.5-3B-Instruct-Q4_K_M.gguf";
 /// Base model repo used for the HF tokenizer (tokenizer.json + tokenizer_config.json).
 pub const QWEN25_3B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-3B-Instruct";
 
+/// Pre-quantized Qwen 3 4B Instruct (GGUF Q4_K_M) — full OpenAI-compatible tool calling (~2.7 GB).
+///
+/// Qwen 3 uses an extended thinking mode (`<think>…</think>`) that significantly improves
+/// reasoning and tool-use accuracy. Load with `max_tokens ≥ 4096` to avoid empty replies caused
+/// by the model exhausting its token budget on thinking before producing a response.
+///
+/// Recommended model for siGit Code (coding agent with tool calling on macOS/Linux/Windows).
+pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
+/// The specific GGUF filename to download from the bartowski Qwen 3 4B repo.
+pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
 pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
+    BARTOWSKI_QWEN3_4B_GGUF,
 ];
 
 /// Rich metadata for a supported model, used by the frontend to display
@@ -116,5 +128,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         // Qwen2.5-3B-Instruct-Q4_K_M.gguf from bartowski repo.
         // Exact file size from HuggingFace API siblings[].size.
         expected_size_bytes: 1_929_903_264,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_4B_GGUF,
+        name: "Qwen 3 4B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Full tool-calling support with extended reasoning mode (~2.7 GB). \
+                      Recommended for siGit Code on macOS, Linux, and Windows.",
+        // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
+        expected_size_bytes: 2_596_306_912,
     },
 ];

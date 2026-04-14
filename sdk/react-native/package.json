@@ -1,0 +1,63 @@
+{
+  "name": "@ondeinference/react-native",
+  "version": "0.1.4",
+  "description": "On-device LLM inference for React Native. Run Qwen 2.5 models locally with Metal on iOS, CPU on Android. No cloud, no API key.",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf build",
+    "prepublishOnly": "npm run clean && npm run build",
+    "build:rust:ios": "./scripts/build-rust.sh ios",
+    "build:rust:android": "./scripts/build-rust.sh android",
+    "build:rust": "./scripts/build-rust.sh all"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "inference",
+    "llm",
+    "on-device",
+    "ai",
+    "metal",
+    "qwen",
+    "rust",
+    "mistral"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "author": "Onde Inference <hello@ondeinference.com>",
+  "homepage": "https://ondeinference.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ondeinference/onde.git",
+    "directory": "sdk/react-native"
+  },
+  "bugs": {
+    "url": "https://github.com/ondeinference/onde/issues"
+  },
+  "devDependencies": {
+    "expo-modules-core": "^2.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "expo": ">=52.0.0",
+    "react": ">=18.0.0",
+    "react-native": ">=0.76.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "build/",
+    "ios/OndeInference.podspec",
+    "ios/OndeInferenceModule.swift",
+    "ios/rust/OndeReactNative.xcframework",
+    "android/",
+    "rust/Cargo.toml",
+    "rust/Cargo.lock",
+    "rust/build.rs",
+    "rust/src/",
+    "scripts/",
+    "expo-module.config.json"
+  ]
+}
