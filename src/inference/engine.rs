@@ -198,6 +198,7 @@ struct LoadedModel {
 ))]
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
+    pulse: Option<crate::pulse::PulseClient>,
 }
 
 #[cfg(any(
@@ -217,6 +218,7 @@ impl ChatEngine {
     pub fn new() -> Self {
         Self {
             inner: Mutex::new(None),
+            pulse: crate::pulse::PulseClient::from_env(),
         }
     }
 
@@ -346,6 +348,10 @@ impl ChatEngine {
             sampling.max_tokens,
         );
 
+        // Capture before config is moved into LoadedModel.
+        let pulse_model_id   = config.model_id.clone();
+        let pulse_model_name = config.display_name.clone();
+
         let mut guard = self.inner.lock().await;
         *guard = Some(LoadedModel {
             model: Arc::new(model),
@@ -354,6 +360,10 @@ impl ChatEngine {
             system_prompt,
             sampling,
         });
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64);
+        }
 
         Ok(elapsed)
     }
@@ -570,11 +580,16 @@ impl ChatEngine {
         let user_message = user_message.into();
 
         // ── 1. Snapshot model handle + build request, then release lock ──
-        let (model, request) = {
+        let (model, request, pulse_model_id) = {
             let guard = self.inner.lock().await;
             let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
             let request = self::build_request(loaded, &user_message);
-            (loaded.model.clone(), request)
+            let pulse_model_id = match &loaded.config {
+                LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                #[cfg(target_os = "macos")]
+                LoadedModelConfig::Isq(c) => c.model_id.clone(),
+            };
+            (loaded.model.clone(), request, pulse_model_id)
         }; // ← mutex released before inference
 
         log::info!(
@@ -615,6 +630,15 @@ impl ChatEngine {
                 loaded.history.push(ChatMessage::user(user_message));
                 loaded.history.push(ChatMessage::assistant(reply.clone()));
             }
+        }
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_inference(
+                pulse_model_id,
+                crate::pulse::next_request_id(),
+                elapsed.as_millis() as u64,
+                "success".to_string(),
+            );
         }
 
         Ok(InferenceResult {

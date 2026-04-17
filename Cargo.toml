@@ -105,7 +105,12 @@ mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/a
 mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
 
 # Patch sysctl with watchOS (target_os = "watchos") support until upstream merges it.
-# Upstream PR: https://github.com/johalun/sysctl-rs/pull/74
-# Fork branch: https://github.com/setoelkahfi/sysctl-rs/tree/feature/watchos
+
+[dependencies.smbcloud-gresiq-sdk]
+path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
+# TODO: version = "0.1" after publishing to crates.io
+
+# Patch sysctl with watchOS support until upstream merges it.
+# PR: https://github.com/johalun/sysctl-rs/pull/74
 [patch.crates-io]
 sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos" }

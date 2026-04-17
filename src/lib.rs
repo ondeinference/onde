@@ -43,6 +43,8 @@
 //! ```
 
 pub mod hf_cache;
+
+pub mod pulse;
 pub mod inference;
 
 uniffi::setup_scaffolding!();
