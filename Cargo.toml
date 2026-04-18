@@ -25,10 +25,13 @@ anyhow = "1"
 home = "0.5.4"
 log = "^0.4"
 serde = { version = "1.0", features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["macros", "rt", "sync"] }
 tsync = "2"
 
 thiserror = "2"
+smbcloud-gresiq-sdk = { version = "0.3" }
+# smbcloud-gresiq-sdk = { path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk" }
 
 # Pinned to =0.31.0 — the versions MUST be identical across the crate and
 # the uniffi-bindgen binary crate.
