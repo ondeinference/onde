@@ -211,6 +211,8 @@ pub struct ChatEngine {
     target_os = "linux",
     target_os = "android"
 ))]
+
+
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
@@ -389,6 +391,126 @@ impl ChatEngine {
 
         Ok(elapsed)
     }
+
+    /// Fetch the model assigned to this Onde app from the SDK model-config
+    /// endpoint and load it.
+    ///
+    /// Authenticates using the app's own `onde_app_id` + `onde_app_secret`
+    /// (the SDK credentials shown in the ondeinference.com dashboard).
+    /// No end-user JWT is required — model assignment is an operator-level
+    /// configuration that is independent of which user is currently signed in.
+    ///
+    /// **Fallback behaviour:**
+    /// - HTTP 404 (no model assigned) → loads [`GgufModelConfig::platform_default()`].
+    /// - Missing `hf_repo_id` or `gguf_file` in response → loads platform default.
+    /// - Any HTTP or network error → returns [`InferenceError::ModelBuild`] so
+    ///   the caller can apply its own fallback.
+    pub async fn load_assigned_model(
+        &self,
+        environment: smbcloud_gresiq_sdk::Environment,
+        onde_app_id: &str,
+        onde_app_secret: &str,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        use log::{info, warn};
+
+        #[derive(serde::Deserialize)]
+        struct ModelConfigResponse {
+            hf_repo_id:        Option<String>,
+            gguf_file:         Option<String>,
+            name:              Option<String>,
+            approx_size_bytes: Option<i64>,
+        }
+
+        let url = format!(
+            "{}://{}/v1/client/onde_sdk/model_config?app_id={}&app_secret={}",
+            environment.api_protocol(),
+            environment.api_host(),
+            onde_app_id,
+            onde_app_secret,
+        );
+
+        let response = reqwest::Client::new()
+            .get(&url)
+            .header("Content-Type", "application/json")
+            .send()
+            .await
+            .map_err(|e| InferenceError::ModelBuild {
+                reason: format!("SDK model_config request failed: {e}"),
+            })?;
+
+        if response.status().as_u16() == 404 {
+            warn!(
+                "ChatEngine: no model assigned to Onde app {onde_app_id};                  loading platform default."
+            );
+            return self
+                .load_gguf_model(GgufModelConfig::platform_default(), system_prompt, sampling)
+                .await;
+        }
+
+        if !response.status().is_success() {
+            return Err(InferenceError::ModelBuild {
+                reason: format!(
+                    "SDK model_config returned HTTP {}",
+                    response.status().as_u16()
+                ),
+            });
+        }
+
+        let resp: ModelConfigResponse = response
+            .json()
+            .await
+            .map_err(|e| InferenceError::ModelBuild {
+                reason: format!("Failed to parse model_config response: {e}"),
+            })?;
+
+        let hf_repo_id = resp.hf_repo_id.as_deref().unwrap_or_default();
+        let gguf_file  = resp.gguf_file.as_deref().unwrap_or_default();
+
+        if hf_repo_id.is_empty() || gguf_file.is_empty() {
+            warn!(
+                "ChatEngine: model_config response missing hf_repo_id or gguf_file;                  loading platform default."
+            );
+            return self
+                .load_gguf_model(GgufModelConfig::platform_default(), system_prompt, sampling)
+                .await;
+        }
+
+        #[cfg(target_os = "android")]
+        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id)
+            .map(|s| s.to_string());
+        #[cfg(not(target_os = "android"))]
+        let tok_model_id: Option<String> = None;
+
+        let approx_memory = resp
+            .approx_size_bytes
+            .map(|b| {
+                let gb = b as f64 / 1_073_741_824.0;
+                if gb >= 1.0 {
+                    format!("~{:.2} GB", gb)
+                } else {
+                    format!("~{} MB", b / 1_048_576)
+                }
+            })
+            .unwrap_or_else(|| "—".to_string());
+
+        info!(
+            "ChatEngine: resolved SDK model assignment → {} / {} ({})",
+            hf_repo_id, gguf_file, approx_memory
+        );
+
+        let config = GgufModelConfig {
+            model_id:     hf_repo_id.to_string(),
+            files:        vec![gguf_file.to_string()],
+            tok_model_id,
+            display_name: resp.name.unwrap_or_else(|| hf_repo_id.to_string()),
+            approx_memory,
+        };
+
+        self.load_gguf_model(config, system_prompt, sampling).await
+    }
+
 
     /// Load an ISQ (in-situ quantised) model into the engine.
     ///
