@@ -211,22 +211,19 @@ pub struct ChatEngine {
     target_os = "linux",
     target_os = "android"
 ))]
-
-
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
         let environment = Self::pulse_environment();
-        let edge_id = std::env::var("ONDE_EDGE_ID")
-            .unwrap_or_else(|_| "onde-unknown".to_string());
+        let edge_id = std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
         let pulse = crate::pulse::PulseClient::new(environment, edge_id);
 
         match &pulse {
-            Some(_) => log::info!(
-                "ChatEngine: pulse telemetry enabled (environment={environment})"
-            ),
+            Some(_) => {
+                log::info!("ChatEngine: pulse telemetry enabled (environment={environment})")
+            }
             None => log::info!(
                 "ChatEngine: pulse telemetry disabled \
                  (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
@@ -244,7 +241,7 @@ impl ChatEngine {
     fn pulse_environment() -> smbcloud_gresiq_sdk::Environment {
         match std::env::var("GRESIQ_ENVIRONMENT").as_deref() {
             Ok("dev") => smbcloud_gresiq_sdk::Environment::Dev,
-            _         => smbcloud_gresiq_sdk::Environment::Production,
+            _ => smbcloud_gresiq_sdk::Environment::Production,
         }
     }
 
@@ -375,7 +372,7 @@ impl ChatEngine {
         );
 
         // Capture before config is moved into LoadedModel.
-        let pulse_model_id   = config.model_id.clone();
+        let pulse_model_id = config.model_id.clone();
         let pulse_model_name = config.display_name.clone();
 
         let mut guard = self.inner.lock().await;
@@ -419,9 +416,9 @@ impl ChatEngine {
 
         #[derive(serde::Deserialize)]
         struct ModelConfigResponse {
-            hf_repo_id:        Option<String>,
-            gguf_file:         Option<String>,
-            name:              Option<String>,
+            hf_repo_id: Option<String>,
+            gguf_file: Option<String>,
+            name: Option<String>,
             approx_size_bytes: Option<i64>,
         }
 
@@ -460,15 +457,16 @@ impl ChatEngine {
             });
         }
 
-        let resp: ModelConfigResponse = response
-            .json()
-            .await
-            .map_err(|e| InferenceError::ModelBuild {
-                reason: format!("Failed to parse model_config response: {e}"),
-            })?;
+        let resp: ModelConfigResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| InferenceError::ModelBuild {
+                    reason: format!("Failed to parse model_config response: {e}"),
+                })?;
 
         let hf_repo_id = resp.hf_repo_id.as_deref().unwrap_or_default();
-        let gguf_file  = resp.gguf_file.as_deref().unwrap_or_default();
+        let gguf_file = resp.gguf_file.as_deref().unwrap_or_default();
 
         if hf_repo_id.is_empty() || gguf_file.is_empty() {
             warn!(
@@ -480,8 +478,7 @@ impl ChatEngine {
         }
 
         #[cfg(target_os = "android")]
-        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id)
-            .map(|s| s.to_string());
+        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id).map(|s| s.to_string());
         #[cfg(not(target_os = "android"))]
         let tok_model_id: Option<String> = None;
 
@@ -503,8 +500,8 @@ impl ChatEngine {
         );
 
         let config = GgufModelConfig {
-            model_id:     hf_repo_id.to_string(),
-            files:        vec![gguf_file.to_string()],
+            model_id: hf_repo_id.to_string(),
+            files: vec![gguf_file.to_string()],
             tok_model_id,
             display_name: resp.name.unwrap_or_else(|| hf_repo_id.to_string()),
             approx_memory,
@@ -512,7 +509,6 @@ impl ChatEngine {
 
         self.load_gguf_model(config, system_prompt, sampling).await
     }
-
 
     /// Load an ISQ (in-situ quantised) model into the engine.
     ///

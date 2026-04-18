@@ -148,10 +148,10 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
 /// embedded tokenizer is used automatically.
 pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
     match hf_repo_id {
-        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF      => Some(QWEN25_1_5B_TOK_MODEL_ID),
-        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF        => Some(QWEN25_3B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(QWEN25_1_5B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),
-        BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF  => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
-        _                                        => None,
+        BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
+        _ => None,
     }
 }

@@ -20,7 +20,7 @@ const EMBEDDED_API_SECRET: Option<&str> = option_env!("GRESIQ_API_SECRET");
 /// so cloning is a pointer bump, not a new TCP connection.
 #[derive(Debug, Clone)]
 pub struct PulseClient {
-    inner:   GresiqClient,
+    inner: GresiqClient,
     edge_id: String,
 }
 
@@ -34,7 +34,7 @@ impl PulseClient {
     /// `edge_id` is a stable device identifier (installation UUID).
     /// Pass an empty string to default to `"onde-unknown"`.
     pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
-        let api_key    = EMBEDDED_API_KEY?;
+        let api_key = EMBEDDED_API_KEY?;
         let api_secret = EMBEDDED_API_SECRET?;
 
         let edge_id = if edge_id.is_empty() {
@@ -78,10 +78,10 @@ impl PulseClient {
     /// completions.  Writes to pulse/inference_event.  Logs on failure, no retry.
     pub fn record_inference(
         &self,
-        model_id:    String,
-        request_id:  String,
+        model_id: String,
+        request_id: String,
         duration_ms: u64,
-        status:      String,
+        status: String,
     ) {
         let client = self.clone();
         tokio::spawn(async move {

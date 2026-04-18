@@ -44,8 +44,8 @@
 
 pub mod hf_cache;
 
-pub mod pulse;
 pub mod inference;
+pub mod pulse;
 
 uniffi::setup_scaffolding!();
 
