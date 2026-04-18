@@ -198,6 +198,7 @@ struct LoadedModel {
 ))]
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
+    pulse: Option<crate::pulse::PulseClient>,
 }
 
 #[cfg(any(
@@ -210,15 +211,37 @@ pub struct ChatEngine {
     target_os = "linux",
     target_os = "android"
 ))]
-
-
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
+        let environment = Self::pulse_environment();
+        let edge_id = std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
+        let pulse = crate::pulse::PulseClient::new(environment, edge_id);
+
+        match &pulse {
+            Some(_) => {
+                log::info!("ChatEngine: pulse telemetry enabled (environment={environment})")
+            }
+            None => log::info!(
+                "ChatEngine: pulse telemetry disabled \
+                 (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
+            ),
+        }
+
         Self {
             inner: Mutex::new(None),
+            pulse,
+        }
+    }
+
+    /// Resolve the pulse environment from the `GRESIQ_ENVIRONMENT` env var.
+    /// Defaults to `Production` when the var is absent or unrecognised.
+    fn pulse_environment() -> smbcloud_gresiq_sdk::Environment {
+        match std::env::var("GRESIQ_ENVIRONMENT").as_deref() {
+            Ok("dev") => smbcloud_gresiq_sdk::Environment::Dev,
+            _ => smbcloud_gresiq_sdk::Environment::Production,
         }
     }
 
@@ -348,6 +371,10 @@ impl ChatEngine {
             sampling.max_tokens,
         );
 
+        // Capture before config is moved into LoadedModel.
+        let pulse_model_id = config.model_id.clone();
+        let pulse_model_name = config.display_name.clone();
+
         let mut guard = self.inner.lock().await;
         *guard = Some(LoadedModel {
             model: Arc::new(model),
@@ -356,6 +383,10 @@ impl ChatEngine {
             system_prompt,
             sampling,
         });
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64);
+        }
 
         Ok(elapsed)
     }
@@ -385,9 +416,9 @@ impl ChatEngine {
 
         #[derive(serde::Deserialize)]
         struct ModelConfigResponse {
-            hf_repo_id:        Option<String>,
-            gguf_file:         Option<String>,
-            name:              Option<String>,
+            hf_repo_id: Option<String>,
+            gguf_file: Option<String>,
+            name: Option<String>,
             approx_size_bytes: Option<i64>,
         }
 
@@ -426,15 +457,16 @@ impl ChatEngine {
             });
         }
 
-        let resp: ModelConfigResponse = response
-            .json()
-            .await
-            .map_err(|e| InferenceError::ModelBuild {
-                reason: format!("Failed to parse model_config response: {e}"),
-            })?;
+        let resp: ModelConfigResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| InferenceError::ModelBuild {
+                    reason: format!("Failed to parse model_config response: {e}"),
+                })?;
 
         let hf_repo_id = resp.hf_repo_id.as_deref().unwrap_or_default();
-        let gguf_file  = resp.gguf_file.as_deref().unwrap_or_default();
+        let gguf_file = resp.gguf_file.as_deref().unwrap_or_default();
 
         if hf_repo_id.is_empty() || gguf_file.is_empty() {
             warn!(
@@ -446,8 +478,7 @@ impl ChatEngine {
         }
 
         #[cfg(target_os = "android")]
-        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id)
-            .map(|s| s.to_string());
+        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id).map(|s| s.to_string());
         #[cfg(not(target_os = "android"))]
         let tok_model_id: Option<String> = None;
 
@@ -469,8 +500,8 @@ impl ChatEngine {
         );
 
         let config = GgufModelConfig {
-            model_id:     hf_repo_id.to_string(),
-            files:        vec![gguf_file.to_string()],
+            model_id: hf_repo_id.to_string(),
+            files: vec![gguf_file.to_string()],
             tok_model_id,
             display_name: resp.name.unwrap_or_else(|| hf_repo_id.to_string()),
             approx_memory,
@@ -478,7 +509,6 @@ impl ChatEngine {
 
         self.load_gguf_model(config, system_prompt, sampling).await
     }
-
 
     /// Load an ISQ (in-situ quantised) model into the engine.
     ///
@@ -692,11 +722,16 @@ impl ChatEngine {
         let user_message = user_message.into();
 
         // ── 1. Snapshot model handle + build request, then release lock ──
-        let (model, request) = {
+        let (model, request, pulse_model_id) = {
             let guard = self.inner.lock().await;
             let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
             let request = self::build_request(loaded, &user_message);
-            (loaded.model.clone(), request)
+            let pulse_model_id = match &loaded.config {
+                LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                #[cfg(target_os = "macos")]
+                LoadedModelConfig::Isq(c) => c.model_id.clone(),
+            };
+            (loaded.model.clone(), request, pulse_model_id)
         }; // ← mutex released before inference
 
         log::info!(
@@ -737,6 +772,15 @@ impl ChatEngine {
                 loaded.history.push(ChatMessage::user(user_message));
                 loaded.history.push(ChatMessage::assistant(reply.clone()));
             }
+        }
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_inference(
+                pulse_model_id,
+                crate::pulse::next_request_id(),
+                elapsed.as_millis() as u64,
+                "success".to_string(),
+            );
         }
 
         Ok(InferenceResult {
