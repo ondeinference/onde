@@ -219,7 +219,9 @@ impl ChatEngine {
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
         let environment = Self::pulse_environment();
-        let pulse = crate::pulse::PulseClient::from_env(environment);
+        let edge_id = std::env::var("ONDE_EDGE_ID")
+            .unwrap_or_else(|_| "onde-unknown".to_string());
+        let pulse = crate::pulse::PulseClient::new(environment, edge_id);
 
         match &pulse {
             Some(_) => log::info!(
@@ -227,7 +229,7 @@ impl ChatEngine {
             ),
             None => log::info!(
                 "ChatEngine: pulse telemetry disabled \
-                 (GRESIQ_API_KEY / GRESIQ_API_SECRET / ONDE_CLIENT_KEY / ONDE_CLIENT_SECRET not set)"
+                 (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
             ),
         }
 
@@ -237,7 +239,7 @@ impl ChatEngine {
         }
     }
 
-    /// Resolve the GresIQ environment from the `GRESIQ_ENVIRONMENT` env var.
+    /// Resolve the pulse environment from the `GRESIQ_ENVIRONMENT` env var.
     /// Defaults to `Production` when the var is absent or unrecognised.
     fn pulse_environment() -> smbcloud_gresiq_sdk::Environment {
         match std::env::var("GRESIQ_ENVIRONMENT").as_deref() {

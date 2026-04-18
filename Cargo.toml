@@ -45,6 +45,7 @@ version = "0.3"
 uniffi = { version = "=0.31.0", features = ["build"] }
 # Used by build.rs to compile the tvOS ___chkstk_darwin assembly stub.
 cc = "1"
+dotenvy = "0.15"
 
 # Android: CPU-only GGUF inference via candle; also needs hf-hub and
 # mistralrs-core for explicit cache path seeding (dirs::home_dir() panics

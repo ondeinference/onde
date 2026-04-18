@@ -1,12 +1,20 @@
-use std::collections::HashMap;
-
 use smbcloud_gresiq_sdk::{Environment, GresiqClient, GresiqCredentials};
 
 use super::events::{InferenceEvent, ModelLoadedEvent};
 
-/// Onde telemetry client. Wraps GresiqClient so pulse events land in the
-/// right GresIQ-managed tables without this crate knowing anything about
-/// the HTTP auth layer underneath.
+/// GresIQ API key embedded at SDK build time.
+/// Consumer apps never set this — it's Onde Inference's own credential.
+const EMBEDDED_API_KEY: Option<&str> = option_env!("GRESIQ_API_KEY");
+
+/// GresIQ API secret embedded at SDK build time.
+const EMBEDDED_API_SECRET: Option<&str> = option_env!("GRESIQ_API_SECRET");
+
+/// Onde telemetry client.  Wraps GresiqClient so pulse events land in the
+/// right GresIQ-managed tables without consumer apps knowing anything about
+/// the GresIQ auth layer underneath.
+///
+/// GresIQ credentials are embedded in the SDK at build time.
+/// Consumer apps only provide an `edge_id` (stable device identifier).
 ///
 /// Cheap to clone: the inner GresiqClient holds an Arc-backed reqwest::Client,
 /// so cloning is a pointer bump, not a new TCP connection.
@@ -17,49 +25,39 @@ pub struct PulseClient {
 }
 
 impl PulseClient {
-    /// Reads credentials from the environment and resolves the GresIQ
-    /// gateway URL from the given `Environment`.
+    /// Build a pulse client using the GresIQ credentials embedded in the SDK.
     ///
-    /// GresIQ layer (shared across all SDK clients):
-    ///   `GRESIQ_API_KEY`, `GRESIQ_API_SECRET`
+    /// Returns `None` if the SDK was compiled without `GRESIQ_API_KEY` /
+    /// `GRESIQ_API_SECRET` (e.g. a local dev build of onde without `.env`).
+    /// In that case telemetry is silently disabled — no panic, no partial state.
     ///
-    /// SDK client layer (this app’s own credentials):
-    ///   `ONDE_CLIENT_KEY`, `ONDE_CLIENT_SECRET`
-    ///   `ONDE_EDGE_ID`  (optional, defaults to `"onde-unknown"`)
-    ///
-    /// Returns `None` if any required var is absent. Nothing blows up —
-    /// the engine just skips telemetry for the whole run.
-    pub fn from_env(environment: Environment) -> Option<Self> {
-        // GresIQ credentials
-        let gresiq_api_key    = std::env::var("GRESIQ_API_KEY").ok()?;
-        let gresiq_api_secret = std::env::var("GRESIQ_API_SECRET").ok()?;
+    /// `edge_id` is a stable device identifier (installation UUID).
+    /// Pass an empty string to default to `"onde-unknown"`.
+    pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
+        let api_key    = EMBEDDED_API_KEY?;
+        let api_secret = EMBEDDED_API_SECRET?;
 
-        // SDK client credentials
-        let client_key    = std::env::var("ONDE_CLIENT_KEY").ok()?;
-        let client_secret = std::env::var("ONDE_CLIENT_SECRET").ok()?;
-        let edge_id       = std::env::var("ONDE_EDGE_ID")
-            .unwrap_or_else(|_| "onde-unknown".to_string());
-
-        let mut extra = HashMap::new();
-        extra.insert("X-Onde-Client-Key".to_string(),    client_key);
-        extra.insert("X-Onde-Client-Secret".to_string(), client_secret);
-
-        let credentials = GresiqCredentials {
-            api_key:    &gresiq_api_key,
-            api_secret: &gresiq_api_secret,
+        let edge_id = if edge_id.is_empty() {
+            "onde-unknown".to_string()
+        } else {
+            edge_id
         };
 
-        let inner = GresiqClient::from_credentials(environment, credentials)
-            .with_extra_headers(extra);
+        let credentials = GresiqCredentials {
+            api_key,
+            api_secret,
+        };
+
+        let inner = GresiqClient::from_credentials(environment, credentials);
 
         Some(PulseClient { inner, edge_id })
     }
 
     /// Spawns a background task that writes the model-load event to the
-    /// pulse/model_loaded table, then returns immediately. Slow network
+    /// pulse/model_loaded table, then returns immediately.  Slow network
     /// responses don't block the first inference request.
     ///
-    /// Failed writes emit a warn! log line -- no retry, no queue,
+    /// Failed writes emit a warn! log line — no retry, no queue,
     /// and no effect on the caller.
     pub fn record_model_loaded(&self, model_id: String, model_name: String, load_duration_ms: u64) {
         let client = self.clone();
@@ -77,7 +75,7 @@ impl PulseClient {
     }
 
     /// Same fire-and-forget pattern as record_model_loaded but for inference
-    /// completions. Writes to pulse/inference_event. Logs on failure, no retry.
+    /// completions.  Writes to pulse/inference_event.  Logs on failure, no retry.
     pub fn record_inference(
         &self,
         model_id:    String,
