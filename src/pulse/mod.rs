@@ -1,17 +1,17 @@
-//! Sends timing data to the Onde Inference dashboard via smbCloud GresIQ.
+//! Sends timing data to the Onde Inference dashboard.
 //!
-//! Opt-in at the infra level, not the code level. Set three env vars and
+//! Opt-in at the infra level, not the code level. Set the four env vars and
 //! telemetry starts flowing. Set none and nothing happens — no warnings,
 //! no stubs, the branches just never run.
 //!
 //! The engine reads the vars once in `ChatEngine::new()`. You can't flip
 //! telemetry on mid-run without restarting.
 //!
-//! | Variable            | Example                        |
-//! |---------------------|--------------------------------|
-//! | `GRESIQ_BASE_URL`   | `https://api.smbcloud.xyz`     |
-//! | `GRESIQ_API_KEY`    | `gresiq_abc123...`             |
-//! | `GRESIQ_API_SECRET` | `<secret from GresIQ console>` |
+//! | Variable              | Example                      |
+//! |-----------------------|------------------------------|
+//! | `ONDE_BASE_URL`       | `https://ondeinference.com`  |
+//! | `ONDE_CLIENT_KEY`     | `<issued by Onde Inference>` |
+//! | `ONDE_CLIENT_SECRET`  | `<issued by Onde Inference>` |
 //!
 //! `ONDE_EDGE_ID` is what this machine gets called in the dashboard.
 //! Anything works — just keep it stable across restarts or you'll

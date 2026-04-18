@@ -29,10 +29,16 @@ tokio = { version = "1", features = ["macros", "rt", "sync"] }
 tsync = "2"
 
 thiserror = "2"
+reqwest    = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde_json = "1"
 
 # Pinned to =0.31.0 — the versions MUST be identical across the crate and
 # the uniffi-bindgen binary crate.
 uniffi = { version = "=0.31.0", features = ["tokio"] }
+
+[dependencies.smbcloud-gresiq-sdk]
+path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
+# TODO: version = "0.1" after publishing to crates.io
 
 [build-dependencies]
 # Required for UniFFI scaffolding code generation at build time.
@@ -106,9 +112,6 @@ mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/a
 
 # Patch sysctl with watchOS (target_os = "watchos") support until upstream merges it.
 
-[dependencies.smbcloud-gresiq-sdk]
-path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
-# TODO: version = "0.1" after publishing to crates.io
 
 # Patch sysctl with watchOS support until upstream merges it.
 # PR: https://github.com/johalun/sysctl-rs/pull/74
