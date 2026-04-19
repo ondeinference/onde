@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["OndeInferenceModule"]
+  },
+  "android": {
+    "modules": ["com.ondeinference.OndeInferenceModule"]
+  }
+}

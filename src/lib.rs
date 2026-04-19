@@ -43,7 +43,9 @@
 //! ```
 
 pub mod hf_cache;
+
 pub mod inference;
+pub mod pulse;
 
 uniffi::setup_scaffolding!();
 
@@ -53,6 +55,8 @@ uniffi::setup_scaffolding!();
     target_os = "macos",
     target_os = "ios",
     target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
     target_os = "windows",
     target_os = "linux",
     target_os = "android"

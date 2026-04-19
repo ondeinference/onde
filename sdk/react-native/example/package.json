@@ -1,0 +1,23 @@
+{
+  "name": "onde-example",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android"
+  },
+  "dependencies": {
+    "@ondeinference/react-native": "file:..",
+    "expo": "~52.0.0",
+    "expo-asset": "^55.0.14",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.7",
+    "react-native-safe-area-context": "~5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.0",
+    "typescript": "~5.6.0"
+  }
+}
