@@ -7,7 +7,8 @@ use super::events::{InferenceEvent, ModelLoadedEvent};
 const EMBEDDED_API_KEY_DEV: Option<&str> = option_env!("GRESIQ_API_KEY_DEV");
 const EMBEDDED_API_SECRET_DEV: Option<&str> = option_env!("GRESIQ_API_SECRET_DEV");
 const EMBEDDED_API_KEY_PRODUCTION: Option<&str> = option_env!("GRESIQ_API_KEY_PRODUCTION");
-const EMBEDDED_API_SECRET_SECRET_PRODUCTION: Option<&str> = option_env!("GRESIQ_API_SECRET_PRODUCTION");
+const EMBEDDED_API_SECRET_SECRET_PRODUCTION: Option<&str> =
+    option_env!("GRESIQ_API_SECRET_PRODUCTION");
 
 /// Onde telemetry client.  Wraps GresiqClient so pulse events land in the
 /// right GresIQ-managed tables without consumer apps knowing anything about
@@ -36,7 +37,10 @@ impl PulseClient {
     pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
         let (api_key, api_secret) = match environment {
             Environment::Dev => (EMBEDDED_API_KEY_DEV?, EMBEDDED_API_SECRET_DEV?),
-            Environment::Production => (EMBEDDED_API_KEY_PRODUCTION?, EMBEDDED_API_SECRET_SECRET_PRODUCTION?),
+            Environment::Production => (
+                EMBEDDED_API_KEY_PRODUCTION?,
+                EMBEDDED_API_SECRET_SECRET_PRODUCTION?,
+            ),
         };
 
         let edge_id = if edge_id.is_empty() {

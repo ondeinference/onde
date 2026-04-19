@@ -7,7 +7,13 @@ fn main() {
     let _ = dotenvy::from_filename(
         std::path::Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(".env"),
     );
-    for var in ["GRESIQ_API_KEY_DEV", "GRESIQ_API_SECRET_DEV", "GRESIQ_API_KEY_PRODUCTION", "GRESIQ_API_SECRET_PRODUCTION", "HF_TOKEN"] {
+    for var in [
+        "GRESIQ_API_KEY_DEV",
+        "GRESIQ_API_SECRET_DEV",
+        "GRESIQ_API_KEY_PRODUCTION",
+        "GRESIQ_API_SECRET_PRODUCTION",
+        "HF_TOKEN",
+    ] {
         println!("cargo:rerun-if-env-changed={var}");
         if let Ok(val) = std::env::var(var) {
             if !val.is_empty() {
