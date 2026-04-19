@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 description = "On-device inference engine for Apple silicon."
 license = "MIT OR Apache-2.0"

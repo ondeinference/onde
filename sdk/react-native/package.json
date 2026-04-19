@@ -1,6 +1,6 @@
 {
   "name": "@ondeinference/react-native",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "On-device LLM inference for React Native. Run Qwen 2.5 models locally with Metal on iOS, CPU on Android. No cloud, no API key.",
   "main": "build/index.js",
   "types": "build/index.d.ts",

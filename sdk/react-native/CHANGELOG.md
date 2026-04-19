@@ -1,3 +1,7 @@
+## 0.1.6
+
+* **Fix:** Replaced the composite `LICENSE` file with the canonical MIT license text so registries correctly recognise the OSI-approved license.
+
 ## 0.1.5
 
 * **Engine:** Added `loadAssignedModel()` — fetches the operator-assigned model config from the Onde SDK backend using app credentials (no user JWT required); falls back gracefully to the platform default when no model is assigned yet.
