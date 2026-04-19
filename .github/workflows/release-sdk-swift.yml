@@ -13,6 +13,13 @@ jobs:
   build-and-release:
     runs-on: macos-26
 
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
     steps:
       - name: Checkout onde
         uses: actions/checkout@v6

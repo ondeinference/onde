@@ -2,12 +2,12 @@ use smbcloud_gresiq_sdk::{Environment, GresiqClient, GresiqCredentials};
 
 use super::events::{InferenceEvent, ModelLoadedEvent};
 
-/// GresIQ API key embedded at SDK build time.
-/// Consumer apps never set this — it's Onde Inference's own credential.
-const EMBEDDED_API_KEY: Option<&str> = option_env!("GRESIQ_API_KEY");
-
-/// GresIQ API secret embedded at SDK build time.
-const EMBEDDED_API_SECRET: Option<&str> = option_env!("GRESIQ_API_SECRET");
+/// GresIQ credentials embedded at SDK build time — one pair per environment.
+/// Consumer apps never set these — they're Onde Inference's own credentials.
+const EMBEDDED_API_KEY_DEV: Option<&str> = option_env!("GRESIQ_API_KEY_DEV");
+const EMBEDDED_API_SECRET_DEV: Option<&str> = option_env!("GRESIQ_API_SECRET_DEV");
+const EMBEDDED_API_KEY_PRODUCTION: Option<&str> = option_env!("GRESIQ_API_KEY_PRODUCTION");
+const EMBEDDED_API_SECRET_SECRET_PRODUCTION: Option<&str> = option_env!("GRESIQ_API_SECRET_PRODUCTION");
 
 /// Onde telemetry client.  Wraps GresiqClient so pulse events land in the
 /// right GresIQ-managed tables without consumer apps knowing anything about
@@ -34,8 +34,10 @@ impl PulseClient {
     /// `edge_id` is a stable device identifier (installation UUID).
     /// Pass an empty string to default to `"onde-unknown"`.
     pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
-        let api_key = EMBEDDED_API_KEY?;
-        let api_secret = EMBEDDED_API_SECRET?;
+        let (api_key, api_secret) = match environment {
+            Environment::Dev => (EMBEDDED_API_KEY_DEV?, EMBEDDED_API_SECRET_DEV?),
+            Environment::Production => (EMBEDDED_API_KEY_PRODUCTION?, EMBEDDED_API_SECRET_SECRET_PRODUCTION?),
+        };
 
         let edge_id = if edge_id.is_empty() {
             "onde-unknown".to_string()
