@@ -104,6 +104,13 @@ jobs:
         working-directory: sdk/dart
         run: flutter pub get
 
+      # flutter pub get regenerates platform plugin registrants (e.g.
+      # GeneratedPluginRegistrant.java) which leaves the working tree dirty.
+      # Restore tracked files to HEAD so pub publish sees a clean state.
+      - name: Restore generated files modified by flutter pub get
+        working-directory: sdk/dart
+        run: git checkout -- . 2>/dev/null || true
+
       # ── Authenticate with pub.dev ─────────────────────────────────────────
       # PUB_CREDENTIALS must be a repository secret containing the full JSON
       # content of the Dart pub credentials file obtained from a machine that

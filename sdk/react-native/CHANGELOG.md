@@ -1,3 +1,7 @@
+## 0.1.7
+
+* **CI:** No user-visible changes. Internal release to keep version numbers in sync across all SDK distributions.
+
 ## 0.1.6
 
 * **Fix:** Replaced the composite `LICENSE` file with the canonical MIT license text so registries correctly recognise the OSI-approved license.
