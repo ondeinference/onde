@@ -18,6 +18,12 @@ jobs:
     outputs:
       version: ${{ steps.meta.outputs.version }}
 
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -77,6 +83,12 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
