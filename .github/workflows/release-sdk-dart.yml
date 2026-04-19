@@ -18,6 +18,12 @@ jobs:
     outputs:
       version: ${{ steps.meta.outputs.version }}
 
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -77,6 +83,12 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -91,6 +103,13 @@ jobs:
       - name: Install dependencies
         working-directory: sdk/dart
         run: flutter pub get
+
+      # flutter pub get regenerates platform plugin registrants (e.g.
+      # GeneratedPluginRegistrant.java) which leaves the working tree dirty.
+      # Restore tracked files to HEAD so pub publish sees a clean state.
+      - name: Restore generated files modified by flutter pub get
+        working-directory: sdk/dart
+        run: git checkout -- . 2>/dev/null || true
 
       # ── Authenticate with pub.dev ─────────────────────────────────────────
       # PUB_CREDENTIALS must be a repository secret containing the full JSON

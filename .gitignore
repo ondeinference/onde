@@ -29,3 +29,6 @@ sdk/python/.pytest_cache/
 
 # Zed settings
 .zed
+
+# SDK credentials (build-time secrets)
+.env

@@ -30,6 +30,12 @@ jobs:
   clippy:
     name: Clippy (macOS)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -42,6 +48,12 @@ jobs:
   test:
     name: Test (macOS)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -52,6 +64,12 @@ jobs:
   check-ios:
     name: Check (iOS device)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -65,6 +83,12 @@ jobs:
   check-ios-sim:
     name: Check (iOS simulator)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -78,6 +102,12 @@ jobs:
   check-tvos:
     name: Check (tvOS device)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -91,6 +121,12 @@ jobs:
   check-tvos-sim:
     name: Check (tvOS simulator)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -104,6 +140,12 @@ jobs:
   check-visionos:
     name: Check (visionOS device)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -117,6 +159,12 @@ jobs:
   check-visionos-sim:
     name: Check (visionOS simulator)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -130,6 +178,12 @@ jobs:
   check-watchos:
     name: Check (watchOS device)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -143,6 +197,12 @@ jobs:
   check-watchos-sim:
     name: Check (watchOS simulator)
     runs-on: macos-26
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
