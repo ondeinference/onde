@@ -1,0 +1,26 @@
+# Example app
+example/
+
+# Rust build artifacts — target/ is huge, never publish it
+rust/target/
+
+# iOS intermediate staging dirs — only the XCFramework is needed by CocoaPods
+ios/rust/device/
+ios/rust/simulator/
+
+# Development files
+.github/
+.vscode/
+.zed/
+*.log
+
+# TypeScript source (compiled output is in build/)
+src/
+
+# Config files not needed at runtime
+tsconfig.json
+CHANGELOG.md
+
+# OS files
+.DS_Store
+Thumbs.db

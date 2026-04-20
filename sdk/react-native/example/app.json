@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Onde Example",
+    "slug": "onde-example",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.ondeinference.example",
+      "supportsTablet": true,
+      "deploymentTarget": "16.0",
+      "appleTeamId": "2TQF86ZACD"
+    },
+    "android": {
+      "package": "com.ondeinference.example",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

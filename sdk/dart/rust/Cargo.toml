@@ -13,3 +13,26 @@ onde = { path = "../../../" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 thiserror = "2"
 log = "0.4"
+
+# ── Local mistral.rs patch ────────────────────────────────────────────────────
+#
+# [patch.crates-io] is only honoured by the ROOT manifest being built.
+# The Flutter build script runs `cargo build` from this directory, so the
+# patch in onde/Cargo.toml is silently ignored — this crate resolves
+# mistralrs 0.8.1 directly from crates.io (the broken version).
+#
+# The fix in fix/metal-air-to-metallib-std-flag passes --sdk and -std= to
+# the air→metallib link step, which is the root cause of:
+#   "Error while loading function: fused_glu_float"
+#
+# Remove this section once the PR lands on crates.io and the version
+# constraints in onde/Cargo.toml are bumped to the fixed release.
+[patch.crates-io]
+mistralrs          = { path = "../../../../mistral.rs/mistralrs" }
+mistralrs-core     = { path = "../../../../mistral.rs/mistralrs-core" }
+mistralrs-quant    = { path = "../../../../mistral.rs/mistralrs-quant" }
+mistralrs-paged-attn = { path = "../../../../mistral.rs/mistralrs-paged-attn" }
+mistralrs-vision   = { path = "../../../../mistral.rs/mistralrs-vision" }
+mistralrs-audio    = { path = "../../../../mistral.rs/mistralrs-audio" }
+mistralrs-mcp      = { path = "../../../../mistral.rs/mistralrs-mcp" }
+mistralrs-macros   = { path = "../../../../mistral.rs/mistralrs-macros" }

@@ -1,9 +1,9 @@
 [package]
 name = "onde"
-version = "0.1.1"
+version = "0.1.7"
 edition = "2021"
 description = "On-device inference engine for Apple silicon."
-license = "MIT"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
@@ -13,30 +13,97 @@ categories = ["multimedia::audio", "artificial-intelligence", "api-bindings"]
 
 [lib]
 name = "onde"
-# "lib"        – normal Rust dependency for other crates.
-# "cdylib"     – shared library (.dylib / .so / .dll) consumed by UniFFI bindgen
+# "lib"        - normal Rust dependency for other crates.
+# "cdylib"     - shared library (.dylib / .so / .dll) consumed by UniFFI bindgen
 #                to generate Swift / Kotlin / Python bindings.
-# "staticlib"  – static library (.a) required for iOS targets where dynamic
+# "staticlib"  - static library (.a) required for iOS targets where dynamic
 #                linking is not allowed.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+# -- Feature flags -----------------------------------------------------------
 [features]
 default = []
 # Enable Whisper-based speech-to-text transcription via transcribe-rs.
 # macOS uses Metal GPU acceleration; Android uses CPU-only inference.
-whisper = ["dep:transcribe-rs", "dep:hf-hub"]
+whisper = ["dep:transcribe-rs"]
+
+# Android: CPU-only GGUF inference via candle; also needs hf-hub and
+# mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
+# in the Android sandbox).
+[target.'cfg(target_os = "android")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = [] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+# mistralrs-core = { version = "0.8.1", features = [] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+
+# iOS: Metal-accelerated inference; hf-hub + mistralrs-core needed for
+# GLOBAL_HF_CACHE sandbox workaround (~/.cache is outside the container).
+[target.'cfg(target_os = "ios")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+# mistralrs-core = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# Linux: CPU-only baseline (no GPU features).
+# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
+[target.'cfg(target_os = "linux")'.dependencies]
+# mistralrs = { version = "0.8.1" }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+
+# macOS: Metal-accelerated inference.
+[target.'cfg(target_os = "macos")'.dependencies]
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# tvOS: Metal-accelerated inference (Apple TV has Apple GPU); hf-hub +
+# mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
+[target.'cfg(target_os = "tvos")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+# mistralrs-core = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# visionOS: Metal-accelerated inference (Apple Vision Pro has M2 GPU);
+# hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
+[target.'cfg(target_os = "visionos")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+# mistralrs-core = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# watchOS: Metal-accelerated inference (Apple Watch Series 4+ has Apple GPU);
+# hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
+# Memory constrained - default to 1.5B model.
+[target.'cfg(target_os = "watchos")'.dependencies]
+hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
+# mistralrs = { version = "0.8.1", features = ["metal"] }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+# mistralrs-core = { version = "0.8.1", features = ["metal"] }
+mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+
+# Windows: CPU-only baseline (no GPU features).
+# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
+[target.'cfg(target_os = "windows")'.dependencies]
+# mistralrs = { version = "0.8.1" }
+mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
 
 [dependencies]
 anyhow = "1"
 home = "0.5.4"
 log = "^0.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+
+thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt", "sync"] }
 tsync = "2"
 
-thiserror = "2"
-
-# Pinned to =0.31.0 — the versions MUST be identical across the crate and
+# Pinned to =0.31.0 -- the versions MUST be identical across the crate and
 # the uniffi-bindgen binary crate.
 uniffi = { version = "=0.31.0", features = ["tokio"] }
 
@@ -44,46 +111,19 @@ uniffi = { version = "=0.31.0", features = ["tokio"] }
 # The `whisper` feature in transcribe-rs pulls in platform-specific whisper-rs
 # (Metal on macOS, Vulkan on Windows/Linux) via its own Cargo.toml cfg gates.
 transcribe-rs = { git = "https://github.com/setoelkahfi/transcribe-rs", branch = "feature/onde", features = ["whisper"], optional = true }
-hf-hub = { version = "0.4", features = ["tokio"], optional = true }
+
+[dependencies.smbcloud-gresiq-sdk]
+version = "0.3"
+# path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
 
 [build-dependencies]
-# Required for UniFFI scaffolding code generation at build time.
-uniffi = { version = "=0.31.0", features = ["build"] }
 # Used by build.rs to compile the tvOS ___chkstk_darwin assembly stub.
 cc = "1"
+dotenvy = "0.15"
+# Required for UniFFI scaffolding code generation at build time.
+uniffi = { version = "=0.31.0", features = ["build"] }
 
-# Android: CPU-only GGUF inference via candle; also needs hf-hub and
-# mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
-# in the Android sandbox).
-[target.'cfg(target_os = "android")'.dependencies]
-hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { version = "0.8.1", features = [] }
-mistralrs-core = { version = "0.8.1", features = [] }
-
-# iOS: Metal-accelerated inference; hf-hub + mistralrs-core needed for
-# GLOBAL_HF_CACHE sandbox workaround (~/.cache is outside the container).
-[target.'cfg(target_os = "ios")'.dependencies]
-hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { version = "0.8.1", features = ["metal"] }
-
-# tvOS: Metal-accelerated inference (Apple TV has Apple GPU); hf-hub +
-# mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
-[target.'cfg(target_os = "tvos")'.dependencies]
-hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { version = "0.8.1", features = ["metal"] }
-
-# macOS: Metal-accelerated inference.
-[target.'cfg(target_os = "macos")'.dependencies]
-mistralrs = { version = "0.8.1", features = ["metal"] }
-
-# Windows: CPU-only baseline (no GPU features).
-# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
-[target.'cfg(target_os = "windows")'.dependencies]
-mistralrs = { version = "0.8.1" }
-
-# Linux: CPU-only baseline (no GPU features).
-# For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
-[target.'cfg(target_os = "linux")'.dependencies]
-mistralrs = { version = "0.8.1" }
+# Patch sysctl with watchOS support until upstream merges it.
+# PR: https://github.com/johalun/sysctl-rs/pull/74
+[patch.crates-io]
+sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos" }
