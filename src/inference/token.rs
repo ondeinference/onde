@@ -40,6 +40,7 @@
     target_os = "visionos",
     target_os = "watchos",
     target_os = "windows",
+    target_os = "linux",
     target_os = "android"
 ))]
 use mistralrs::TokenSource;
@@ -100,6 +101,7 @@ mod tests {
         target_os = "visionos",
         target_os = "watchos",
         target_os = "windows",
+        target_os = "linux",
         target_os = "android"
     ))]
     fn token_source_returns_valid_variant() {
