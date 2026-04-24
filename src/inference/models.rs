@@ -74,6 +74,14 @@ pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
 /// The specific GGUF filename to download from the bartowski Qwen 3 4B repo.
 pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
 
+/// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
+///
+/// Smallest Qwen 3 variant with tool calling support. Suitable for mobile devices
+/// where the 4B model would be too large.
+pub const BARTOWSKI_QWEN3_1_7B_GGUF: &str = "bartowski/Qwen_Qwen3-1.7B-GGUF";
+/// The specific GGUF filename for the Qwen3 1.7B repo.
+pub const QWEN3_1_7B_GGUF_FILE: &str = "Qwen_Qwen3-1.7B-Q4_K_M.gguf";
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
@@ -81,6 +89,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN3_4B_GGUF,
+    BARTOWSKI_QWEN3_1_7B_GGUF,
 ];
 
 /// Rich metadata for a supported model, used by the frontend to display
@@ -137,6 +146,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
                       Recommended for siGit Code on macOS, Linux, and Windows.",
         // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
         expected_size_bytes: 2_596_306_912,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_1_7B_GGUF,
+        name: "Qwen 3 1.7B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Lightweight tool-calling model for mobile (~1.3 GB). \
+             Smallest Qwen 3 variant with tool calling support.",
+        expected_size_bytes: 1_282_439_584,
     },
 ];
 

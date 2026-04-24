@@ -20,6 +20,7 @@ name = "onde"
 #                linking is not allowed.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+
 # Android: CPU-only GGUF inference via candle; also needs hf-hub and
 # mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
 # in the Android sandbox).
