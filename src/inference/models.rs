@@ -63,15 +63,15 @@ pub const QWEN25_3B_GGUF_FILE: &str = "Qwen2.5-3B-Instruct-Q4_K_M.gguf";
 /// Base model repo used for the HF tokenizer (tokenizer.json + tokenizer_config.json).
 pub const QWEN25_3B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-3B-Instruct";
 
-/// Pre-quantized Qwen 3 4B (GGUF Q4_K_M) — tool-calling-capable coding model (~2.7 GB).
+/// Pre-quantized Qwen 3 4B Instruct (GGUF Q4_K_M) — full OpenAI-compatible tool calling (~2.7 GB).
 ///
-/// Qwen 3 is the first Qwen family supported by mistral.rs for structured tool calling
-/// (via the `<tool_call>` / `</tool_call>` XML format). The 4B variant offers a good
-/// balance of tool-calling reliability and memory footprint for macOS desktops.
+/// Qwen 3 uses an extended thinking mode (`<think>…</think>`) that significantly improves
+/// reasoning and tool-use accuracy. Load with `max_tokens ≥ 4096` to avoid empty replies caused
+/// by the model exhausting its token budget on thinking before producing a response.
 ///
-/// bartowski's GGUF embeds the full tokenizer and chat template.
+/// Recommended model for siGit Code (coding agent with tool calling on macOS/Linux/Windows).
 pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
-/// The specific GGUF filename to download from the bartowski Qwen3 4B repo.
+/// The specific GGUF filename to download from the bartowski Qwen 3 4B repo.
 pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
 
 /// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
@@ -142,9 +142,10 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         id: BARTOWSKI_QWEN3_4B_GGUF,
         name: "Qwen 3 4B (GGUF)",
         org: "Qwen / Alibaba",
-        description: "Tool-calling-capable model for macOS — balanced quality and size (~2.7 GB). \
-             First Qwen family with structured tool calling support in mistral.rs.",
-        expected_size_bytes: 2_600_000_000,
+        description: "Full tool-calling support with extended reasoning mode (~2.7 GB). \
+                      Recommended for siGit Code on macOS, Linux, and Windows.",
+        // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
+        expected_size_bytes: 2_596_306_912,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_1_7B_GGUF,
@@ -155,3 +156,19 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         expected_size_bytes: 1_282_439_584,
     },
 ];
+
+/// Return the explicit tokenizer model ID required on Android for `hf_repo_id`.
+///
+/// The candle GGUF backend cannot parse the tokenizer embedded inside GGUF
+/// files; an explicit `tok_model_id` triggers a separate tokenizer download
+/// from the base model repo. Returns `None` on iOS and macOS where the
+/// embedded tokenizer is used automatically.
+pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
+    match hf_repo_id {
+        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(QWEN25_1_5B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
+        _ => None,
+    }
+}

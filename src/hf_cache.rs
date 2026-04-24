@@ -776,7 +776,7 @@ pub fn list_local_hf_models() -> LocalHfModelsResponse {
     models.retain(|m| SUPPORTED_MODELS.iter().any(|&s| s == m.model_id));
 
     // Sort by model_id for a stable, predictable order.
-    models.sort_by(|a, b| a.model_id.to_lowercase().cmp(&b.model_id.to_lowercase()));
+    models.sort_by_key(|a| a.model_id.to_lowercase());
 
     let total_size_bytes: u64 = models.iter().map(|m| m.size_bytes).sum();
 

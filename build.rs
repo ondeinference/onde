@@ -1,4 +1,27 @@
 fn main() {
+    // ── SDK credentials ──────────────────────────────────────────────────
+    // Load .env from the onde crate root so GresIQ credentials are available
+    // to option_env!() in pulse/client.rs.  Consumer apps never set these —
+    // they're Onde Inference's own infrastructure secrets.
+    println!("cargo:rerun-if-changed=.env");
+    let _ = dotenvy::from_filename(
+        std::path::Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join(".env"),
+    );
+    for var in [
+        "GRESIQ_API_KEY_DEV",
+        "GRESIQ_API_SECRET_DEV",
+        "GRESIQ_API_KEY_PRODUCTION",
+        "GRESIQ_API_SECRET_PRODUCTION",
+        "HF_TOKEN",
+    ] {
+        println!("cargo:rerun-if-env-changed={var}");
+        if let Ok(val) = std::env::var(var) {
+            if !val.is_empty() {
+                println!("cargo:rustc-env={var}={val}");
+            }
+        }
+    }
+
     // ── UniFFI scaffolding ───────────────────────────────────────────────
     // Not strictly required when using `uniffi::setup_scaffolding!()` in
     // lib.rs (the proc-macro approach), but having it here ensures the

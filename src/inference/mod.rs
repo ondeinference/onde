@@ -77,8 +77,9 @@ pub use types::{
     IsqModelConfig,
     SamplingConfig,
     StreamChunk,
-    // Tool calling (Rust-only, not UniFFI-exported)
+    // Tool calling
     ToolAwareResult,
+    ToolCallInfo,
     ToolCallRequest,
     ToolDefinition,
     ToolResult,

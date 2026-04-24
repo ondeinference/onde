@@ -273,6 +273,41 @@ pub struct InferenceResult {
     pub duration_display: String,
     /// Finish reason reported by the model (e.g. `"stop"`, `"length"`).
     pub finish_reason: String,
+    /// Tool calls requested by the model (empty when no tools were invoked).
+    pub tool_calls: Vec<ToolCallInfo>,
+}
+
+// ── Tool calling ─────────────────────────────────────────────────────────────
+
+/// A tool definition passed to the model so it knows which tools are available.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolDefinition {
+    /// Tool name (e.g. `"read_file"`).
+    pub name: String,
+    /// Human-readable description of what the tool does.
+    pub description: String,
+    /// JSON Schema string describing the tool's parameters.
+    pub parameters_schema: String,
+}
+
+/// Information about a single tool call requested by the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolCallInfo {
+    /// Unique identifier for this tool call (used to correlate results).
+    pub id: String,
+    /// The name of the function the model wants to invoke.
+    pub function_name: String,
+    /// JSON-encoded arguments for the function.
+    pub arguments: String,
+}
+
+/// The result of executing a tool, sent back to the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolResult {
+    /// The tool call ID this result corresponds to.
+    pub tool_call_id: String,
+    /// The output produced by executing the tool.
+    pub content: String,
 }
 
 // ── Streaming chunk ──────────────────────────────────────────────────────────
@@ -379,17 +414,8 @@ pub fn format_duration(d: std::time::Duration) -> String {
 // These types are intentionally NOT annotated with `uniffi::Record` /
 // `uniffi::Enum` — they are for Rust consumers only.  The UniFFI surface
 // area (Swift / Kotlin) remains unchanged.
-
-/// Definition of a tool the model can invoke.
-#[derive(Debug, Clone)]
-pub struct ToolDefinition {
-    /// Tool function name (e.g. `"get_weather"`).
-    pub name: String,
-    /// Human-readable description of what the tool does.
-    pub description: String,
-    /// JSON Schema for function parameters, as a serialised JSON string.
-    pub parameters_schema: String,
-}
+// (`ToolDefinition`, `ToolCallInfo`, and `ToolResult` are defined above
+// with UniFFI derives and shared across both layers.)
 
 /// A tool call requested by the model.
 #[derive(Debug, Clone)]
@@ -400,15 +426,6 @@ pub struct ToolCallRequest {
     pub function_name: String,
     /// JSON string of the function arguments.
     pub arguments: String,
-}
-
-/// Result of executing a tool, to send back to the model.
-#[derive(Debug, Clone)]
-pub struct ToolResult {
-    /// The `id` from the corresponding [`ToolCallRequest`].
-    pub tool_call_id: String,
-    /// The tool's output (plain text or JSON).
-    pub content: String,
 }
 
 /// Result from a tool-aware inference call (Rust-only, not UniFFI-exported).
