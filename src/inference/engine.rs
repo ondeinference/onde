@@ -94,7 +94,10 @@ use super::types::*;
     target_os = "linux",
     target_os = "android"
 ))]
-use mistralrs::{GgufModelBuilder, Model, RequestBuilder, TextMessageRole};
+use mistralrs::{
+    Function, GgufModelBuilder, Model, RequestBuilder, TextMessageRole, Tool as MistralTool,
+    ToolType,
+};
 
 // ISQ types are only used by load_isq_model, which is macOS-only.
 #[cfg(target_os = "macos")]
@@ -788,6 +791,7 @@ impl ChatEngine {
             duration_secs: elapsed.as_secs_f64(),
             duration_display: format_duration(elapsed),
             finish_reason,
+            tool_calls: vec![],
         })
     }
 
@@ -850,6 +854,224 @@ impl ChatEngine {
             duration_secs: elapsed.as_secs_f64(),
             duration_display: format_duration(elapsed),
             finish_reason,
+            tool_calls: vec![],
+        })
+    }
+
+    // ── Tool-calling inference ───────────────────────────────────────────
+
+    /// Send a user message with tool definitions and receive a complete
+    /// response that may contain tool calls.
+    ///
+    /// The user message is appended to the conversation history.  If the
+    /// model responds with text (no tool calls), the assistant reply is
+    /// also appended.  If the model requests tool calls, the caller is
+    /// responsible for executing them and calling [`send_tool_results`].
+    pub async fn send_message_with_tools(
+        &self,
+        user_message: &str,
+        tools: &[ToolDefinition],
+    ) -> Result<InferenceResult, InferenceError> {
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+            let mut req = self::build_request(loaded, user_message);
+
+            // Convert ToolDefinitions → mistralrs Tool objects.
+            let mistral_tools: Vec<MistralTool> = tools
+                .iter()
+                .map(|t| {
+                    let params: std::collections::HashMap<String, serde_json::Value> =
+                        serde_json::from_str(&t.parameters_schema).unwrap_or_default();
+                    MistralTool {
+                        tp: ToolType::Function,
+                        function: Function {
+                            description: Some(t.description.clone()),
+                            name: t.name.clone(),
+                            parameters: Some(params),
+                            strict: None,
+                        },
+                    }
+                })
+                .collect();
+
+            req = req.set_tools(mistral_tools);
+            (loaded.model.clone(), req)
+        };
+
+        log::info!(
+            "ChatEngine: tool inference START — message: \"{}\"",
+            truncate_for_log(user_message, 100)
+        );
+
+        let start = std::time::Instant::now();
+        let response =
+            model
+                .send_chat_request(request)
+                .await
+                .map_err(|e| InferenceError::Inference {
+                    reason: e.to_string(),
+                })?;
+        let elapsed = start.elapsed();
+
+        let choice = &response.choices[0];
+        let reply = choice
+            .message
+            .content
+            .as_ref()
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let finish_reason = choice.finish_reason.clone();
+
+        // Extract tool calls from the response.
+        let tool_calls: Vec<ToolCallInfo> = choice
+            .message
+            .tool_calls
+            .as_ref()
+            .map(|tcs| {
+                tcs.iter()
+                    .map(|tc| ToolCallInfo {
+                        id: tc.id.clone(),
+                        function_name: tc.function.name.clone(),
+                        arguments: tc.function.arguments.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        log::info!(
+            "ChatEngine: tool inference END — {} — {} tool call(s), reply: \"{}\"",
+            format_duration(elapsed),
+            tool_calls.len(),
+            truncate_for_log(&reply, 100)
+        );
+
+        // Persist the user message to history.
+        {
+            let mut guard = self.inner.lock().await;
+            if let Some(loaded) = guard.as_mut() {
+                loaded.history.push(ChatMessage::user(user_message));
+                // Only persist the assistant reply if there are no tool calls.
+                if tool_calls.is_empty() && !reply.is_empty() {
+                    loaded.history.push(ChatMessage::assistant(reply.clone()));
+                }
+            }
+        }
+
+        Ok(InferenceResult {
+            text: reply,
+            duration_secs: elapsed.as_secs_f64(),
+            duration_display: format_duration(elapsed),
+            finish_reason,
+            tool_calls,
+        })
+    }
+
+    /// Feed tool execution results back to the model and get the next
+    /// response.
+    ///
+    /// `next_tools` controls whether the model may request further tool
+    /// calls.  Pass `Some(tools)` to allow another round, or `None` to
+    /// force a text-only response.
+    pub async fn send_tool_results(
+        &self,
+        results: Vec<ToolResult>,
+        next_tools: Option<&[ToolDefinition]>,
+    ) -> Result<InferenceResult, InferenceError> {
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+
+            let mut req = RequestBuilder::new();
+            req = apply_sampling(req, &loaded.sampling);
+
+            // System prompt.
+            if let Some(ref sp) = loaded.system_prompt {
+                req = req.add_message(TextMessageRole::System, sp);
+            }
+
+            // Replay history.
+            for turn in &loaded.history {
+                req = req.add_message(chat_role_to_mistral(&turn.role), &turn.content);
+            }
+
+            // Append tool results as tool-role messages.
+            for tr in &results {
+                req = req.add_tool_message(&tr.content, &tr.tool_call_id);
+            }
+
+            // Optionally allow further tool calls.
+            if let Some(tools) = next_tools {
+                let mistral_tools: Vec<MistralTool> = tools
+                    .iter()
+                    .map(|t| {
+                        let params: std::collections::HashMap<String, serde_json::Value> =
+                            serde_json::from_str(&t.parameters_schema).unwrap_or_default();
+                        MistralTool {
+                            tp: ToolType::Function,
+                            function: Function {
+                                description: Some(t.description.clone()),
+                                name: t.name.clone(),
+                                parameters: Some(params),
+                                strict: None,
+                            },
+                        }
+                    })
+                    .collect();
+                req = req.set_tools(mistral_tools);
+            }
+
+            (loaded.model.clone(), req)
+        };
+
+        let start = std::time::Instant::now();
+        let response =
+            model
+                .send_chat_request(request)
+                .await
+                .map_err(|e| InferenceError::Inference {
+                    reason: e.to_string(),
+                })?;
+        let elapsed = start.elapsed();
+
+        let choice = &response.choices[0];
+        let reply = choice
+            .message
+            .content
+            .as_ref()
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let finish_reason = choice.finish_reason.clone();
+
+        let tool_calls: Vec<ToolCallInfo> = choice
+            .message
+            .tool_calls
+            .as_ref()
+            .map(|tcs| {
+                tcs.iter()
+                    .map(|tc| ToolCallInfo {
+                        id: tc.id.clone(),
+                        function_name: tc.function.name.clone(),
+                        arguments: tc.function.arguments.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Persist the assistant reply if no further tool calls.
+        if tool_calls.is_empty() && !reply.is_empty() {
+            let mut guard = self.inner.lock().await;
+            if let Some(loaded) = guard.as_mut() {
+                loaded.history.push(ChatMessage::assistant(reply.clone()));
+            }
+        }
+
+        Ok(InferenceResult {
+            text: reply,
+            duration_secs: elapsed.as_secs_f64(),
+            duration_display: format_duration(elapsed),
+            finish_reason,
+            tool_calls,
         })
     }
 
@@ -1219,6 +1441,26 @@ impl ChatEngine {
         &self,
         _user_message: impl Into<String>,
     ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
+
+    pub async fn send_message_with_tools(
+        &self,
+        _user_message: &str,
+        _tools: &[ToolDefinition],
+    ) -> Result<InferenceResult, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
+
+    pub async fn send_tool_results(
+        &self,
+        _results: Vec<ToolResult>,
+        _next_tools: Option<&[ToolDefinition]>,
+    ) -> Result<InferenceResult, InferenceError> {
         Err(InferenceError::Other {
             reason: "LLM inference is not supported on this platform.".into(),
         })

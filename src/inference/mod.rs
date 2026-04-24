@@ -68,5 +68,6 @@ pub use engine::ChatEngine;
 pub use ffi::{OndeChatEngine, StreamChunkListener};
 pub use types::{
     ChatMessage, ChatRole, EngineInfo, EngineStatus, GgufModelConfig, InferenceError,
-    InferenceResult, IsqModelConfig, SamplingConfig, StreamChunk,
+    InferenceResult, IsqModelConfig, SamplingConfig, StreamChunk, ToolCallInfo, ToolDefinition,
+    ToolResult,
 };
