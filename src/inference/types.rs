@@ -273,6 +273,41 @@ pub struct InferenceResult {
     pub duration_display: String,
     /// Finish reason reported by the model (e.g. `"stop"`, `"length"`).
     pub finish_reason: String,
+    /// Tool calls requested by the model (empty when no tools were invoked).
+    pub tool_calls: Vec<ToolCallInfo>,
+}
+
+// ── Tool calling ─────────────────────────────────────────────────────────────
+
+/// A tool definition passed to the model so it knows which tools are available.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolDefinition {
+    /// Tool name (e.g. `"read_file"`).
+    pub name: String,
+    /// Human-readable description of what the tool does.
+    pub description: String,
+    /// JSON Schema string describing the tool's parameters.
+    pub parameters_schema: String,
+}
+
+/// Information about a single tool call requested by the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolCallInfo {
+    /// Unique identifier for this tool call (used to correlate results).
+    pub id: String,
+    /// The name of the function the model wants to invoke.
+    pub function_name: String,
+    /// JSON-encoded arguments for the function.
+    pub arguments: String,
+}
+
+/// The result of executing a tool, sent back to the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolResult {
+    /// The tool call ID this result corresponds to.
+    pub tool_call_id: String,
+    /// The output produced by executing the tool.
+    pub content: String,
 }
 
 // ── Streaming chunk ──────────────────────────────────────────────────────────
