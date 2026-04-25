@@ -74,6 +74,13 @@ pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
 /// The specific GGUF filename to download from the bartowski Qwen 3 4B repo.
 pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
 
+/// Pre-quantized Qwen 3 8B (GGUF Q4_K_M) — strong tool-calling model (~5 GB).
+///
+/// Best balance of quality and memory for macOS with 24+ GB RAM.
+/// Full tool calling and extended thinking mode support.
+pub const BARTOWSKI_QWEN3_8B_GGUF: &str = "bartowski/Qwen_Qwen3-8B-GGUF";
+pub const QWEN3_8B_GGUF_FILE: &str = "Qwen_Qwen3-8B-Q4_K_M.gguf";
+
 /// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
 ///
 /// Smallest Qwen 3 variant with tool calling support. Suitable for mobile devices
@@ -89,6 +96,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN3_4B_GGUF,
+    BARTOWSKI_QWEN3_8B_GGUF,
     BARTOWSKI_QWEN3_1_7B_GGUF,
 ];
 
@@ -146,6 +154,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
                       Recommended for siGit Code on macOS, Linux, and Windows.",
         // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
         expected_size_bytes: 2_596_306_912,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_8B_GGUF,
+        name: "Qwen 3 8B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong tool-calling model with extended thinking (~5 GB). \
+                      Best balance of quality and memory for macOS with 24+ GB RAM.",
+        expected_size_bytes: 5_131_567_104,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_1_7B_GGUF,
