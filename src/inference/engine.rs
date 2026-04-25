@@ -1547,19 +1547,18 @@ fn attach_tools(mut req: RequestBuilder, tools: &[ToolDefinition]) -> RequestBui
         let mistral_tools: Vec<MistralTool> = tools
             .iter()
             .map(|td| {
-                let params: HashMap<String, serde_json::Value> = match serde_json::from_str(
-                    &td.parameters_schema,
-                ) {
-                    Ok(p) => p,
-                    Err(err) => {
-                        log::warn!(
+                let params: HashMap<String, serde_json::Value> =
+                    match serde_json::from_str(&td.parameters_schema) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            log::warn!(
                             "tool '{}': malformed parameters_schema JSON ({}), using empty params",
                             td.name,
                             err
                         );
-                        HashMap::new()
-                    }
-                };
+                            HashMap::new()
+                        }
+                    };
                 MistralTool {
                     tp: ToolType::Function,
                     function: Function {
@@ -1938,6 +1937,20 @@ impl GgufModelConfig {
             tok_model_id: None,
             display_name: "Qwen 3 1.7B (Q4_K_M)".into(),
             approx_memory: "~1.3 GB".into(),
+        }
+    }
+
+    /// Qwen 3 8B Instruct (GGUF Q4_K_M) — ~5 GB.
+    ///
+    /// Strong tool-calling model with extended thinking. Best balance of
+    /// quality and memory for macOS with 24+ GB RAM.
+    pub fn qwen3_8b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_8B_GGUF.into(),
+            files: vec![super::models::QWEN3_8B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 8B (Q4_K_M)".into(),
+            approx_memory: "~5 GB".into(),
         }
     }
 
