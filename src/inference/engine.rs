@@ -418,14 +418,21 @@ impl ChatEngine {
         let pulse_model_id = config.model_id.clone();
         let pulse_model_name = config.display_name.clone();
 
-        let mut guard = self.inner.lock().await;
-        *guard = Some(LoadedModel {
-            model: Arc::new(model),
-            config: LoadedModelConfig::Gguf(config),
-            history: Vec::new(),
-            system_prompt,
-            sampling,
-        });
+        // Swap the new model in and take the old one out — all under the lock
+        // so the engine is never seen as None by a concurrent prompt.  Then
+        // drop the old weights *outside* the lock so we don't block inference
+        // while the allocator frees potentially several GB of tensors.
+        let old_model = {
+            let mut guard = self.inner.lock().await;
+            guard.replace(LoadedModel {
+                model: Arc::new(model),
+                config: LoadedModelConfig::Gguf(config),
+                history: Vec::new(),
+                system_prompt,
+                sampling,
+            })
+        };
+        drop(old_model); // free old weights outside the lock
 
         if let Some(ref pulse) = self.pulse {
             pulse.record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64);
