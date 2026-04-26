@@ -204,6 +204,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Strong reasoning and tool-calling model with extended thinking (~8.4 GB). \
              Best all-around model for macOS with 16+ GB RAM.",
+        // Qwen_Qwen3-14B-Q4_K_M.gguf from bartowski repo.
+        // Exact file size from HuggingFace API siblings[].size.
         expected_size_bytes: 9_001_753_632,
     },
     SupportedModelInfo {
