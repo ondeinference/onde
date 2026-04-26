@@ -93,6 +93,14 @@ pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
 pub const BARTOWSKI_QWEN3_8B_GGUF: &str = "bartowski/Qwen_Qwen3-8B-GGUF";
 pub const QWEN3_8B_GGUF_FILE: &str = "Qwen_Qwen3-8B-Q4_K_M.gguf";
 
+/// Pre-quantized Qwen 3 14B (GGUF Q4_K_M) — strong reasoning and tool-calling model (~8.4 GB).
+///
+/// Qwen 3 uses extended thinking mode (`<think>…</think>`) for improved reasoning.
+/// Best all-around model for macOS with 16+ GB RAM. Full tool calling support.
+pub const BARTOWSKI_QWEN3_14B_GGUF: &str = "bartowski/Qwen_Qwen3-14B-GGUF";
+/// The specific GGUF filename.
+pub const QWEN3_14B_GGUF_FILE: &str = "Qwen_Qwen3-14B-Q4_K_M.gguf";
+
 /// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
 ///
 /// Smallest Qwen 3 variant with tool calling support. Suitable for mobile devices
@@ -121,6 +129,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN3_4B_GGUF,
     BARTOWSKI_QWEN3_8B_GGUF,
+    BARTOWSKI_QWEN3_14B_GGUF,
     BARTOWSKI_QWEN3_1_7B_GGUF,
     BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
     THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
@@ -188,6 +197,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         description: "Strong tool-calling model with extended thinking (~5 GB). \
                       Best balance of quality and memory for macOS with 24+ GB RAM.",
         expected_size_bytes: 5_131_567_104,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_14B_GGUF,
+        name: "Qwen 3 14B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong reasoning and tool-calling model with extended thinking (~8.4 GB). \
+             Best all-around model for macOS with 16+ GB RAM.",
+        expected_size_bytes: 9_001_753_632,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_1_7B_GGUF,
