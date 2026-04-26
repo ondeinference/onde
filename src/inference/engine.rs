@@ -2003,8 +2003,21 @@ impl GgufModelConfig {
         }
     }
 
-    /// Qwen 3 8B Instruct (GGUF Q4_K_M) — ~5 GB.
+    /// Qwen 3 14B Instruct (GGUF Q4_K_M) — ~8.4 GB.
     ///
+    /// Strongest reasoning and tool-calling model with extended thinking.
+    /// Best all-around model for macOS with 16+ GB RAM.
+    pub fn qwen3_14b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
+            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 14B (Q4_K_M)".into(),
+            approx_memory: "~8.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
     /// Strong tool-calling model with extended thinking. Best balance of
     /// quality and memory for macOS with 24+ GB RAM.
     pub fn qwen3_8b() -> Self {

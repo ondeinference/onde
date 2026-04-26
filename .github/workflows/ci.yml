@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, development]
   pull_request:
-    branches: [main, development]
   workflow_dispatch:
 
 concurrency:
@@ -288,7 +286,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Configure Android NDK toolchain
         shell: bash
         run: |
