@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>On-device LLM inference for Flutter & Dart — Metal on iOS and macOS, CPU everywhere else.</strong>
+  <strong>Run LLMs on-device from Flutter and Dart. Metal on iOS and macOS, CPU everywhere else.</strong>
 </p>
 
 <p align="center">
@@ -23,9 +23,9 @@
 
 ---
 
-Run Qwen 2.5 models inside your Flutter app. The model downloads from HuggingFace on first launch, then everything runs locally — no server, no API key, nothing leaves the device. Metal gives you ~15 tok/s on an iPhone 15 Pro; Android and desktop run on CPU, slower but it works.
+Run Qwen 2.5 models directly inside your Flutter app. The model downloads from Hugging Face on first launch, then everything runs locally. No server, no API key, and no user data leaving the device. On an iPhone 15 Pro, Metal gets you around 15 tok/s. Android and desktop run on CPU, so they are slower, but they work well for local inference.
 
-Multi-turn chat, streaming, one-shot generation, configurable sampling — the full API is one import away.
+You get multi-turn chat, streaming, one-shot generation, and configurable sampling in a single package.
 
 ## Platform support
 
@@ -48,11 +48,11 @@ dependencies:
   onde_inference: ^0.1.0
 ```
 
-The inference engine is Rust compiled via [flutter_rust_bridge](https://pub.dev/packages/flutter_rust_bridge). You need a working [Rust toolchain](https://rustup.rs). First build is slow (~5–10 min, compiling the full dep tree); incremental builds are under a minute.
+The inference engine is written in Rust and wired into Dart through [flutter_rust_bridge](https://pub.dev/packages/flutter_rust_bridge). You will need a working [Rust toolchain](https://rustup.rs). The first build is usually slow, around 5 to 10 minutes, because it has to compile the full dependency tree. After that, incremental builds are much faster.
 
 ### Initialize
 
-Call once at startup, before anything else:
+Call this once at startup, before anything else:
 
 ```dart
 import 'package:onde_inference/onde_inference.dart';
@@ -69,7 +69,7 @@ void main() async {
 ```dart
 final engine = await OndeChatEngine.create();
 
-// Picks the right model for the device:
+// Picks the default model for the device:
 //   iOS / Android → Qwen 2.5 1.5B (~941 MB)
 //   macOS / Linux / Windows → Qwen 2.5 3B (~1.93 GB)
 final elapsed = await engine.loadDefaultModel(
@@ -128,7 +128,7 @@ await engine.pushHistory(ChatMessage.assistant('Hi! How can I help today?'));
 
 ### One-shot generation
 
-Runs inference without touching conversation history. Good for prompt enhancement, classification, formatting.
+This runs inference without changing conversation history. It is useful for things like prompt enhancement, classification, or formatting.
 
 ```dart
 final result = await engine.generate(
@@ -212,13 +212,13 @@ try {
 }
 ```
 
-Common causes: calling `sendMessage` before loading a model, no internet on first run (the model needs to download), or out of memory (the 3B model needs ~2 GB free — use 1.5B on constrained devices).
+Common causes include calling `sendMessage` before loading a model, having no internet connection on first run while the model still needs to download, or running out of memory. The 3B model needs about 2 GB free, so on tighter devices you will usually want the 1.5B model instead.
 
 ---
 
 ## Sandboxed app setup (iOS / macOS)
 
-On iOS and sandboxed macOS, the default HuggingFace cache path is outside the app container. Call `setupCacheDir()` once at startup to point it somewhere accessible:
+On iOS and sandboxed macOS, the default Hugging Face cache path sits outside the app container. Call `setupCacheDir()` once at startup so Onde uses a location your app can actually access:
 
 ```dart
 import 'package:onde_inference/onde_inference.dart';
@@ -239,13 +239,13 @@ void main() async {
 }
 ```
 
-This first tries the App Group shared container (`group.com.ondeinference.apps`) so all Onde-powered apps share downloaded models. Falls back to the app's private directory if the App Group isn't configured.
+Onde first tries the App Group shared container (`group.com.ondeinference.apps`) so Onde-powered apps can share downloaded models. If that App Group is not configured, it falls back to the app's private directory.
 
 ---
 
 ## Contributing
 
-Source lives at [github.com/ondeinference/onde](https://github.com/ondeinference/onde):
+The source lives at [github.com/ondeinference/onde](https://github.com/ondeinference/onde):
 
 - Rust core: `src/`
 - Dart bridge crate: `sdk/dart/rust/`
@@ -256,7 +256,7 @@ Open an issue before sending large PRs.
 
 ## License
 
-Dual-licensed under **MIT** and **Apache 2.0**. Pick whichever works for you.
+Onde is dual-licensed under **MIT** and **Apache 2.0**. You can use either one.
 
 - [MIT License](https://github.com/ondeinference/onde/blob/main/LICENSE-MIT)
 - [Apache License 2.0](https://github.com/ondeinference/onde/blob/main/LICENSE-APACHE)

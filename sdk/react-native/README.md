@@ -5,26 +5,27 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>On-device LLM inference for React Native — Metal on iOS, CPU on Android.</strong>
+  <strong>Run LLMs on-device from React Native. Metal on iOS, CPU on Android, and no user data leaving the device.</strong>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@ondeinference/react-native"><img src="https://img.shields.io/npm/v/@ondeinference/react-native?style=flat-square&color=235843&labelColor=17211D&label=npm" alt="npm"></a>
   <a href="https://crates.io/crates/onde"><img src="https://img.shields.io/crates/v/onde?style=flat-square&color=235843&labelColor=17211D&label=crates.io" alt="crates.io"></a>
+  <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference?style=flat-square&color=235843&labelColor=17211D&label=Maven%20Central" alt="Maven Central"></a>
   <a href="https://swiftpackageindex.com/ondeinference/onde-swift"><img src="https://img.shields.io/badge/Swift%20Package%20Index-onde--swift-235843?style=flat-square&labelColor=17211D" alt="Swift Package Index"></a>
   <a href="https://pub.dev/packages/onde_inference"><img src="https://img.shields.io/pub/v/onde_inference?style=flat-square&color=235843&labelColor=17211D&label=pub.dev" alt="pub.dev"></a>
   <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/ondeinference/onde">Rust SDK</a> · <a href="https://swiftpackageindex.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://pub.dev/packages/onde_inference">Flutter SDK</a> · <a href="https://ondeinference.com">Website</a>
+  <a href="https://github.com/ondeinference/onde">Rust SDK</a> · <a href="https://swiftpackageindex.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference">Kotlin Multiplatform SDK</a> · <a href="https://pub.dev/packages/onde_inference">Flutter SDK</a> · <a href="https://ondeinference.com">Website</a>
 </p>
 
 ---
 
-Run Qwen 2.5 models on the phone. No server, no API key, nothing leaves the device.
+Run Qwen 2.5 models directly on the device. No server, no API key, and no user data leaving the phone.
 
-The model downloads from HuggingFace on first load, then runs locally. ~941 MB for the 1.5B variant. Metal gives you ~15 tok/s on an iPhone 15; Android runs on CPU, slower but works.
+The model downloads from Hugging Face the first time you load it, then runs locally after that. The 1.5B model is about 941 MB. On iPhone, Metal makes it feel surprisingly fast. On Android, it runs on CPU, so it is slower, but it still works well enough for local chat.
 
 ## Installation
 
@@ -37,7 +38,7 @@ npx expo install @ondeinference/react-native
 ```typescript
 import { OndeChatEngine, userMessage } from "@ondeinference/react-native";
 
-// Picks the right model for the device:
+// Picks the default model for the device:
 //   iOS     → Qwen 2.5 1.5B (~941 MB, Metal)
 //   Android → Qwen 2.5 1.5B (~941 MB, CPU)
 const seconds = await OndeChatEngine.loadDefaultModel(
@@ -101,7 +102,7 @@ import {
 
 ## Example app
 
-There's a working chat app in [`example/`](./example):
+There is a working chat app in [`example/`](./example):
 
 ```bash
 cd example
@@ -109,7 +110,7 @@ npm install
 npx expo run:ios
 ```
 
-Single file, ~290 lines. Shows loading, chat, status, history management, and error handling.
+It is a single-file example, about 290 lines, and it covers loading, chat, status, history management, and error handling.
 
 ## Building from source
 
@@ -125,9 +126,9 @@ rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-and
 ./scripts/build-rust.sh android
 ```
 
-The script compiles the Rust FFI bridge in `rust/`, then copies the static lib (iOS) or shared libs (Android) into the right places under `ios/` and `android/`.
+The script builds the Rust FFI bridge in `rust/`, then copies the static library for iOS or the shared libraries for Android into the right places under `ios/` and `android/`.
 
-## How it works
+## How it fits together
 
 ```
 TypeScript  →  Expo Module (Swift / Kotlin)  →  Rust C FFI  →  onde crate  →  mistral.rs
@@ -135,11 +136,11 @@ TypeScript  →  Expo Module (Swift / Kotlin)  →  Rust C FFI  →  onde crate 
                 JNI external (Android)                     Metal / CPU
 ```
 
-The native module talks to Rust through `extern "C"` functions. Complex types cross the boundary as JSON strings — the TypeScript layer handles camelCase ↔ snake_case conversion. A global `tokio::Runtime` (created once) runs the async inference.
+The native module talks to Rust through `extern "C"` functions. Complex types cross the boundary as JSON strings, and the TypeScript layer handles camelCase ↔ snake_case conversion. A global `tokio::Runtime`, created once, runs the async inference work.
 
 ## License
 
-Dual-licensed under **MIT** and **Apache 2.0**. Pick whichever works for you.
+Onde is dual-licensed under **MIT** and **Apache 2.0**. You can use either one.
 
 - [MIT License](https://github.com/ondeinference/onde/blob/main/LICENSE-MIT)
 - [Apache License 2.0](https://github.com/ondeinference/onde/blob/main/LICENSE-APACHE)
