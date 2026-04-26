@@ -7,6 +7,7 @@ import type {
   InferenceResult,
   SamplingConfig,
   StreamChunk,
+  ToolCallInfo,
 } from "./types";
 import { OndeError } from "./types";
 
@@ -20,6 +21,7 @@ export type {
   InferenceResult,
   SamplingConfig,
   StreamChunk,
+  ToolCallInfo,
 } from "./types";
 export { OndeError } from "./types";
 
@@ -46,6 +48,7 @@ function serializeModelConfig(config: GgufModelConfig): string {
     tok_model_id: config.tokModelId,
     display_name: config.displayName,
     approx_memory: config.approxMemory,
+    chat_template: config.chatTemplate,
   });
 }
 
@@ -65,12 +68,22 @@ function parseInferenceResult(json: string): InferenceResult {
     duration_secs: number;
     duration_display: string;
     finish_reason?: string;
+    tool_calls?: Array<{
+      id: string;
+      function_name: string;
+      arguments: string;
+    }>;
   }>(json);
   return {
     text: raw.text,
     durationSecs: raw.duration_secs,
     durationDisplay: raw.duration_display,
     finishReason: raw.finish_reason,
+    toolCalls: (raw.tool_calls ?? []).map((tc) => ({
+      id: tc.id,
+      functionName: tc.function_name,
+      arguments: tc.arguments,
+    })),
   };
 }
 
@@ -97,6 +110,7 @@ function parseModelConfig(json: string): GgufModelConfig {
     tokModelId: raw.tok_model_id,
     displayName: raw.display_name,
     approxMemory: raw.approx_memory,
+    chatTemplate: raw.chat_template,
   };
 }
 
@@ -151,6 +165,34 @@ export const OndeChatEngine = {
     sampling?: SamplingConfig,
   ): Promise<number> {
     const json = await OndeInferenceModule.loadDefaultModel(
+      systemPrompt ?? null,
+      sampling ? serializeSampling(sampling) : null,
+    );
+    const result = parseResult<{ elapsed_secs: number }>(json);
+    return result.elapsed_secs;
+  },
+
+  /**
+   * Load the model assigned to this app via the Onde dashboard.
+   *
+   * Register your app at https://ondeinference.com to get an app ID
+   * and secret. The dashboard lets you assign a model — the SDK
+   * fetches it automatically. If no model is assigned, the platform
+   * default is loaded instead.
+   *
+   * @param appId - Your Onde app ID from ondeinference.com
+   * @param appSecret - Your Onde app secret from ondeinference.com
+   * @returns Wall-clock loading time in seconds.
+   */
+  async loadAssignedModel(
+    appId: string,
+    appSecret: string,
+    systemPrompt?: string,
+    sampling?: SamplingConfig,
+  ): Promise<number> {
+    const json = await OndeInferenceModule.loadAssignedModel(
+      appId,
+      appSecret,
       systemPrompt ?? null,
       sampling ? serializeSampling(sampling) : null,
     );

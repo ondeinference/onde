@@ -22,6 +22,7 @@ export 'frb_generated.dart/api.dart'
         GgufModelConfig,
         InferenceResult,
         StreamChunk,
+        ToolCallInfo,
         EngineStatus,
         EngineInfo,
         OndeError,
@@ -121,14 +122,14 @@ extension SamplingConfigX on SamplingConfig {
   /// Balanced creative-chat defaults:
   /// `temperature=0.7`, `topP=0.95`, `maxTokens=512`.
   static SamplingConfig defaultConfig() => SamplingConfig(
-        temperature: 0.7,
-        topP: 0.95,
-        topK: null,
-        minP: null,
-        maxTokens: BigInt.from(512),
-        frequencyPenalty: null,
-        presencePenalty: null,
-      );
+    temperature: 0.7,
+    topP: 0.95,
+    topK: null,
+    minP: null,
+    maxTokens: BigInt.from(512),
+    frequencyPenalty: null,
+    presencePenalty: null,
+  );
 
   /// Greedy / fully deterministic decoding:
   /// `temperature=0.0`, `maxTokens=512`.
@@ -136,26 +137,26 @@ extension SamplingConfigX on SamplingConfig {
   /// Use for coding, fact-retrieval, or any task where reproducibility
   /// matters.
   static SamplingConfig deterministic() => SamplingConfig(
-        temperature: 0.0,
-        topP: null,
-        topK: null,
-        minP: null,
-        maxTokens: BigInt.from(512),
-        frequencyPenalty: null,
-        presencePenalty: null,
-      );
+    temperature: 0.0,
+    topP: null,
+    topK: null,
+    minP: null,
+    maxTokens: BigInt.from(512),
+    frequencyPenalty: null,
+    presencePenalty: null,
+  );
 
   /// Low-latency preset for memory-constrained mobile devices:
   /// `temperature=0.7`, `topP=0.95`, `maxTokens=128`.
   static SamplingConfig mobile() => SamplingConfig(
-        temperature: 0.7,
-        topP: 0.95,
-        topK: null,
-        minP: null,
-        maxTokens: BigInt.from(128),
-        frequencyPenalty: null,
-        presencePenalty: null,
-      );
+    temperature: 0.7,
+    topP: 0.95,
+    topK: null,
+    minP: null,
+    maxTokens: BigInt.from(128),
+    frequencyPenalty: null,
+    presencePenalty: null,
+  );
 
   /// Returns a copy of this config with the given fields replaced.
   SamplingConfig copyWith({
@@ -166,16 +167,15 @@ extension SamplingConfigX on SamplingConfig {
     BigInt? maxTokens,
     double? frequencyPenalty,
     double? presencePenalty,
-  }) =>
-      SamplingConfig(
-        temperature: temperature ?? this.temperature,
-        topP: topP ?? this.topP,
-        topK: topK ?? this.topK,
-        minP: minP ?? this.minP,
-        maxTokens: maxTokens ?? this.maxTokens,
-        frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
-        presencePenalty: presencePenalty ?? this.presencePenalty,
-      );
+  }) => SamplingConfig(
+    temperature: temperature ?? this.temperature,
+    topP: topP ?? this.topP,
+    topK: topK ?? this.topK,
+    minP: minP ?? this.minP,
+    maxTokens: maxTokens ?? this.maxTokens,
+    frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
+    presencePenalty: presencePenalty ?? this.presencePenalty,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -199,12 +199,12 @@ extension EngineStatusX on EngineStatus {
 
   /// A short human-readable label for display in UIs.
   String get label => switch (this) {
-        EngineStatus.unloaded => 'Unloaded',
-        EngineStatus.loading => 'Loading…',
-        EngineStatus.ready => 'Ready',
-        EngineStatus.generating => 'Generating…',
-        EngineStatus.error => 'Error',
-      };
+    EngineStatus.unloaded => 'Unloaded',
+    EngineStatus.loading => 'Loading…',
+    EngineStatus.ready => 'Ready',
+    EngineStatus.generating => 'Generating…',
+    EngineStatus.error => 'Error',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -233,4 +233,14 @@ extension InferenceResultX on InferenceResult {
 
   /// Returns `true` if generation was truncated by the `maxTokens` limit.
   bool get truncated => finishReason == 'length';
+}
+
+// ---------------------------------------------------------------------------
+// InferenceResult — tool calling extension
+// ---------------------------------------------------------------------------
+
+/// Convenience helpers on [InferenceResult] for tool calling.
+extension InferenceResultToolsX on InferenceResult {
+  /// Returns `true` if the model requested one or more tool calls.
+  bool get hasToolCalls => toolCalls.isNotEmpty;
 }

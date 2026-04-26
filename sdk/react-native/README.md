@@ -148,6 +148,6 @@ Dual-licensed under **MIT** and **Apache 2.0**. Pick whichever works for you.
 
 ---
 
-<p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a></sub>
-</p>
+## Copyright
+
+© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).

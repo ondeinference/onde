@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "0.1.7"
+version = "1.0.0"
 edition = "2021"
 description = "On-device inference engine for Apple silicon."
 license = "MIT OR Apache-2.0"
@@ -20,69 +20,57 @@ name = "onde"
 #                linking is not allowed.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+
 # Android: CPU-only GGUF inference via candle; also needs hf-hub and
 # mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
 # in the Android sandbox).
 [target.'cfg(target_os = "android")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-# mistralrs = { version = "0.8.1", features = [] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
-# mistralrs-core = { version = "0.8.1", features = [] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = [] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = [] }
+mistralrs-core = { version = "0.8.2", package = "onde-mistralrs-core", features = [] }
 
 # iOS: Metal-accelerated inference; hf-hub + mistralrs-core needed for
 # GLOBAL_HF_CACHE sandbox workaround (~/.cache is outside the container).
 [target.'cfg(target_os = "ios")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-# mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-# mistralrs-core = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
+mistralrs-core = { version = "0.8.2", package = "onde-mistralrs-core", features = ["metal"] }
 
 # Linux: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
 [target.'cfg(target_os = "linux")'.dependencies]
-# mistralrs = { version = "0.8.1" }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs" }
 
 # macOS: Metal-accelerated inference.
 [target.'cfg(target_os = "macos")'.dependencies]
-# mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
 
 # tvOS: Metal-accelerated inference (Apple TV has Apple GPU); hf-hub +
 # mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
 [target.'cfg(target_os = "tvos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-# mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-# mistralrs-core = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
+mistralrs-core = { version = "0.8.2", package = "onde-mistralrs-core", features = ["metal"] }
 
 # visionOS: Metal-accelerated inference (Apple Vision Pro has M2 GPU);
 # hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
 [target.'cfg(target_os = "visionos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-# mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-# mistralrs-core = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
+mistralrs-core = { version = "0.8.2", package = "onde-mistralrs-core", features = ["metal"] }
 
 # watchOS: Metal-accelerated inference (Apple Watch Series 4+ has Apple GPU);
 # hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
 # Memory constrained — default to 1.5B model.
 [target.'cfg(target_os = "watchos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
-# mistralrs = { version = "0.8.1", features = ["metal"] }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
-# mistralrs-core = { version = "0.8.1", features = ["metal"] }
-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", features = ["metal"] }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
+mistralrs-core = { version = "0.8.2", package = "onde-mistralrs-core", features = ["metal"] }
 
 # Windows: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
 [target.'cfg(target_os = "windows")'.dependencies]
-# mistralrs = { version = "0.8.1" }
-mistralrs = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes" }
+mistralrs = { version = "0.8.2", package = "onde-mistralrs" }
 
 [dependencies]
 anyhow = "1"
@@ -111,9 +99,20 @@ dotenvy = "0.15"
 # Required for UniFFI scaffolding code generation at build time.
 uniffi = { version = "=0.31.0", features = ["build"] }
 
-# Patch sysctl with watchOS (target_os = "watchos") support until upstream merges it.
+# ── Local development patches ────────────────────────────────────────────────
+#
+# [patch.crates-io] is stripped by `cargo publish` and never seen by crates.io
+# consumers. These patches only apply when building from this local checkout.
+#
+# To develop against the mistral.rs git fork locally instead of the published
+# onde-mistralrs crates, uncomment the block below:
+#
+# [patch.crates-io]
+# onde-mistralrs      = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", package = "mistralrs" }
+# onde-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", package = "mistralrs-core" }
 
 # Patch sysctl with watchOS support until upstream merges it.
 # PR: https://github.com/johalun/sysctl-rs/pull/74
+# NOTE: [patch.crates-io] is ignored by crates.io consumers — safe to keep.
 [patch.crates-io]
 sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos" }

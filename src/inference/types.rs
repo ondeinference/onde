@@ -203,6 +203,10 @@ pub struct GgufModelConfig {
     pub display_name: String,
     /// Approximate memory footprint description, e.g. `"~941 MB (GGUF Q4_K_M)"`.
     pub approx_memory: String,
+    /// Optional Jinja chat template string. When set, this overrides the
+    /// template embedded in the GGUF file (if any). Required for older GGUF
+    /// files that don't embed a chat template (e.g. TheBloke models).
+    pub chat_template: Option<String>,
 }
 
 // ── ISQ model configuration ──────────────────────────────────────────────────
@@ -273,6 +277,41 @@ pub struct InferenceResult {
     pub duration_display: String,
     /// Finish reason reported by the model (e.g. `"stop"`, `"length"`).
     pub finish_reason: String,
+    /// Tool calls requested by the model (empty when no tools were invoked).
+    pub tool_calls: Vec<ToolCallInfo>,
+}
+
+// ── Tool calling ─────────────────────────────────────────────────────────────
+
+/// A tool definition passed to the model so it knows which tools are available.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolDefinition {
+    /// Tool name (e.g. `"read_file"`).
+    pub name: String,
+    /// Human-readable description of what the tool does.
+    pub description: String,
+    /// JSON Schema string describing the tool's parameters.
+    pub parameters_schema: String,
+}
+
+/// Information about a single tool call requested by the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolCallInfo {
+    /// Unique identifier for this tool call (used to correlate results).
+    pub id: String,
+    /// The name of the function the model wants to invoke.
+    pub function_name: String,
+    /// JSON-encoded arguments for the function.
+    pub arguments: String,
+}
+
+/// The result of executing a tool, sent back to the model.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct ToolResult {
+    /// The tool call ID this result corresponds to.
+    pub tool_call_id: String,
+    /// The output produced by executing the tool.
+    pub content: String,
 }
 
 // ── Streaming chunk ──────────────────────────────────────────────────────────
@@ -372,6 +411,42 @@ pub fn format_duration(d: std::time::Duration) -> String {
     } else {
         format!("{:.1}s", secs)
     }
+}
+
+// ── Tool calling types (Rust-only) ──────────────────────────────────────────
+//
+// These types are intentionally NOT annotated with `uniffi::Record` /
+// `uniffi::Enum` — they are for Rust consumers only.  The UniFFI surface
+// area (Swift / Kotlin) remains unchanged.
+// (`ToolDefinition`, `ToolCallInfo`, and `ToolResult` are defined above
+// with UniFFI derives and shared across both layers.)
+
+/// A tool call requested by the model.
+#[derive(Debug, Clone)]
+pub struct ToolCallRequest {
+    /// Unique identifier for this tool call (used to correlate results).
+    pub id: String,
+    /// Name of the function the model wants to invoke.
+    pub function_name: String,
+    /// JSON string of the function arguments.
+    pub arguments: String,
+}
+
+/// Result from a tool-aware inference call (Rust-only, not UniFFI-exported).
+#[derive(Debug, Clone)]
+pub struct ToolAwareResult {
+    /// Text content of the assistant reply (may be empty when the model
+    /// decides to call tools instead of responding with text).
+    pub text: String,
+    /// Tool calls requested by the model.  Empty when the model responds
+    /// with text only.
+    pub tool_calls: Vec<ToolCallRequest>,
+    /// Wall-clock inference duration in seconds.
+    pub duration_secs: f64,
+    /// Human-readable duration string (e.g. `"1.3s"`).
+    pub duration_display: String,
+    /// Finish reason reported by the model (e.g. `"stop"`, `"tool_calls"`).
+    pub finish_reason: String,
 }
 
 #[cfg(test)]

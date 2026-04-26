@@ -138,6 +138,34 @@ impl OndeChatEngine {
         Ok(elapsed.as_secs_f64())
     }
 
+    /// Load the model assigned to this app via the Onde dashboard.
+    ///
+    /// The `app_id` and `app_secret` identify your app on
+    /// [ondeinference.com](https://ondeinference.com). The backend returns
+    /// the GGUF model configuration assigned to your app; if no model is
+    /// assigned (HTTP 404) the platform default is loaded instead.
+    ///
+    /// Returns the wall-clock loading time in seconds.
+    pub async fn load_assigned_model(
+        &self,
+        app_id: String,
+        app_secret: String,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<f64, InferenceError> {
+        let elapsed = self
+            .inner
+            .load_assigned_model(
+                smbcloud_gresiq_sdk::Environment::Production,
+                &app_id,
+                &app_secret,
+                system_prompt,
+                sampling,
+            )
+            .await?;
+        Ok(elapsed.as_secs_f64())
+    }
+
     /// Unload the current model, freeing all memory.
     ///
     /// Returns the display name of the model that was unloaded, or `nil`

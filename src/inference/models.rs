@@ -52,6 +52,18 @@ pub const QWEN25_CODER_3B_GGUF_FILE: &str = "Qwen2.5-Coder-3B-Instruct-Q4_K_M.gg
 /// Base model repo used for the HF tokenizer on Android.
 pub const QWEN25_CODER_3B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-Coder-3B-Instruct";
 
+/// Pre-quantized Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) — strong coding model with tool calling (~4.4 GB).
+///
+/// Uses the `qwen2` GGUF architecture. Trained on 5.5T tokens of code/math data with
+/// fill-in-the-middle and repo-level code understanding. Supports function/tool calling
+/// via the Qwen2.5 chat template. Requires ~8 GB RAM.
+pub const BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF: &str =
+    "bartowski/Qwen2.5-Coder-7B-Instruct-GGUF";
+/// The specific GGUF filename to download from the bartowski Coder 7B repo.
+pub const QWEN25_CODER_7B_GGUF_FILE: &str = "Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
+/// Base model repo used for the HF tokenizer on Android.
+pub const QWEN25_CODER_7B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-Coder-7B-Instruct";
+
 /// Pre-quantized Qwen 2.5 3B Instruct (GGUF Q4_K_M) — balanced option (~1.93 GB).
 /// Ideal for macOS desktops and Android devices with sufficient RAM.
 /// Not recommended as default on iOS: the 3B variant caused OOM on iPhone 16e (8 GB RAM)
@@ -74,6 +86,41 @@ pub const BARTOWSKI_QWEN3_4B_GGUF: &str = "bartowski/Qwen_Qwen3-4B-GGUF";
 /// The specific GGUF filename to download from the bartowski Qwen 3 4B repo.
 pub const QWEN3_4B_GGUF_FILE: &str = "Qwen_Qwen3-4B-Q4_K_M.gguf";
 
+/// Pre-quantized Qwen 3 8B (GGUF Q4_K_M) — strong tool-calling model (~5 GB).
+///
+/// Best balance of quality and memory for macOS with 24+ GB RAM.
+/// Full tool calling and extended thinking mode support.
+pub const BARTOWSKI_QWEN3_8B_GGUF: &str = "bartowski/Qwen_Qwen3-8B-GGUF";
+pub const QWEN3_8B_GGUF_FILE: &str = "Qwen_Qwen3-8B-Q4_K_M.gguf";
+
+/// Pre-quantized Qwen 3 14B (GGUF Q4_K_M) — strong reasoning and tool-calling model (~8.4 GB).
+///
+/// Qwen 3 uses extended thinking mode (`<think>…</think>`) for improved reasoning.
+/// Best all-around model for macOS with 16+ GB RAM. Full tool calling support.
+pub const BARTOWSKI_QWEN3_14B_GGUF: &str = "bartowski/Qwen_Qwen3-14B-GGUF";
+/// The specific GGUF filename.
+pub const QWEN3_14B_GGUF_FILE: &str = "Qwen_Qwen3-14B-Q4_K_M.gguf";
+
+/// Pre-quantized Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling model (~1.3 GB).
+///
+/// Smallest Qwen 3 variant with tool calling support. Suitable for mobile devices
+/// where the 4B model would be too large.
+pub const BARTOWSKI_QWEN3_1_7B_GGUF: &str = "bartowski/Qwen_Qwen3-1.7B-GGUF";
+/// The specific GGUF filename for the Qwen3 1.7B repo.
+pub const QWEN3_1_7B_GGUF_FILE: &str = "Qwen_Qwen3-1.7B-Q4_K_M.gguf";
+
+/// DeepSeek Coder v1 6.7B Instruct (GGUF Q4_K_M) — dedicated code generation model (~3.8 GB).
+///
+/// Uses the `llama` GGUF architecture, so it loads through the existing
+/// `quantized_llama.rs` path in mistral.rs without any code changes.
+/// Strong coding performance. Requires ~8 GB RAM.
+pub const THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF: &str =
+    "TheBloke/deepseek-coder-6.7B-instruct-GGUF";
+/// The specific GGUF filename.
+pub const DEEPSEEK_CODER_6_7B_GGUF_FILE: &str = "deepseek-coder-6.7b-instruct.Q4_K_M.gguf";
+/// Base model repo used for the HF tokenizer on Android.
+pub const DEEPSEEK_CODER_6_7B_TOK_MODEL_ID: &str = "deepseek-ai/deepseek-coder-6.7b-instruct";
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
@@ -81,6 +128,11 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN3_4B_GGUF,
+    BARTOWSKI_QWEN3_8B_GGUF,
+    BARTOWSKI_QWEN3_14B_GGUF,
+    BARTOWSKI_QWEN3_1_7B_GGUF,
+    BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
+    THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
 ];
 
 /// Rich metadata for a supported model, used by the frontend to display
@@ -138,6 +190,48 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
         expected_size_bytes: 2_596_306_912,
     },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_8B_GGUF,
+        name: "Qwen 3 8B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong tool-calling model with extended thinking (~5 GB). \
+                      Best balance of quality and memory for macOS with 24+ GB RAM.",
+        expected_size_bytes: 5_131_567_104,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_14B_GGUF,
+        name: "Qwen 3 14B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong reasoning and tool-calling model with extended thinking (~8.4 GB). \
+             Best all-around model for macOS with 16+ GB RAM.",
+        // Qwen_Qwen3-14B-Q4_K_M.gguf from bartowski repo.
+        // Exact file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 9_001_753_632,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN3_1_7B_GGUF,
+        name: "Qwen 3 1.7B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Lightweight tool-calling model for mobile (~1.3 GB). \
+             Smallest Qwen 3 variant with tool calling support.",
+        expected_size_bytes: 1_282_439_584,
+    },
+    SupportedModelInfo {
+        id: BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
+        name: "Qwen 2.5 Coder 7B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong coding model with tool calling support (~4.4 GB). \
+             Trained on 5.5T code tokens. Requires 8+ GB RAM.",
+        expected_size_bytes: 4_683_074_336,
+    },
+    SupportedModelInfo {
+        id: THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
+        name: "DeepSeek Coder 6.7B (GGUF)",
+        org: "DeepSeek AI",
+        description: "Strong code generation model using the llama architecture (~3.8 GB). \
+             Requires 8+ GB RAM. Not recommended for mobile devices.",
+        expected_size_bytes: 4_083_015_904,
+    },
 ];
 
 /// Return the explicit tokenizer model ID required on Android for `hf_repo_id`.
@@ -152,6 +246,8 @@ pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
         BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF => Some(QWEN25_CODER_7B_TOK_MODEL_ID),
+        THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF => Some(DEEPSEEK_CODER_6_7B_TOK_MODEL_ID),
         _ => None,
     }
 }
