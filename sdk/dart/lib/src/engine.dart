@@ -47,10 +47,17 @@ export 'frb_generated.dart/api.dart'
 /// // 2. Create a native engine instance (sync — no Future).
 /// final engine = OndeChatEngine();
 ///
-/// // 3. Load the platform-appropriate default model.
-/// await engine.loadDefaultModel(
+/// // 3a. Load your assigned model (recommended for production).
+/// await engine.loadAssignedModel(
+///   appId: 'your-app-id',       // from ondeinference.com
+///   appSecret: 'your-app-secret',
 ///   systemPrompt: 'You are a helpful assistant.',
 /// );
+///
+/// // 3b. Or load the platform default (for prototyping).
+/// // await engine.loadDefaultModel(
+/// //   systemPrompt: 'You are a helpful assistant.',
+/// // );
 ///
 /// // 4. Chat.
 /// final result = await engine.sendMessage(message: 'Hello!');
@@ -93,12 +100,11 @@ extension OndeChatEngineX on api.OndeChatEngine {
   Future<double> loadDefaultModel({
     String? systemPrompt,
     SamplingConfig? sampling,
-  }) =>
-      loadGgufModel(
-        config: api.defaultModelConfig(),
-        systemPrompt: systemPrompt,
-        sampling: sampling,
-      );
+  }) => loadGgufModel(
+    config: api.defaultModelConfig(),
+    systemPrompt: systemPrompt,
+    sampling: sampling,
+  );
 
   // -------------------------------------------------------------------------
   // clearHistoryCount — int-typed convenience over clearHistory() → BigInt
@@ -156,9 +162,7 @@ abstract final class OndeInference {
     if (Platform.isMacOS) {
       // CocoaPods + use_frameworks! → pod is a dynamic framework.
       // DynamicLibrary.process() can't resolve symbols inside it.
-      lib = ExternalLibrary.open(
-        'onde_inference.framework/onde_inference',
-      );
+      lib = ExternalLibrary.open('onde_inference.framework/onde_inference');
     } else if (Platform.isIOS) {
       // CocoaPods on iOS statically links the pod into the Runner
       // binary via -force_load.  Symbols live in the main executable.

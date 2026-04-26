@@ -47,6 +47,7 @@
 //!     tok_model_id: None,
 //!     display_name: "Qwen 2.5 1.5B".into(),
 //!     approx_memory: "~941 MB".into(),
+//!     chat_template: None,
 //! };
 //!
 //! engine.load_gguf_model(config, None).await?;
@@ -94,7 +95,22 @@ use super::types::*;
     target_os = "linux",
     target_os = "android"
 ))]
-use mistralrs::{GgufModelBuilder, Model, RequestBuilder, TextMessageRole};
+use mistralrs::{
+    CalledFunction, Function, GgufModelBuilder, Model, RequestBuilder, TextMessageRole,
+    Tool as MistralTool, ToolCallResponse, ToolCallType, ToolChoice, ToolType,
+};
+
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+use std::collections::HashMap;
 
 // ISQ types are only used by load_isq_model, which is macOS-only.
 #[cfg(target_os = "macos")]
@@ -166,11 +182,39 @@ struct LoadedModel {
     /// Configuration used to load this model (kept for status reporting).
     config: LoadedModelConfig,
     /// Conversation history (system prompt is stored separately).
-    history: Vec<ChatMessage>,
+    history: Vec<HistoryEntry>,
     /// System prompt prepended to every request.
     system_prompt: Option<String>,
     /// Sampling parameters for generation.
     sampling: SamplingConfig,
+}
+
+/// An entry in the conversation history (internal only).
+/// Supports tool-related messages alongside regular text.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+#[derive(Debug, Clone)]
+enum HistoryEntry {
+    /// A regular text message (user, assistant, system).
+    Text(ChatMessage),
+    /// An assistant response that includes tool calls.
+    AssistantToolCall {
+        content: String,
+        tool_calls: Vec<ToolCallRequest>,
+    },
+    /// A tool execution result.
+    ToolResult {
+        tool_call_id: String,
+        content: String,
+    },
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -198,6 +242,7 @@ struct LoadedModel {
 ))]
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
+    pulse: Option<crate::pulse::PulseClient>,
 }
 
 #[cfg(any(
@@ -215,8 +260,32 @@ impl ChatEngine {
 
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
+        let environment = Self::pulse_environment();
+        let edge_id = std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
+        let pulse = crate::pulse::PulseClient::new(environment, edge_id);
+
+        match &pulse {
+            Some(_) => {
+                log::info!("ChatEngine: pulse telemetry enabled (environment={environment})")
+            }
+            None => log::info!(
+                "ChatEngine: pulse telemetry disabled \
+                 (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
+            ),
+        }
+
         Self {
             inner: Mutex::new(None),
+            pulse,
+        }
+    }
+
+    /// Resolve the pulse environment from the `GRESIQ_ENVIRONMENT` env var.
+    /// Defaults to `Production` when the var is absent or unrecognised.
+    fn pulse_environment() -> smbcloud_gresiq_sdk::Environment {
+        match std::env::var("GRESIQ_ENVIRONMENT").as_deref() {
+            Ok("dev") => smbcloud_gresiq_sdk::Environment::Dev,
+            _ => smbcloud_gresiq_sdk::Environment::Production,
         }
     }
 
@@ -315,6 +384,27 @@ impl ChatEngine {
             builder = builder.with_tok_model_id(tok_id);
         }
 
+        // Some older GGUF files (e.g. TheBloke) do not embed a chat template.
+        // When the config provides one, write it to a temporary .jinja file
+        // and pass the path — mistral.rs only accepts file paths ending in
+        // .json or .jinja, not literal template strings.
+        let _chat_template_tempfile = if let Some(ref template) = config.chat_template {
+            let tmp_dir = std::env::temp_dir().join("onde-chat-templates");
+            std::fs::create_dir_all(&tmp_dir).ok();
+            let tmp_path = tmp_dir.join("chat_template.jinja");
+            std::fs::write(&tmp_path, template).map_err(|e| InferenceError::ModelBuild {
+                reason: format!(
+                    "Failed to write chat template to {}: {}",
+                    tmp_path.display(),
+                    e
+                ),
+            })?;
+            builder = builder.with_chat_template(tmp_path.to_string_lossy().to_string());
+            Some(tmp_path)
+        } else {
+            None
+        };
+
         let model = builder
             .build()
             .await
@@ -346,16 +436,151 @@ impl ChatEngine {
             sampling.max_tokens,
         );
 
-        let mut guard = self.inner.lock().await;
-        *guard = Some(LoadedModel {
-            model: Arc::new(model),
-            config: LoadedModelConfig::Gguf(config),
-            history: Vec::new(),
-            system_prompt,
-            sampling,
-        });
+        // Capture before config is moved into LoadedModel.
+        let pulse_model_id = config.model_id.clone();
+        let pulse_model_name = config.display_name.clone();
+
+        // Swap the new model in and take the old one out — all under the lock
+        // so the engine is never seen as None by a concurrent prompt.  Then
+        // drop the old weights *outside* the lock so we don't block inference
+        // while the allocator frees potentially several GB of tensors.
+        let old_model = {
+            let mut guard = self.inner.lock().await;
+            guard.replace(LoadedModel {
+                model: Arc::new(model),
+                config: LoadedModelConfig::Gguf(config),
+                history: Vec::new(),
+                system_prompt,
+                sampling,
+            })
+        };
+        drop(old_model); // free old weights outside the lock
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64);
+        }
 
         Ok(elapsed)
+    }
+
+    /// Fetch the model assigned to this Onde app from the SDK model-config
+    /// endpoint and load it.
+    ///
+    /// Authenticates using the app's own `onde_app_id` + `onde_app_secret`
+    /// (the SDK credentials shown in the ondeinference.com dashboard).
+    /// No end-user JWT is required — model assignment is an operator-level
+    /// configuration that is independent of which user is currently signed in.
+    ///
+    /// **Fallback behaviour:**
+    /// - HTTP 404 (no model assigned) → loads [`GgufModelConfig::platform_default()`].
+    /// - Missing `hf_repo_id` or `gguf_file` in response → loads platform default.
+    /// - Any HTTP or network error → returns [`InferenceError::ModelBuild`] so
+    ///   the caller can apply its own fallback.
+    pub async fn load_assigned_model(
+        &self,
+        environment: smbcloud_gresiq_sdk::Environment,
+        onde_app_id: &str,
+        onde_app_secret: &str,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        use log::{info, warn};
+
+        #[derive(serde::Deserialize)]
+        struct ModelConfigResponse {
+            hf_repo_id: Option<String>,
+            gguf_file: Option<String>,
+            name: Option<String>,
+            approx_size_bytes: Option<i64>,
+        }
+
+        let url = format!(
+            "{}://{}/v1/client/onde_sdk/model_config?app_id={}&app_secret={}",
+            environment.api_protocol(),
+            environment.api_host(),
+            onde_app_id,
+            onde_app_secret,
+        );
+
+        let response = reqwest::Client::new()
+            .get(&url)
+            .header("Content-Type", "application/json")
+            .send()
+            .await
+            .map_err(|e| InferenceError::ModelBuild {
+                reason: format!("SDK model_config request failed: {e}"),
+            })?;
+
+        if response.status().as_u16() == 404 {
+            warn!(
+                "ChatEngine: no model assigned to Onde app {onde_app_id};                  loading platform default."
+            );
+            return self
+                .load_gguf_model(GgufModelConfig::platform_default(), system_prompt, sampling)
+                .await;
+        }
+
+        if !response.status().is_success() {
+            return Err(InferenceError::ModelBuild {
+                reason: format!(
+                    "SDK model_config returned HTTP {}",
+                    response.status().as_u16()
+                ),
+            });
+        }
+
+        let resp: ModelConfigResponse =
+            response
+                .json()
+                .await
+                .map_err(|e| InferenceError::ModelBuild {
+                    reason: format!("Failed to parse model_config response: {e}"),
+                })?;
+
+        let hf_repo_id = resp.hf_repo_id.as_deref().unwrap_or_default();
+        let gguf_file = resp.gguf_file.as_deref().unwrap_or_default();
+
+        if hf_repo_id.is_empty() || gguf_file.is_empty() {
+            warn!(
+                "ChatEngine: model_config response missing hf_repo_id or gguf_file;                  loading platform default."
+            );
+            return self
+                .load_gguf_model(GgufModelConfig::platform_default(), system_prompt, sampling)
+                .await;
+        }
+
+        #[cfg(target_os = "android")]
+        let tok_model_id = super::models::tok_model_id_for_repo(hf_repo_id).map(|s| s.to_string());
+        #[cfg(not(target_os = "android"))]
+        let tok_model_id: Option<String> = None;
+
+        let approx_memory = resp
+            .approx_size_bytes
+            .map(|b| {
+                let gb = b as f64 / 1_073_741_824.0;
+                if gb >= 1.0 {
+                    format!("~{:.2} GB", gb)
+                } else {
+                    format!("~{} MB", b / 1_048_576)
+                }
+            })
+            .unwrap_or_else(|| "—".to_string());
+
+        info!(
+            "ChatEngine: resolved SDK model assignment → {} / {} ({})",
+            hf_repo_id, gguf_file, approx_memory
+        );
+
+        let config = GgufModelConfig {
+            model_id: hf_repo_id.to_string(),
+            files: vec![gguf_file.to_string()],
+            tok_model_id,
+            display_name: resp.name.unwrap_or_else(|| hf_repo_id.to_string()),
+            approx_memory,
+            chat_template: None,
+        };
+
+        self.load_gguf_model(config, system_prompt, sampling).await
     }
 
     /// Load an ISQ (in-situ quantised) model into the engine.
@@ -519,10 +744,24 @@ impl ChatEngine {
     // ── Conversation history ─────────────────────────────────────────────
 
     /// Get a clone of the full conversation history.
+    ///
+    /// Tool-related history entries are converted back to plain
+    /// [`ChatMessage`] values (assistant tool-call entries become assistant
+    /// messages with just their text content; tool results are omitted).
     pub async fn history(&self) -> Vec<ChatMessage> {
         let guard = self.inner.lock().await;
         match guard.as_ref() {
-            Some(loaded) => loaded.history.clone(),
+            Some(loaded) => loaded
+                .history
+                .iter()
+                .filter_map(|entry| match entry {
+                    HistoryEntry::Text(msg) => Some(msg.clone()),
+                    HistoryEntry::AssistantToolCall { content, .. } => {
+                        Some(ChatMessage::assistant(content))
+                    }
+                    HistoryEntry::ToolResult { .. } => None,
+                })
+                .collect(),
             None => Vec::new(),
         }
     }
@@ -548,7 +787,7 @@ impl ChatEngine {
     /// Useful for restoring a saved conversation or injecting context.
     pub async fn push_history(&self, message: ChatMessage) {
         if let Some(loaded) = self.inner.lock().await.as_mut() {
-            loaded.history.push(message);
+            loaded.history.push(HistoryEntry::Text(message));
         }
     }
 
@@ -570,11 +809,16 @@ impl ChatEngine {
         let user_message = user_message.into();
 
         // ── 1. Snapshot model handle + build request, then release lock ──
-        let (model, request) = {
+        let (model, request, pulse_model_id) = {
             let guard = self.inner.lock().await;
             let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
             let request = self::build_request(loaded, &user_message);
-            (loaded.model.clone(), request)
+            let pulse_model_id = match &loaded.config {
+                LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                #[cfg(target_os = "macos")]
+                LoadedModelConfig::Isq(c) => c.model_id.clone(),
+            };
+            (loaded.model.clone(), request, pulse_model_id)
         }; // ← mutex released before inference
 
         log::info!(
@@ -612,9 +856,22 @@ impl ChatEngine {
         {
             let mut guard = self.inner.lock().await;
             if let Some(loaded) = guard.as_mut() {
-                loaded.history.push(ChatMessage::user(user_message));
-                loaded.history.push(ChatMessage::assistant(reply.clone()));
+                loaded
+                    .history
+                    .push(HistoryEntry::Text(ChatMessage::user(user_message)));
+                loaded
+                    .history
+                    .push(HistoryEntry::Text(ChatMessage::assistant(reply.clone())));
             }
+        }
+
+        if let Some(ref pulse) = self.pulse {
+            pulse.record_inference(
+                pulse_model_id,
+                crate::pulse::next_request_id(),
+                elapsed.as_millis() as u64,
+                "success".to_string(),
+            );
         }
 
         Ok(InferenceResult {
@@ -622,6 +879,7 @@ impl ChatEngine {
             duration_secs: elapsed.as_secs_f64(),
             duration_display: format_duration(elapsed),
             finish_reason,
+            tool_calls: vec![],
         })
     }
 
@@ -684,6 +942,7 @@ impl ChatEngine {
             duration_secs: elapsed.as_secs_f64(),
             duration_display: format_duration(elapsed),
             finish_reason,
+            tool_calls: vec![],
         })
     }
 
@@ -797,10 +1056,12 @@ impl ChatEngine {
                     {
                         let mut guard = inner_ref.lock().await;
                         if let Some(loaded) = guard.as_mut() {
-                            loaded.history.push(ChatMessage::user(user_msg_clone));
                             loaded
                                 .history
-                                .push(ChatMessage::assistant(assembled.trim()));
+                                .push(HistoryEntry::Text(ChatMessage::user(user_msg_clone)));
+                            loaded
+                                .history
+                                .push(HistoryEntry::Text(ChatMessage::assistant(assembled.trim())));
                         }
                     }
 
@@ -815,6 +1076,283 @@ impl ChatEngine {
                 }
                 Err(e) => {
                     log::error!("ChatEngine: stream_chat_request failed: {}", e);
+                    let _ = tx
+                        .send(StreamChunk {
+                            delta: String::new(),
+                            done: true,
+                            finish_reason: Some(format!("error: {}", e)),
+                        })
+                        .await;
+                }
+            }
+        });
+
+        Ok(rx)
+    }
+
+    // ── Tool-aware inference (Rust-only) ─────────────────────────────────
+
+    /// Send a user message with tool definitions available. Non-streaming.
+    ///
+    /// If the model decides to call tools, [`ToolAwareResult::tool_calls`]
+    /// will be non-empty and `finish_reason` will typically be `"tool_calls"`.
+    ///
+    /// The user message and response (including any tool calls) are
+    /// automatically added to conversation history.
+    pub async fn send_message_with_tools(
+        &self,
+        user_message: impl Into<String>,
+        tools: &[ToolDefinition],
+    ) -> Result<ToolAwareResult, InferenceError> {
+        let user_message = user_message.into();
+
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+            let request = build_request_with_tools(loaded, &user_message, tools);
+            (loaded.model.clone(), request)
+        };
+
+        log::info!(
+            "ChatEngine: tool inference START — message: \"{}\"",
+            truncate_for_log(&user_message, 100)
+        );
+
+        let start = std::time::Instant::now();
+        let response =
+            model
+                .send_chat_request(request)
+                .await
+                .map_err(|e| InferenceError::Inference {
+                    reason: e.to_string(),
+                })?;
+        let elapsed = start.elapsed();
+
+        let choice = &response.choices[0];
+        let reply = choice
+            .message
+            .content
+            .as_ref()
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let finish_reason = choice.finish_reason.clone();
+        let tool_calls = parse_tool_calls(choice);
+
+        log::info!(
+            "ChatEngine: tool inference END — {} — tool_calls: {} — reply: \"{}\"",
+            format_duration(elapsed),
+            tool_calls.len(),
+            truncate_for_log(&reply, 100)
+        );
+
+        // Persist to history.
+        {
+            let mut guard = self.inner.lock().await;
+            if let Some(loaded) = guard.as_mut() {
+                loaded
+                    .history
+                    .push(HistoryEntry::Text(ChatMessage::user(&user_message)));
+                if tool_calls.is_empty() {
+                    loaded
+                        .history
+                        .push(HistoryEntry::Text(ChatMessage::assistant(&reply)));
+                } else {
+                    loaded.history.push(HistoryEntry::AssistantToolCall {
+                        content: reply.clone(),
+                        tool_calls: tool_calls.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(ToolAwareResult {
+            text: reply,
+            tool_calls,
+            duration_secs: elapsed.as_secs_f64(),
+            duration_display: format_duration(elapsed),
+            finish_reason,
+        })
+    }
+
+    /// Send tool execution results back to the model. Non-streaming.
+    ///
+    /// Call this after executing the tools from a previous
+    /// [`send_message_with_tools`](Self::send_message_with_tools) response.
+    /// Pass the same (or updated) tool definitions if the model should be
+    /// allowed to make further tool calls.
+    pub async fn send_tool_results(
+        &self,
+        results: Vec<ToolResult>,
+        tools: Option<&[ToolDefinition]>,
+    ) -> Result<ToolAwareResult, InferenceError> {
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+            let request = build_tool_results_request(loaded, &results, tools);
+            (loaded.model.clone(), request)
+        };
+
+        log::info!(
+            "ChatEngine: tool results inference START — {} results",
+            results.len()
+        );
+
+        let start = std::time::Instant::now();
+        let response =
+            model
+                .send_chat_request(request)
+                .await
+                .map_err(|e| InferenceError::Inference {
+                    reason: e.to_string(),
+                })?;
+        let elapsed = start.elapsed();
+
+        let choice = &response.choices[0];
+        let reply = choice
+            .message
+            .content
+            .as_ref()
+            .map(|c| c.trim().to_string())
+            .unwrap_or_default();
+        let finish_reason = choice.finish_reason.clone();
+        let tool_calls = parse_tool_calls(choice);
+
+        log::info!(
+            "ChatEngine: tool results inference END — {} — tool_calls: {} — reply: \"{}\"",
+            format_duration(elapsed),
+            tool_calls.len(),
+            truncate_for_log(&reply, 100)
+        );
+
+        // Persist to history.
+        {
+            let mut guard = self.inner.lock().await;
+            if let Some(loaded) = guard.as_mut() {
+                for result in &results {
+                    loaded.history.push(HistoryEntry::ToolResult {
+                        tool_call_id: result.tool_call_id.clone(),
+                        content: result.content.clone(),
+                    });
+                }
+                if tool_calls.is_empty() {
+                    loaded
+                        .history
+                        .push(HistoryEntry::Text(ChatMessage::assistant(&reply)));
+                } else {
+                    loaded.history.push(HistoryEntry::AssistantToolCall {
+                        content: reply.clone(),
+                        tool_calls: tool_calls.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(ToolAwareResult {
+            text: reply,
+            tool_calls,
+            duration_secs: elapsed.as_secs_f64(),
+            duration_display: format_duration(elapsed),
+            finish_reason,
+        })
+    }
+
+    /// Stream tool execution results back to the model.
+    ///
+    /// Similar to [`send_tool_results`](Self::send_tool_results) but returns
+    /// a streaming receiver.  Tool calls in the streaming response are NOT
+    /// parsed — this is intended for the final text response after all tool
+    /// rounds complete.
+    pub async fn stream_tool_results(
+        &self,
+        results: Vec<ToolResult>,
+        tools: Option<Vec<ToolDefinition>>,
+    ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+            let request = build_tool_results_request(loaded, &results, tools.as_deref());
+            (loaded.model.clone(), request)
+        };
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<StreamChunk>(64);
+
+        let inner_ptr = &self.inner as *const Mutex<Option<LoadedModel>>;
+        // SAFETY: ChatEngine is stored in a Lazy static or equivalent with
+        // 'static lifetime.  The spawned task cannot outlive the engine.
+        let inner_ref: &'static Mutex<Option<LoadedModel>> = unsafe { &*inner_ptr };
+
+        let results_clone = results;
+
+        tokio::task::spawn(async move {
+            let stream_result = model.stream_chat_request(request).await;
+
+            match stream_result {
+                Ok(mut stream) => {
+                    let mut assembled = String::new();
+                    let mut last_finish_reason = None;
+
+                    while let Some(response) = stream.next().await {
+                        match response {
+                            mistralrs::Response::Chunk(chunk) => {
+                                if let Some(choice) = chunk.choices.first() {
+                                    if let Some(ref text) = choice.delta.content {
+                                        assembled.push_str(text);
+                                        let _ = tx
+                                            .send(StreamChunk {
+                                                delta: text.clone(),
+                                                done: false,
+                                                finish_reason: None,
+                                            })
+                                            .await;
+                                    }
+                                    if let Some(ref reason) = choice.finish_reason {
+                                        last_finish_reason = Some(reason.clone());
+                                    }
+                                }
+                            }
+                            mistralrs::Response::Done(_) => break,
+                            mistralrs::Response::InternalError(e) => {
+                                log::error!("stream_tool_results internal error: {}", e);
+                                break;
+                            }
+                            mistralrs::Response::ValidationError(e) => {
+                                log::error!("stream_tool_results validation error: {}", e);
+                                break;
+                            }
+                            mistralrs::Response::ModelError(msg, _) => {
+                                log::error!("stream_tool_results model error: {}", msg);
+                                break;
+                            }
+                            _ => break,
+                        }
+                    }
+
+                    // Persist to history.
+                    {
+                        let mut guard = inner_ref.lock().await;
+                        if let Some(loaded) = guard.as_mut() {
+                            for result in &results_clone {
+                                loaded.history.push(HistoryEntry::ToolResult {
+                                    tool_call_id: result.tool_call_id.clone(),
+                                    content: result.content.clone(),
+                                });
+                            }
+                            loaded
+                                .history
+                                .push(HistoryEntry::Text(ChatMessage::assistant(assembled.trim())));
+                        }
+                    }
+
+                    let _ = tx
+                        .send(StreamChunk {
+                            delta: String::new(),
+                            done: true,
+                            finish_reason: last_finish_reason,
+                        })
+                        .await;
+                }
+                Err(e) => {
+                    log::error!("stream_tool_results failed: {}", e);
                     let _ = tx
                         .send(StreamChunk {
                             delta: String::new(),
@@ -877,14 +1415,239 @@ fn build_request(loaded: &LoadedModel, user_message: &str) -> RequestBuilder {
     }
 
     // Replay conversation history for multi-turn context.
-    for turn in &loaded.history {
-        req = req.add_message(chat_role_to_mistral(&turn.role), &turn.content);
+    for entry in &loaded.history {
+        match entry {
+            HistoryEntry::Text(msg) => {
+                req = req.add_message(chat_role_to_mistral(&msg.role), &msg.content);
+            }
+            HistoryEntry::AssistantToolCall { content, .. } => {
+                // When replaying without tools, just use the text content.
+                req = req.add_message(TextMessageRole::Assistant, content);
+            }
+            HistoryEntry::ToolResult { .. } => {
+                // Skip tool results when not in tool mode.
+            }
+        }
     }
 
     // Append the current user message.
     req = req.add_message(TextMessageRole::User, user_message);
 
     req
+}
+
+/// Build a request with tool support, properly replaying tool-related history.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn build_request_with_tools(
+    loaded: &LoadedModel,
+    user_message: &str,
+    tools: &[ToolDefinition],
+) -> RequestBuilder {
+    let mut req = RequestBuilder::new();
+    req = apply_sampling(req, &loaded.sampling);
+
+    if let Some(ref sp) = loaded.system_prompt {
+        req = req.add_message(TextMessageRole::System, sp);
+    }
+
+    req = replay_history_with_tools(req, &loaded.history);
+
+    req = req.add_message(TextMessageRole::User, user_message);
+
+    // Add tool definitions.
+    req = attach_tools(req, tools);
+
+    req
+}
+
+/// Build a request for sending tool results back to the model.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn build_tool_results_request(
+    loaded: &LoadedModel,
+    results: &[ToolResult],
+    tools: Option<&[ToolDefinition]>,
+) -> RequestBuilder {
+    let mut req = RequestBuilder::new();
+    req = apply_sampling(req, &loaded.sampling);
+
+    if let Some(ref sp) = loaded.system_prompt {
+        req = req.add_message(TextMessageRole::System, sp);
+    }
+
+    // Replay full history (including tool call entries).
+    req = replay_history_with_tools(req, &loaded.history);
+
+    // Add new tool results.
+    for result in results {
+        req = req.add_tool_message(&result.content, &result.tool_call_id);
+    }
+
+    // Optionally add tools for further rounds.
+    if let Some(tool_defs) = tools {
+        req = attach_tools(req, tool_defs);
+    }
+
+    req
+}
+
+/// Replay conversation history entries onto a [`RequestBuilder`], preserving
+/// tool call and tool result messages.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn replay_history_with_tools(mut req: RequestBuilder, history: &[HistoryEntry]) -> RequestBuilder {
+    for entry in history {
+        match entry {
+            HistoryEntry::Text(msg) => {
+                req = req.add_message(chat_role_to_mistral(&msg.role), &msg.content);
+            }
+            HistoryEntry::AssistantToolCall {
+                content,
+                tool_calls,
+            } => {
+                let mistral_tcs: Vec<ToolCallResponse> = tool_calls
+                    .iter()
+                    .enumerate()
+                    .map(|(i, tc)| ToolCallResponse {
+                        index: i,
+                        id: tc.id.clone(),
+                        tp: ToolCallType::Function,
+                        function: CalledFunction {
+                            name: tc.function_name.clone(),
+                            arguments: tc.arguments.clone(),
+                        },
+                    })
+                    .collect();
+                req = req.add_message_with_tool_call(
+                    TextMessageRole::Assistant,
+                    content.clone(),
+                    mistral_tcs,
+                );
+            }
+            HistoryEntry::ToolResult {
+                tool_call_id,
+                content,
+            } => {
+                req = req.add_tool_message(content, tool_call_id);
+            }
+        }
+    }
+    req
+}
+
+/// Attach [`ToolDefinition`] slices as mistralrs [`Tool`] values and set
+/// [`ToolChoice::Auto`].
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn attach_tools(mut req: RequestBuilder, tools: &[ToolDefinition]) -> RequestBuilder {
+    if !tools.is_empty() {
+        let mistral_tools: Vec<MistralTool> = tools
+            .iter()
+            .map(|td| {
+                let params: HashMap<String, serde_json::Value> =
+                    match serde_json::from_str(&td.parameters_schema) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            log::warn!(
+                            "tool '{}': malformed parameters_schema JSON ({}), using empty params",
+                            td.name,
+                            err
+                        );
+                            HashMap::new()
+                        }
+                    };
+                MistralTool {
+                    tp: ToolType::Function,
+                    function: Function {
+                        description: Some(td.description.clone()),
+                        name: td.name.clone(),
+                        parameters: Some(params),
+                        strict: Some(true),
+                    },
+                }
+            })
+            .collect();
+        req = req.set_tools(mistral_tools);
+        req = req.set_tool_choice(ToolChoice::Auto);
+    }
+    req
+}
+
+/// Parse tool calls from a mistralrs response choice.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn parse_tool_calls(choice: &mistralrs::Choice) -> Vec<ToolCallRequest> {
+    choice
+        .message
+        .tool_calls
+        .as_ref()
+        .map(|tcs| {
+            tcs.iter()
+                .enumerate()
+                .map(|(i, tc)| {
+                    let id = if tc.id.is_empty() {
+                        log::warn!("tool call at index {i} has empty id — generating fallback");
+                        format!("call_{i}")
+                    } else {
+                        tc.id.clone()
+                    };
+                    if serde_json::from_str::<serde_json::Value>(&tc.function.arguments).is_err() {
+                        log::warn!(
+                            "tool call '{}' has malformed arguments JSON: {}",
+                            tc.function.name,
+                            tc.function.arguments.chars().take(200).collect::<String>()
+                        );
+                    }
+                    ToolCallRequest {
+                        id,
+                        function_name: tc.function.name.clone(),
+                        arguments: tc.function.arguments.clone(),
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// Apply a [`SamplingConfig`] to a [`RequestBuilder`].
@@ -923,7 +1686,7 @@ fn apply_sampling(mut req: RequestBuilder, sampling: &SamplingConfig) -> Request
     req
 }
 
-/// Convert [`ChatRole`] → [`TextMessageRole`].
+/// Convert a [`ChatRole`] to a [`TextMessageRole`].
 #[cfg(any(
     target_os = "macos",
     target_os = "ios",
@@ -1057,6 +1820,26 @@ impl ChatEngine {
             reason: "LLM inference is not supported on this platform.".into(),
         })
     }
+
+    pub async fn send_message_with_tools(
+        &self,
+        _user_message: &str,
+        _tools: &[ToolDefinition],
+    ) -> Result<InferenceResult, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
+
+    pub async fn send_tool_results(
+        &self,
+        _results: Vec<ToolResult>,
+        _next_tools: Option<&[ToolDefinition]>,
+    ) -> Result<InferenceResult, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
 }
 
 #[cfg(not(any(
@@ -1079,6 +1862,14 @@ impl Default for ChatEngine {
 // Prebuilt model configs (convenience constructors)
 // ═════════════════════════════════════════════════════════════════════════════
 
+/// DeepSeek Coder v1 Jinja chat template.
+///
+/// TheBloke's GGUF files do not embed a chat template — without an explicit
+/// template, mistral.rs rejects chat requests with "model does not have a
+/// chat template". This template reproduces the official DeepSeek Coder v1
+/// `### Instruction: / ### Response:` format.
+const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_template.txt");
+
 /// Convenience constructors for common GGUF model configurations.
 ///
 /// These mirror the constants in [`super::models`] but return a ready-to-use
@@ -1098,6 +1889,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 1.5B".into(),
             approx_memory: "~941 MB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1116,6 +1908,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 3B".into(),
             approx_memory: "~1.93 GB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1139,6 +1932,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 Coder 1.5B".into(),
             approx_memory: "~941 MB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1158,6 +1952,101 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 Coder 3B".into(),
             approx_memory: "~1.93 GB (GGUF Q4_K_M)".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) — ~4.4 GB.
+    ///
+    /// Strong coding model with tool/function calling support via the Qwen2.5
+    /// chat template. Uses the `qwen2` architecture. Requires 8+ GB RAM.
+    pub fn qwen25_coder_7b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF.into(),
+            files: vec![super::models::QWEN25_CODER_7B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN25_CODER_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 2.5 Coder 7B (Q4_K_M)".into(),
+            approx_memory: "~4.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 4B Instruct (GGUF Q4_K_M) — ~2.7 GB.
+    ///
+    /// Full OpenAI-compatible tool calling with extended thinking mode.
+    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
+    /// consume 300–400 tokens before the real response begins.
+    pub fn qwen3_4b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 4B (Q4_K_M)".into(),
+            approx_memory: "~2.7 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 1.7B (GGUF Q4_K_M) — lightweight tool-calling, ~1.3 GB.
+    pub fn qwen3_1_7b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_1_7B_GGUF.into(),
+            files: vec![super::models::QWEN3_1_7B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 1.7B (Q4_K_M)".into(),
+            approx_memory: "~1.3 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 14B Instruct (GGUF Q4_K_M) — ~8.4 GB.
+    ///
+    /// Strongest reasoning and tool-calling model with extended thinking.
+    /// Best all-around model for macOS with 16+ GB RAM.
+    pub fn qwen3_14b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
+            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 14B (Q4_K_M)".into(),
+            approx_memory: "~8.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Strong tool-calling model with extended thinking. Best balance of
+    /// quality and memory for macOS with 24+ GB RAM.
+    pub fn qwen3_8b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_8B_GGUF.into(),
+            files: vec![super::models::QWEN3_8B_GGUF_FILE.into()],
+            tok_model_id: None,
+            display_name: "Qwen 3 8B (Q4_K_M)".into(),
+            approx_memory: "~5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// DeepSeek Coder v1 6.7B Instruct (GGUF Q4_K_M) — ~3.8 GB.
+    ///
+    /// Strong code generation model using the `llama` GGUF architecture.
+    /// Requires 8+ GB RAM; recommended for macOS desktops and Linux.
+    pub fn deepseek_coder_6_7b() -> Self {
+        Self {
+            model_id: super::models::THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF.into(),
+            files: vec![super::models::DEEPSEEK_CODER_6_7B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::DEEPSEEK_CODER_6_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "DeepSeek Coder 6.7B (Q4_K_M)".into(),
+            approx_memory: "~3.8 GB".into(),
+            chat_template: Some(DEEPSEEK_CODER_CHAT_TEMPLATE.into()),
         }
     }
 

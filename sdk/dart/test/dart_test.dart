@@ -176,12 +176,14 @@ void main() {
         durationSecs: 1.5,
         durationDisplay: '1.5s',
         finishReason: 'stop',
+        toolCalls: [],
       );
       const b = InferenceResult(
         text: 'Hi there!',
         durationSecs: 1.5,
         durationDisplay: '1.5s',
         finishReason: 'stop',
+        toolCalls: [],
       );
       expect(a, equals(b));
     });
@@ -211,10 +213,7 @@ void main() {
     test('sampling factories return correct presets', () {
       expect(OndeInference.defaultSamplingConfig().temperature, 0.7);
       expect(OndeInference.deterministicSamplingConfig().temperature, 0.0);
-      expect(
-        OndeInference.mobileSamplingConfig().maxTokens,
-        BigInt.from(128),
-      );
+      expect(OndeInference.mobileSamplingConfig().maxTokens, BigInt.from(128));
     });
   });
 
