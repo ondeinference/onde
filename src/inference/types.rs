@@ -203,6 +203,10 @@ pub struct GgufModelConfig {
     pub display_name: String,
     /// Approximate memory footprint description, e.g. `"~941 MB (GGUF Q4_K_M)"`.
     pub approx_memory: String,
+    /// Optional Jinja chat template string. When set, this overrides the
+    /// template embedded in the GGUF file (if any). Required for older GGUF
+    /// files that don't embed a chat template (e.g. TheBloke models).
+    pub chat_template: Option<String>,
 }
 
 // ── ISQ model configuration ──────────────────────────────────────────────────

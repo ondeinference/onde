@@ -89,6 +89,18 @@ pub const BARTOWSKI_QWEN3_1_7B_GGUF: &str = "bartowski/Qwen_Qwen3-1.7B-GGUF";
 /// The specific GGUF filename for the Qwen3 1.7B repo.
 pub const QWEN3_1_7B_GGUF_FILE: &str = "Qwen_Qwen3-1.7B-Q4_K_M.gguf";
 
+/// DeepSeek Coder v1 6.7B Instruct (GGUF Q4_K_M) — dedicated code generation model (~3.8 GB).
+///
+/// Uses the `llama` GGUF architecture, so it loads through the existing
+/// `quantized_llama.rs` path in mistral.rs without any code changes.
+/// Strong coding performance. Requires ~8 GB RAM.
+pub const THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF: &str =
+    "TheBloke/deepseek-coder-6.7B-instruct-GGUF";
+/// The specific GGUF filename.
+pub const DEEPSEEK_CODER_6_7B_GGUF_FILE: &str = "deepseek-coder-6.7b-instruct.Q4_K_M.gguf";
+/// Base model repo used for the HF tokenizer on Android.
+pub const DEEPSEEK_CODER_6_7B_TOK_MODEL_ID: &str = "deepseek-ai/deepseek-coder-6.7b-instruct";
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
@@ -98,6 +110,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN3_4B_GGUF,
     BARTOWSKI_QWEN3_8B_GGUF,
     BARTOWSKI_QWEN3_1_7B_GGUF,
+    THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
 ];
 
 /// Rich metadata for a supported model, used by the frontend to display
@@ -171,6 +184,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
              Smallest Qwen 3 variant with tool calling support.",
         expected_size_bytes: 1_282_439_584,
     },
+    SupportedModelInfo {
+        id: THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
+        name: "DeepSeek Coder 6.7B (GGUF)",
+        org: "DeepSeek AI",
+        description: "Strong code generation model using the llama architecture (~3.8 GB). \
+             Requires 8+ GB RAM. Not recommended for mobile devices.",
+        expected_size_bytes: 4_083_015_904,
+    },
 ];
 
 /// Return the explicit tokenizer model ID required on Android for `hf_repo_id`.
@@ -185,6 +206,7 @@ pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
         BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
+        THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF => Some(DEEPSEEK_CODER_6_7B_TOK_MODEL_ID),
         _ => None,
     }
 }

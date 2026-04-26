@@ -47,6 +47,7 @@
 //!     tok_model_id: None,
 //!     display_name: "Qwen 2.5 1.5B".into(),
 //!     approx_memory: "~941 MB".into(),
+//!     chat_template: None,
 //! };
 //!
 //! engine.load_gguf_model(config, None).await?;
@@ -383,6 +384,27 @@ impl ChatEngine {
             builder = builder.with_tok_model_id(tok_id);
         }
 
+        // Some older GGUF files (e.g. TheBloke) do not embed a chat template.
+        // When the config provides one, write it to a temporary .jinja file
+        // and pass the path — mistral.rs only accepts file paths ending in
+        // .json or .jinja, not literal template strings.
+        let _chat_template_tempfile = if let Some(ref template) = config.chat_template {
+            let tmp_dir = std::env::temp_dir().join("onde-chat-templates");
+            std::fs::create_dir_all(&tmp_dir).ok();
+            let tmp_path = tmp_dir.join("chat_template.jinja");
+            std::fs::write(&tmp_path, template).map_err(|e| InferenceError::ModelBuild {
+                reason: format!(
+                    "Failed to write chat template to {}: {}",
+                    tmp_path.display(),
+                    e
+                ),
+            })?;
+            builder = builder.with_chat_template(tmp_path.to_string_lossy().to_string());
+            Some(tmp_path)
+        } else {
+            None
+        };
+
         let model = builder
             .build()
             .await
@@ -555,6 +577,7 @@ impl ChatEngine {
             tok_model_id,
             display_name: resp.name.unwrap_or_else(|| hf_repo_id.to_string()),
             approx_memory,
+            chat_template: None,
         };
 
         self.load_gguf_model(config, system_prompt, sampling).await
@@ -1839,6 +1862,14 @@ impl Default for ChatEngine {
 // Prebuilt model configs (convenience constructors)
 // ═════════════════════════════════════════════════════════════════════════════
 
+/// DeepSeek Coder v1 Jinja chat template.
+///
+/// TheBloke's GGUF files do not embed a chat template — without an explicit
+/// template, mistral.rs rejects chat requests with "model does not have a
+/// chat template". This template reproduces the official DeepSeek Coder v1
+/// `### Instruction: / ### Response:` format.
+const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_template.txt");
+
 /// Convenience constructors for common GGUF model configurations.
 ///
 /// These mirror the constants in [`super::models`] but return a ready-to-use
@@ -1858,6 +1889,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 1.5B".into(),
             approx_memory: "~941 MB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1876,6 +1908,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 3B".into(),
             approx_memory: "~1.93 GB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1899,6 +1932,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 Coder 1.5B".into(),
             approx_memory: "~941 MB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1918,6 +1952,7 @@ impl GgufModelConfig {
             },
             display_name: "Qwen 2.5 Coder 3B".into(),
             approx_memory: "~1.93 GB (GGUF Q4_K_M)".into(),
+            chat_template: None,
         }
     }
 
@@ -1933,6 +1968,7 @@ impl GgufModelConfig {
             tok_model_id: None,
             display_name: "Qwen 3 4B (Q4_K_M)".into(),
             approx_memory: "~2.7 GB".into(),
+            chat_template: None,
         }
     }
 
@@ -1944,6 +1980,7 @@ impl GgufModelConfig {
             tok_model_id: None,
             display_name: "Qwen 3 1.7B (Q4_K_M)".into(),
             approx_memory: "~1.3 GB".into(),
+            chat_template: None,
         }
     }
 
@@ -1958,6 +1995,26 @@ impl GgufModelConfig {
             tok_model_id: None,
             display_name: "Qwen 3 8B (Q4_K_M)".into(),
             approx_memory: "~5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// DeepSeek Coder v1 6.7B Instruct (GGUF Q4_K_M) — ~3.8 GB.
+    ///
+    /// Strong code generation model using the `llama` GGUF architecture.
+    /// Requires 8+ GB RAM; recommended for macOS desktops and Linux.
+    pub fn deepseek_coder_6_7b() -> Self {
+        Self {
+            model_id: super::models::THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF.into(),
+            files: vec![super::models::DEEPSEEK_CODER_6_7B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::DEEPSEEK_CODER_6_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "DeepSeek Coder 6.7B (Q4_K_M)".into(),
+            approx_memory: "~3.8 GB".into(),
+            chat_template: Some(DEEPSEEK_CODER_CHAT_TEMPLATE.into()),
         }
     }
 
