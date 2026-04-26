@@ -54,13 +54,25 @@ Onde is dual-licensed under **MIT** and **Apache 2.0**. You may use it under eit
 
 Models downloaded by Onde have their own licenses independent of this crate. By using Onde, you are also subject to the license of the model you load:
 
-| Model | License |
-|---|---|
-| Qwen 2.5 1.5B / 3B Instruct | [Qwen Community License](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/blob/main/LICENSE) |
-| Qwen 2.5 Coder 1.5B / 3B / 7B | [Qwen Community License](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct/blob/main/LICENSE) |
+| Model | Size | License | Commercial use |
+|---|---|---|---|
+| Qwen 2.5 1.5B Instruct (GGUF Q4_K_M) | ~941 MB | [Qwen Community License](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/blob/main/LICENSE) | ✅ with conditions¹ |
+| Qwen 2.5 3B Instruct (GGUF Q4_K_M) | ~1.93 GB | [Qwen Community License](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct/blob/main/LICENSE) | ✅ with conditions¹ |
+| Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) | ~4.4 GB | [Qwen Community License](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/LICENSE) | ✅ with conditions¹ |
+| Qwen 3 1.7B (GGUF Q4_K_M) | ~1.3 GB | [Apache 2.0](https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/LICENSE) | ✅ |
+| Qwen 3 4B (GGUF Q4_K_M) | ~2.7 GB | [Apache 2.0](https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE) | ✅ |
+| Qwen 3 8B (GGUF Q4_K_M) | ~5 GB | [Apache 2.0](https://huggingface.co/Qwen/Qwen3-8B/blob/main/LICENSE) | ✅ |
+| Qwen 3 14B (GGUF Q4_K_M) | ~8.4 GB | [Apache 2.0](https://huggingface.co/Qwen/Qwen3-14B/blob/main/LICENSE) | ✅ |
+| DeepSeek Coder 6.7B Instruct (GGUF Q4_K_M) | ~3.8 GB | [DeepSeek License v1.0](https://huggingface.co/deepseek-ai/deepseek-coder-6.7b-instruct/blob/main/LICENSE) | ✅ with conditions² |
+
+¹ **Qwen Community License conditions:** no training of competing models, attribution required, no misrepresentation of origin. Organisations with more than 100 million monthly active users must obtain a separate commercial licence from Alibaba Cloud.
+
+² **DeepSeek License v1.0 conditions:** use-based restrictions apply (see Attachment A of the license). Prohibits military use, generation of disinformation, and certain other uses. Governing law is PRC law.
+
+Onde's own license (MIT OR Apache-2.0) is independent of these model licenses. If you build an application on top of Onde, you are responsible for complying with the license of whichever model your users load.
 
 ---
 
-<p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a></sub>
-</p>
+## Copyright
+
+© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).
