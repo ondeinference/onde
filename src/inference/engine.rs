@@ -1956,6 +1956,25 @@ impl GgufModelConfig {
         }
     }
 
+    /// Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) — ~4.4 GB.
+    ///
+    /// Strong coding model with tool/function calling support via the Qwen2.5
+    /// chat template. Uses the `qwen2` architecture. Requires 8+ GB RAM.
+    pub fn qwen25_coder_7b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF.into(),
+            files: vec![super::models::QWEN25_CODER_7B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN25_CODER_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 2.5 Coder 7B (Q4_K_M)".into(),
+            approx_memory: "~4.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
     /// Qwen 3 4B Instruct (GGUF Q4_K_M) — ~2.7 GB.
     ///
     /// Full OpenAI-compatible tool calling with extended thinking mode.
