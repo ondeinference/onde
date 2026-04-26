@@ -52,6 +52,18 @@ pub const QWEN25_CODER_3B_GGUF_FILE: &str = "Qwen2.5-Coder-3B-Instruct-Q4_K_M.gg
 /// Base model repo used for the HF tokenizer on Android.
 pub const QWEN25_CODER_3B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-Coder-3B-Instruct";
 
+/// Pre-quantized Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) — strong coding model with tool calling (~4.4 GB).
+///
+/// Uses the `qwen2` GGUF architecture. Trained on 5.5T tokens of code/math data with
+/// fill-in-the-middle and repo-level code understanding. Supports function/tool calling
+/// via the Qwen2.5 chat template. Requires ~8 GB RAM.
+pub const BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF: &str =
+    "bartowski/Qwen2.5-Coder-7B-Instruct-GGUF";
+/// The specific GGUF filename to download from the bartowski Coder 7B repo.
+pub const QWEN25_CODER_7B_GGUF_FILE: &str = "Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf";
+/// Base model repo used for the HF tokenizer on Android.
+pub const QWEN25_CODER_7B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-Coder-7B-Instruct";
+
 /// Pre-quantized Qwen 2.5 3B Instruct (GGUF Q4_K_M) — balanced option (~1.93 GB).
 /// Ideal for macOS desktops and Android devices with sufficient RAM.
 /// Not recommended as default on iOS: the 3B variant caused OOM on iPhone 16e (8 GB RAM)
@@ -110,6 +122,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     BARTOWSKI_QWEN3_4B_GGUF,
     BARTOWSKI_QWEN3_8B_GGUF,
     BARTOWSKI_QWEN3_1_7B_GGUF,
+    BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
     THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
 ];
 
@@ -185,6 +198,14 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         expected_size_bytes: 1_282_439_584,
     },
     SupportedModelInfo {
+        id: BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
+        name: "Qwen 2.5 Coder 7B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Strong coding model with tool calling support (~4.4 GB). \
+             Trained on 5.5T code tokens. Requires 8+ GB RAM.",
+        expected_size_bytes: 4_683_074_336,
+    },
+    SupportedModelInfo {
         id: THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
         name: "DeepSeek Coder 6.7B (GGUF)",
         org: "DeepSeek AI",
@@ -206,6 +227,7 @@ pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
         BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF => Some(QWEN25_CODER_3B_TOK_MODEL_ID),
+        BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF => Some(QWEN25_CODER_7B_TOK_MODEL_ID),
         THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF => Some(DEEPSEEK_CODER_6_7B_TOK_MODEL_ID),
         _ => None,
     }
