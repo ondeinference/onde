@@ -30,7 +30,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$SDK_DIR/../.." && pwd)"
-JNILIBS_DIR="$SDK_DIR/lib/src/main/jniLibs"
+JNILIBS_DIR="$SDK_DIR/lib/src/androidMain/jniLibs"
 
 PROFILE="release"
 for arg in "$@"; do
