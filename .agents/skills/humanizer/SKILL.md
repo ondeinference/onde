@@ -195,13 +195,27 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### Style Patterns
 
-#### 13. Em Dash Overuse
+#### 13. No Em Dashes
+
+Em dashes are the single biggest AI tell. Never use them. Replace with commas, parentheses, colons, or just split into two sentences.
 
 **Before:**
 > The term is promoted by institutions—not the people themselves—yet this continues—even in documents.
 
 **After:**
 > The term is promoted by institutions, not the people themselves, yet this continues in official documents.
+
+**Before:**
+> The tools are useful—especially for boilerplate—but they have limits.
+
+**After:**
+> The tools are useful (especially for boilerplate), but they have limits.
+
+**Before:**
+> There's one problem—nobody tested it.
+
+**After:**
+> There's one problem: nobody tested it.
 
 #### 14. Boldface Overuse
 

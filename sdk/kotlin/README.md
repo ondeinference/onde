@@ -2,28 +2,34 @@
   <img src="https://raw.githubusercontent.com/ondeinference/onde/main/assets/onde-inference-logo.svg" alt="Onde Inference" width="96">
 </p>
 
-<h1 align="center">Onde Inference — Kotlin / Android SDK</h1>
+<h1 align="center">Onde Inference Kotlin SDK</h1>
 
 <p align="center">
-  <strong>On-device LLM inference for Android. Run Qwen 2.5 models locally — no cloud, no API key, no data leaving the device.</strong>
+  <strong>Run LLMs on-device from Kotlin. No cloud, no API key, and no user data leaving the device.</strong>
 </p>
 
 <p align="center">
-  <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference" alt="Maven Central"></a>
-  <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/website-ondeinference.com-blue" alt="Website"></a>
-  <a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue" alt="License"></a>
+  <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference?style=flat-square&color=235843&labelColor=17211D&label=maven" alt="Maven Central"></a>
+  <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+  <a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ondeinference/onde">Rust SDK</a> · <a href="https://github.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://pub.dev/packages/onde_inference">Flutter SDK</a> · <a href="https://www.npmjs.com/package/@ondeinference/react-native">React Native SDK</a> · <a href="https://ondeinference.com">Website</a>
 </p>
 
 ---
 
 ## What is Onde?
 
-Onde is an on-device LLM inference SDK for Android. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) behind a clean Kotlin API — automatic model downloading from HuggingFace Hub, cache management, and CPU inference via the Candle backend.
+Onde is an on-device LLM inference SDK for Kotlin apps. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) in a Kotlin-friendly API, with model downloads from Hugging Face, local cache management, and native inference under the hood.
 
-- **On-device** — no cloud, no API key, no data leaving the device
-- **Kotlin-first** — suspend functions and `Flow<StreamChunk>` streaming
-- **UniFFI-powered** — the Rust engine is bound to Kotlin via [uniffi-rs](https://github.com/mozilla/uniffi-rs)
-- **Maven Central** — single Gradle dependency, no manual `.so` management
+- **Runs locally**: no cloud, no API key, no user data leaving the device
+- **Kotlin-friendly**: suspend functions and `Flow<StreamChunk>` for streaming
+- **Rust underneath**: powered by [uniffi-rs](https://github.com/mozilla/uniffi-rs)
+- **Published on Maven Central**: add one Gradle dependency and you're done
+
+This package is built as a Kotlin Multiplatform library. Today that means Android and JVM support, with the same Rust core underneath both.
 
 ---
 
@@ -45,11 +51,11 @@ Add `INTERNET` permission to `AndroidManifest.xml` (required for the initial mod
 
 **Minimum requirements**
 - Android 8.0 (API 26) or higher
-- ~1.1 GB free storage for the default model (Qwen 2.5 1.5B Q4_K_M)
+- About 1.1 GB of free storage for the default model (Qwen 2.5 1.5B Q4_K_M)
 
 ---
 
-## Quick start
+## Quick start on Android
 
 ```kotlin
 import com.ondeinference.onde.OndeInference
@@ -64,7 +70,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             // 1. Load the default model (Qwen 2.5 1.5B on Android, ~941 MB)
-            //    Downloads from HuggingFace Hub on first run (~1–5 min on Wi-Fi).
+            //    It downloads from Hugging Face the first time you run it.
             val elapsed = onde.loadDefaultModel(
                 systemPrompt = "You are a helpful, concise assistant."
             )
@@ -90,7 +96,7 @@ class MainActivity : AppCompatActivity() {
 
 ## Streaming
 
-Receive tokens as they are generated using `Flow`:
+If you want tokens as they arrive, use `Flow`:
 
 ```kotlin
 lifecycleScope.launch {
@@ -106,7 +112,7 @@ lifecycleScope.launch {
 
 ## Multi-turn conversation
 
-The engine maintains conversation history automatically:
+Onde keeps conversation history for you:
 
 ```kotlin
 lifecycleScope.launch {
@@ -131,7 +137,7 @@ lifecycleScope.launch {
 import com.ondeinference.onde.OndeModels
 
 lifecycleScope.launch {
-    // Qwen 2.5 1.5B — default on Android
+    // Qwen 2.5 1.5B, the default on Android
     val elapsed = onde.loadModel(
         config = OndeModels.qwen25_1_5b(),
         systemPrompt = "You are a coding assistant."
@@ -147,20 +153,20 @@ lifecycleScope.launch {
 import com.ondeinference.onde.OndeSampling
 
 lifecycleScope.launch {
-    // Default creative chat — temperature 0.7, top_p 0.95, max 512 tokens
+    // Default chat settings: temperature 0.7, top_p 0.95, max 512 tokens
     onde.loadDefaultModel(sampling = OndeSampling.default())
 
-    // Greedy / deterministic — best for factual Q&A and code generation
+    // Deterministic output, useful for factual answers and code
     onde.loadDefaultModel(sampling = OndeSampling.deterministic())
 
-    // Mobile-conservative — max 128 tokens, faster on low-end devices
+    // Shorter responses, usually better for lower-end devices
     onde.loadDefaultModel(sampling = OndeSampling.mobile())
 }
 ```
 
 ---
 
-## One-shot generation (no history side-effects)
+## One-shot generation (without changing chat history)
 
 ```kotlin
 import com.ondeinference.onde.OndeMessage
@@ -195,8 +201,8 @@ lifecycleScope.launch {
 
 ## File system layout
 
-Onde stores model files in the app's internal `filesDir`. No external storage or
-special permissions are required beyond `INTERNET`.
+Onde stores model files in the app's internal `filesDir`. You do not need external
+storage permissions. `INTERNET` is only needed for the initial download.
 
 ```
 <filesDir>/
@@ -215,7 +221,7 @@ println(onde.modelCacheDir.absolutePath)
 
 ---
 
-## Architecture
+## How it fits together
 
 ```
 ┌───────────────────────────────────────┐
@@ -238,7 +244,7 @@ println(onde.modelCacheDir.absolutePath)
 └───────────────────────────────────────┘
 ```
 
-The Rust engine is compiled for four ABIs and bundled as JNI libs:
+On Android, the Rust engine is compiled for four ABIs and bundled as JNI libs:
 
 | ABI | Architecture |
 |-----|-------------|
@@ -271,7 +277,7 @@ export ANDROID_NDK_HOME=$HOME/Library/Android/sdk/ndk/26.1.10909125
 ./sdk/kotlin/scripts/build-android.sh
 ```
 
-This produces `.so` files in `sdk/kotlin/lib/src/main/jniLibs/`.
+This produces `.so` files in `sdk/kotlin/lib/src/androidMain/jniLibs/`.
 
 ### Generate Kotlin UniFFI bindings
 
@@ -280,9 +286,9 @@ This produces `.so` files in `sdk/kotlin/lib/src/main/jniLibs/`.
 ```
 
 This generates `onde.kt` in `sdk/kotlin/lib/src/generated/kotlin/`. The generated file
-is gitignored — regenerate it whenever the Rust API changes.
+is gitignored, so regenerate it whenever the Rust API changes.
 
-### Build the AAR
+### Build the Android artifact
 
 ```bash
 cd sdk/kotlin
@@ -294,7 +300,7 @@ cd sdk/kotlin
 
 ## Publishing to Maven Central
 
-Publishing requires:
+Publishing is handled by CI. It requires:
 
 | Secret | Description |
 |--------|-------------|
@@ -311,13 +317,13 @@ Tag a release to trigger the workflow:
 git tag 0.1.4 && git push origin 0.1.4
 ```
 
-The CI workflow builds all ABIs, generates bindings, packages the AAR, signs it, and
-publishes to Maven Central automatically.
+The CI workflow builds the native libraries, generates bindings, packages the Android
+artifact, signs it, and publishes to Maven Central automatically.
 
 ---
 
 ## License
 
-MIT OR Apache-2.0 — see [LICENSE](../../LICENSE).
+MIT OR Apache-2.0. See [LICENSE](../../LICENSE).
 
 Built by [Onde Inference / Splitfire AB](https://ondeinference.com).
