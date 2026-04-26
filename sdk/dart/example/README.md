@@ -5,7 +5,7 @@
 <h1 align="center">onde_inference — Example App</h1>
 
 <p align="center">
-  <strong>A complete Flutter chat app running fully on-device LLM inference.</strong><br>
+  <strong>A Flutter chat app that runs LLM inference fully on-device.</strong><br>
   No server. No API key. No data leaving the device.
 </p>
 
@@ -17,9 +17,9 @@
 
 ---
 
-## What this example demonstrates
+## What this example shows
 
-This is a production-quality Material 3 chat app built on the `onde_inference` Flutter SDK. It covers every major SDK feature in a single, self-contained file ([`lib/main.dart`](lib/main.dart)):
+This example is a full Material 3 chat app built with the `onde_inference` Flutter SDK. It puts the main SDK features in one place, inside a single file, [`lib/main.dart`](lib/main.dart):
 
 | Feature | Where |
 |---|---|
@@ -40,10 +40,10 @@ This is a production-quality Material 3 chat app built on the `onde_inference` F
 ### Prerequisites
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) ≥ 3.10
-- [Rust toolchain](https://rustup.rs) (stable) — required to compile the native inference engine
+- [Rust toolchain](https://rustup.rs) (stable), required to compile the native inference engine
 - A physical device or simulator/emulator for your target platform
 
-> **First build takes 5–10 minutes** to compile the full Rust dependency tree (mistral.rs + candle). Subsequent builds are incremental and fast.
+> **The first build usually takes 5 to 10 minutes** because it has to compile the full Rust dependency tree (`mistral.rs` + `candle`). After that, builds are much faster.
 
 ### Steps
 
@@ -58,7 +58,7 @@ flutter pub get
 flutter run
 ```
 
-On **iOS / macOS** the Rust engine is compiled via the CocoaPods podspec and linked automatically by Xcode. On **Android** it is compiled via CMake/Gradle. On **Linux / Windows** it is linked as a shared library.
+On **iOS / macOS**, the Rust engine is built through the CocoaPods podspec and linked automatically by Xcode. On **Android**, it is built through CMake and Gradle. On **Linux / Windows**, it is linked as a shared library.
 
 ### Platform notes
 
@@ -69,7 +69,7 @@ On **iOS / macOS** the Rust engine is compiled via the CocoaPods podspec and lin
 | Android (arm64) | CPU | Qwen 2.5 1.5B (~941 MB) |
 | Linux / Windows | CPU | Qwen 2.5 3B (~1.93 GB) |
 
-> The model is downloaded from HuggingFace Hub on first launch and cached locally — an internet connection is required once.
+> The model is downloaded from Hugging Face Hub on first launch and cached locally, so you only need an internet connection once.
 
 ---
 
@@ -114,12 +114,12 @@ example/
 
 ## Learn more
 
-- **[onde_inference on pub.dev](https://pub.dev/packages/onde_inference)** — full API reference
-- **[Onde Inference docs](https://ondeinference.com)** — guides, model catalogue, platform setup
-- **[onde on GitHub](https://github.com/ondeinference/onde)** — Rust engine source, Swift SDK, issue tracker
+- **[onde_inference on pub.dev](https://pub.dev/packages/onde_inference)**, for the full API reference
+- **[Onde Inference docs](https://ondeinference.com)**, for guides, the model catalog, and platform setup
+- **[onde on GitHub](https://github.com/ondeinference/onde)**, for the Rust engine source, Swift SDK, and issue tracker
 
 ---
 
 <p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a> — MIT License</sub>
+  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a>, MIT License</sub>
 </p>

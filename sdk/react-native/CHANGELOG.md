@@ -1,12 +1,12 @@
 ## 1.0.0
 
-First stable release. Onde has been in production across multiple App Store apps for a while now, so we're dropping the `0.x`.
+This is the first stable release. Onde has already been running in real App Store apps for a while, so it felt like time to leave `0.x` behind.
 
 ### Assigned model loading
 
-New `loadAssignedModel(appId, appSecret)` method on `OndeChatEngine`. Register your app at [ondeinference.com](https://ondeinference.com), assign a model in the dashboard, and the SDK fetches it at runtime. Falls back to the platform default if nothing's assigned yet. `loadDefaultModel` still works for quick prototyping.
+There is a new `loadAssignedModel(appId, appSecret)` method on `OndeChatEngine`. You register your app at [ondeinference.com](https://ondeinference.com), pick a model in the dashboard, and the SDK loads it at runtime. If nothing has been assigned yet, it falls back to the platform default. `loadDefaultModel` still works fine if you just want to get started quickly.
 
-The example app has `ONDE_APP_ID` and `ONDE_APP_SECRET` constants at the top — fill them in and it switches to the assigned model path automatically.
+The example app includes `ONDE_APP_ID` and `ONDE_APP_SECRET` constants near the top. Fill those in and it will switch to the assigned-model flow automatically.
 
 ### New models
 
@@ -16,50 +16,50 @@ The example app has `ONDE_APP_ID` and `ONDE_APP_SECRET` constants at the top —
 
 ### Type changes
 
-* `GgufModelConfig` has a new optional `chatTemplate` field. Models that ship without a built-in template (like DeepSeek Coder) use this.
-* `InferenceResult` now includes a `toolCalls` array (`ToolCallInfo[]`). Usually empty — but when a model decides to request a tool call, you get structured data instead of raw markup in `text`.
-* Added `ToolCallInfo` type export.
+* `GgufModelConfig` now has an optional `chatTemplate` field. This is for models that do not ship with a built-in template, like DeepSeek Coder.
+* `InferenceResult` now includes a `toolCalls` array (`ToolCallInfo[]`). It will usually be empty, but when a model asks for a tool call, you now get structured data instead of raw markup in `text`.
+* Added a `ToolCallInfo` type export.
 
 ### Engine
 
-* Old model weights are dropped outside the lock during model swaps, so status queries don't block while memory is being freed.
+* Old model weights are now dropped outside the lock during model swaps, so status queries do not get stuck while memory is being freed.
 
 ### Dependencies
 
-* Switched from git-based `mistralrs` to published `onde-mistralrs 0.8.2` crates on crates.io.
+* Switched from the git-based `mistralrs` dependency to the published `onde-mistralrs 0.8.2` crates on crates.io.
 
 ### Cross-platform
 
-* Linux and Windows CPU inference builds work properly now (TokenSource fix for non-Darwin platforms).
+* Linux and Windows CPU inference builds now work properly too, thanks to a `TokenSource` fix for non-Darwin platforms.
 
 ## 0.1.7
 
-* **CI:** No user-visible changes. Internal release to keep version numbers in sync across all SDK distributions.
+* **CI:** No user-facing changes here. This was an internal release to keep version numbers aligned across the SDKs.
 
 ## 0.1.6
 
-* **Fix:** Replaced the composite `LICENSE` file with the canonical MIT license text so registries correctly recognise the OSI-approved license.
+* **Fix:** Replaced the composite `LICENSE` file with the standard MIT license text so package registries correctly recognise the OSI-approved license.
 
 ## 0.1.5
 
-* **Engine:** Added `loadAssignedModel()` — fetches the operator-assigned model config from the Onde SDK backend using app credentials (no user JWT required); falls back gracefully to the platform default when no model is assigned yet.
-* **Telemetry:** Added GresIQ pulse telemetry client. The engine now reports usage events to the GresIQ dashboard. Configure via `GRESIQ_ENVIRONMENT` and `ONDE_EDGE_ID` env vars before the engine initialises.
-* **Build:** GresIQ API credentials (`GRESIQ_API_KEY`, `GRESIQ_API_SECRET`, `GRESIQ_APP_ID`) are now embedded at build time via `dotenvy`. CI can inject secrets via env vars without modifying source.
+* **Engine:** Added `loadAssignedModel()`. It fetches the model config assigned to your app from the Onde SDK backend using app credentials, with no user JWT required. If no model has been assigned yet, it falls back to the platform default.
+* **Telemetry:** Added the GresIQ pulse telemetry client. The engine now reports usage events to the GresIQ dashboard. Configure it with the `GRESIQ_ENVIRONMENT` and `ONDE_EDGE_ID` environment variables before the engine starts.
+* **Build:** GresIQ API credentials (`GRESIQ_API_KEY`, `GRESIQ_API_SECRET`, `GRESIQ_APP_ID`) are now embedded at build time through `dotenvy`, so CI can inject secrets through environment variables without changing source files.
 
 ## 0.1.4
 
-* Added Qwen 3 4B GGUF model (`bartowski/Qwen_Qwen3-4B-GGUF`) with full OpenAI-compatible tool calling support.
-* Added `qwen3_4b()` model config and registered it in the supported model list.
+* Added the Qwen 3 4B GGUF model (`bartowski/Qwen_Qwen3-4B-GGUF`) with full OpenAI-compatible tool calling support.
+* Added the `qwen3_4b()` model config and registered it in the supported model list.
 
 ## 0.1.3
 
-* Initial release of the React Native Expo module.
+* First release of the React Native Expo module.
 * Multi-turn chat inference with Qwen 2.5 1.5B and 3B GGUF models.
 * Metal acceleration on iOS (Apple silicon).
 * CPU inference on Android.
-* Platform-aware default model selection (1.5B on iOS / Android).
-* Conversation history management: `history()`, `clearHistory()`, `pushHistory()`.
-* One-shot `generate()` API that does not affect conversation history.
-* Configurable sampling: temperature, top-p, top-k, min-p, max tokens, penalties.
-* Built-in sampling presets: `defaultSamplingConfig()`, `deterministicSamplingConfig()`, `mobileSamplingConfig()`.
-* Engine status via `info()`: status, loaded model name, memory, history length.
+* Platform-aware default model selection, with 1.5B on iOS and Android.
+* Conversation history management through `history()`, `clearHistory()`, and `pushHistory()`.
+* A one-shot `generate()` API that does not change conversation history.
+* Configurable sampling, including temperature, top-p, top-k, min-p, max tokens, and penalties.
+* Built-in sampling presets: `defaultSamplingConfig()`, `deterministicSamplingConfig()`, and `mobileSamplingConfig()`.
+* Engine status through `info()`, including status, loaded model name, memory, and history length.
