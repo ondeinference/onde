@@ -1,6 +1,6 @@
 ---
 name: sdk-releases
-description: End-to-end SDK release process for all Onde distribution channels. Covers version bump checklist, CI/CD pipelines for Swift (XCFramework → onde-swift) and Dart (pub.dev), tag validation, GitHub Release creation, and common pitfalls. Apply whenever bumping versions or troubleshooting release workflows.
+description: End-to-end SDK release process for all Onde distribution channels. Covers version bump checklist, CI/CD pipelines for Rust (crates.io), Swift (XCFramework → onde-swift), Dart (pub.dev), and npm, tag validation, GitHub Release creation, manual publish fallback, and common pitfalls. Apply whenever bumping versions or troubleshooting release workflows.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 user-invocable: true
 ---
@@ -14,6 +14,11 @@ The complete release pipeline for shipping Onde across all registries:
 - **Rust crate** → crates.io (`onde`)
 - **Swift package** → Swift Package Index (`onde-swift`)
 - **Dart/Flutter package** → pub.dev (`onde_inference`)
+- **React Native** → npm (`@ondeinference/react-native`)
+
+All four SDK workflows share the same tag trigger. A single tag push fires all
+four in parallel. When only a subset needs (re-)publishing, use the **manual
+publish fallback** documented below to avoid collateral re-runs.
 
 ---
 
@@ -95,6 +100,47 @@ on:
 
 ---
 
+## CI Pipeline: Rust SDK (crates.io)
+
+**Workflow:** `.github/workflows/release-sdk-rust.yml`
+**Trigger:** Tag push matching `[0-9]+.[0-9]+.[0-9]+` or `workflow_dispatch`
+**Runner:** `macos-26`
+
+### Flow
+
+```
+Tag push (e.g. 1.0.0)
+  │
+  ├─ 1. Checkout + install stable Rust
+  │
+  ├─ 2. Validate tag == Cargo.toml version
+  │     └─ Fails fast if mismatched
+  │
+  ├─ 3. cargo publish --dry-run
+  │     └─ Compiles and packages; catches errors before real publish
+  │
+  └─ 4. cargo publish (tag push only)
+        └─ Authenticates via CARGO_REGISTRY_TOKEN secret
+```
+
+### Key details
+
+- **`workflow_dispatch`** runs the dry-run only (the publish step has
+  `if: startsWith(github.ref, 'refs/tags/')`) — useful for validation.
+- **Runner is `macos-26`** because the crate depends on `mistralrs` with Metal
+  features, which requires macOS + Xcode to compile.
+- **crates.io is immutable** — once a version is published, it cannot be
+  re-published. You must bump to the next version. `cargo yank` hides a version
+  from dependency resolution but does not delete it.
+
+### Required secret
+
+`CARGO_REGISTRY_TOKEN` — a crates.io API token scoped to `publish-update` for
+the `onde` crate. Create at https://crates.io/settings/tokens. Best practice:
+scope it to a single crate rather than using a global token.
+
+---
+
 ## CI Pipeline: Swift SDK
 
 **Workflow:** `.github/workflows/release-sdk-swift.yml`
@@ -159,6 +205,44 @@ lockfile. If a release needs to be redone:
 1. Delete the remote tag: `git push origin :refs/tags/0.1.3`
 2. Delete the GitHub Release on both `onde` and `onde-swift`
 3. Fix the issue, re-tag, push again
+
+---
+
+## CI Pipeline: npm SDK (React Native)
+
+**Workflow:** `.github/workflows/release-sdk-npm.yml`
+**Trigger:** Tag push matching `[0-9]+.[0-9]+.[0-9]+` or `workflow_dispatch`
+**Runner:** `ubuntu-latest`
+
+### Flow
+
+```
+Tag push (e.g. 1.0.0)
+  │
+  ├─ validate job:
+  │   ├─ Set up Node.js 22
+  │   ├─ Read version from sdk/react-native/package.json
+  │   ├─ Validate tag == package.json version
+  │   ├─ npm install + npm run build
+  │   └─ npm publish --dry-run --access public
+  │
+  └─ publish job (tag push only, needs: validate):
+      ├─ npm install + npm run build
+      ├─ Check if version already exists on npm
+      │   └─ If yes → skip publish (idempotent, exits 0)
+      └─ npm publish --access public
+```
+
+### npm idempotency guard
+
+The publish step checks `npm view <package>@<version>` before publishing. If the
+version already exists, it **skips** with a success exit code. This makes the npm
+workflow safe to re-run — unlike Dart/Rust, it won't fail on a duplicate version.
+
+### Required secret
+
+`NPM_TOKEN` — a granular npm access token scoped to the `@ondeinference` org
+with read+write packages. Create at npmjs.com → Access Tokens.
 
 ---
 
@@ -241,9 +325,15 @@ All four must match. If any pair diverges, the relevant CI job fails.
 
 | Secret | Used by | Purpose |
 |--------|---------|---------|
+| `CARGO_REGISTRY_TOKEN` | `release-sdk-rust.yml` | Authenticate with crates.io for `cargo publish`. Scoped to `publish-update` for the `onde` crate. Create at https://crates.io/settings/tokens. |
 | `ONDE_SWIFT_PAT` | `release-sdk-swift.yml` | Push commits + tags to `ondeinference/onde-swift`. Must be a PAT (not `GITHUB_TOKEN`) so it triggers workflows on `onde-swift`. Needs `contents: write` scope. |
 | `PUB_CREDENTIALS` | `release-sdk-dart.yml` | Authenticate with pub.dev for `flutter pub publish`. Full JSON from `~/.config/dart/pub-credentials.json`. |
 | `NPM_TOKEN` | `release-sdk-npm.yml` | Authenticate with npm for `npm publish`. Granular access token scoped to the `@ondeinference` org with read+write packages. Create at npmjs.com → Access Tokens. |
+| `GRESIQ_API_KEY_DEV` | All release workflows | Build-time env for dev environment API key. |
+| `GRESIQ_API_SECRET_DEV` | All release workflows | Build-time env for dev environment API secret. |
+| `GRESIQ_API_KEY_PRODUCTION` | All release workflows | Build-time env for production API key. |
+| `GRESIQ_API_SECRET_PRODUCTION` | All release workflows | Build-time env for production API secret. |
+| `HF_TOKEN` | All release workflows | HuggingFace token baked in at build time (`option_env!`). |
 
 ---
 
@@ -259,15 +349,72 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to update `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Tag has `v` prefix (`v0.1.3`) | CI does not trigger — tag pattern requires bare semver | Delete the tag, re-tag without `v` |
+| `CARGO_REGISTRY_TOKEN` missing | `cargo publish` fails with auth error | Create a scoped token at crates.io/settings/tokens, add as repo secret |
 | `ONDE_SWIFT_PAT` expired | `onde-swift` push fails with 403 | Regenerate PAT at github.com/settings/tokens, update repo secret |
 | `PUB_CREDENTIALS` expired | `flutter pub publish` fails with 401 | Run `dart pub login` locally, copy new credentials JSON to repo secret |
 | `NPM_TOKEN` expired | `npm publish` fails with 401/403 | Regenerate token at npmjs.com → Access Tokens, update repo secret |
-| npm version already published | `npm publish` exits with "already exists" | npm does not allow re-publishing the same version — bump to the next version |
+| crates.io version already published | `cargo publish` fails with "already uploaded" | crates.io is immutable — bump to next version. `cargo yank` hides but doesn't delete. |
+| npm version already published | npm publish step skips (idempotency guard) | Safe — the workflow exits 0. No action needed. |
+| pub.dev version already published | `flutter pub publish` fails | pub.dev is immutable — bump to next version |
+| Tag pushed before workflow exists on `main` | Workflow never fires for that tag | Use `workflow_dispatch` for dry-run, then publish manually. See **Manual Publish Fallback**. |
+| All 4 workflows fire but only 1–2 need re-publishing | Collateral re-runs of Swift/npm/Dart/Rust | Don't delete+re-push the tag. Use **Manual Publish Fallback** for the specific SDKs. |
 | `onde-swift` tag already exists | Tag push skipped (warning emitted) | Delete remote tag first: `git push origin :refs/tags/0.1.3` |
 | Force-pushed a tag on `onde-swift` | SPM users get stale `Package.resolved` | Never force-push. Delete + re-create instead. Advise consumers to run `swift package resolve` |
 | XCFramework URL 404 | `swift package resolve` fails on consumer side | Ensure the `onde` GitHub Release was created BEFORE the `onde-swift` tag was pushed (the workflow handles this order automatically) |
 | `Package.swift` regex didn't match | Python `RuntimeError` in CI | Check that `onde-swift/Package.swift` still has a `.binaryTarget(name: "OndeFramework", ...)` block |
 | Dart `flutter analyze` fails | `validate` job fails, `publish` is skipped | Fix analysis issues, re-tag |
+
+---
+
+## Manual Publish Fallback
+
+When a tag was pushed before a workflow existed on `main`, or when you need to
+publish only a subset of SDKs without re-triggering all four workflows:
+
+### Rust (crates.io)
+
+```bash
+# Dry-run first
+cargo publish --dry-run
+
+# Publish
+cargo publish
+```
+
+Requires `~/.cargo/credentials.toml` or `CARGO_REGISTRY_TOKEN` env var.
+
+### Dart (pub.dev)
+
+```bash
+cd sdk/dart
+
+# Dry-run
+flutter pub publish --dry-run
+
+# Publish
+flutter pub publish --force
+```
+
+Requires `~/.config/dart/pub-credentials.json` from `dart pub login`.
+
+### npm (React Native)
+
+```bash
+cd sdk/react-native
+npm run build
+npm publish --access public
+```
+
+Requires `npm login` or `NPM_TOKEN` env var.
+
+### When to use manual publish
+
+| Scenario | Approach |
+|----------|----------|
+| Tag exists but workflow wasn't on `main` yet | Merge workflow, then publish manually |
+| One SDK's CI failed, others succeeded | Fix the issue, publish that SDK manually |
+| Need to avoid re-triggering Swift XCFramework build | Publish Rust/Dart/npm manually |
+| Testing a new workflow before first real tag | Use `workflow_dispatch` for dry-run only |
 
 ---
 
@@ -296,23 +443,36 @@ git tag 0.1.3
 git push origin main 0.1.3
 ```
 
-### Dart (pub.dev)
+### Dart (pub.dev) / Rust (crates.io)
 
-**pub.dev does not allow re-publishing the same version.** If the Dart package
-was already published, you must bump to `0.1.4` instead. This is a pub.dev
-policy — there is no workaround.
+**Both pub.dev and crates.io are immutable.** Once a version is published, it
+cannot be re-published. You must bump to `0.1.4` instead.
+
+- **crates.io:** `cargo yank --version 0.1.3` hides the version from dependency
+  resolution but does not delete it.
+- **pub.dev:** No yank equivalent. The version remains visible and installable.
 
 If the `publish` job failed (i.e. the package was NOT published), you can
 safely re-tag after fixing the issue.
+
+### npm
+
+The npm workflow's idempotency guard means re-running it is safe — it skips
+if the version already exists. However, npm also does not allow re-publishing
+the same version with different content. Bump to the next version if the
+published content was wrong.
 
 ---
 
 ## End-to-End Release Timeline
 
 ```
-Developer pushes tag 0.1.3 to onde
+Developer pushes tag 1.0.0 to onde
   │
-  ├─── release-sdk-swift.yml fires ──────────────────────────────────────┐
+  ├─── release-sdk-rust.yml fires ──────────────────────────────────────┐
+  │     ~2 min (dry-run + publish to crates.io)                          │
+  │                                                                      │
+  ├─── release-sdk-swift.yml fires ──────────────────────────────────────┤
   │     ~15 min (XCFramework build)                                      │
   │     Creates GitHub Release on onde                                   │
   │     Pushes commit + tag to onde-swift                                │
@@ -320,32 +480,47 @@ Developer pushes tag 0.1.3 to onde
   │          ├─ onde-swift ci.yml fires (push to main)                   │
   │          │   ~5 min (validate + build 5 platforms)                   │
   │          │                                                           │
-  │          └─ onde-swift release.yml fires (tag 0.1.3)                 │
+  │          └─ onde-swift release.yml fires (tag 1.0.0)                 │
   │              ~5 min (validate + create GitHub Release)               │
   │                                                                      │
   ├─── release-sdk-dart.yml fires ───────────────────────────────────────┤
   │     ~3 min (validate + publish to pub.dev)                           │
   │                                                                      │
+  ├─── release-sdk-npm.yml fires ───────────────────────────────────────┤
+  │     ~3 min (validate + publish to npm)                               │
+  │                                                                      │
   └─── Swift Package Index picks up onde-swift tag ──────────────────────┘
         ~30 min (SPI polling interval)
 ```
 
-All three CI workflows (`release-sdk-swift`, `release-sdk-dart`, `onde-swift/release`)
-run **in parallel** from the single tag push. The only ordering dependency is
-that `release-sdk-swift` must create the `onde` GitHub Release (with XCFramework
-assets) **before** pushing the tag to `onde-swift` — this is guaranteed by the
-step order within the workflow.
+All four CI workflows fire **in parallel** from the single tag push. The only
+ordering dependency is that `release-sdk-swift` must create the `onde` GitHub
+Release (with XCFramework assets) **before** pushing the tag to `onde-swift` —
+this is guaranteed by the step order within the workflow.
+
+### Merge train
+
+Always merge through the branch train before tagging:
+
+```
+feature/* → development → main → tag
+```
+
+Never tag from a feature branch. The tag must point to a commit on `main` that
+contains all workflow files and fixes. If a workflow is added on a feature branch
+and the tag is pushed before merging, the workflow won't exist at the tagged
+commit and CI won't fire.
 
 ---
 
 ## Distribution Registry Reference
 
-| Registry | Package Name | Import | Workflow |
-|----------|-------------|--------|----------|
-| crates.io | `onde` | `onde = "0.x"` | Manual `cargo publish` |
-| Swift Package Index | `onde-swift` (org: `ondeinference`) | `import Onde` | `release-sdk-swift.yml` → `onde-swift/release.yml` |
-| pub.dev | `onde_inference` | `import 'package:onde_inference/onde_inference.dart'` | `release-sdk-dart.yml` |
-| npm | `@ondeinference/react-native` | `import { OndeChatEngine } from "@ondeinference/react-native"` | Manual `npm publish --access public` |
+| Registry | Package Name | Import | Workflow | Immutable? |
+|----------|-------------|--------|----------|------------|
+| crates.io | `onde` | `onde = "1.0"` | `release-sdk-rust.yml` | Yes (yank hides, doesn't delete) |
+| Swift Package Index | `onde-swift` (org: `ondeinference`) | `import Onde` | `release-sdk-swift.yml` → `onde-swift/release.yml` | Tags are immutable by convention |
+| pub.dev | `onde_inference` | `import 'package:onde_inference/onde_inference.dart'` | `release-sdk-dart.yml` | Yes (no yank) |
+| npm | `@ondeinference/react-native` | `import { OndeChatEngine } from "@ondeinference/react-native"` | `release-sdk-npm.yml` | Yes (unpublish within 72h only) |
 
 ---
 
@@ -411,6 +586,20 @@ npm publish --access public
 ```
 
 The `--access public` flag is required for scoped packages on first publish.
+
+---
+
+## Registry Immutability Summary
+
+All four registries are effectively immutable once a version is published:
+
+- **crates.io** — `cargo yank` removes from resolver but the tarball stays forever
+- **pub.dev** — No retraction mechanism at all
+- **npm** — `npm unpublish` works within 72 hours, but only if no dependents
+- **Swift (onde-swift tags)** — Convention: never force-push tags. Delete + re-create if needed.
+
+**Bottom line:** get the release right before publishing. Use `--dry-run` locally
+and via `workflow_dispatch` before pushing a real tag.
 
 ---
 
