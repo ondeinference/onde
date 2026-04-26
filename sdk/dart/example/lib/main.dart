@@ -18,7 +18,15 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:onde_inference/onde_inference.dart';
-import 'package:path_provider/path_provider.dart' show getApplicationSupportDirectory;
+import 'package:path_provider/path_provider.dart'
+    show getApplicationSupportDirectory;
+
+// ── Onde app credentials ──────────────────────────────────────────────────
+// Register your app at https://ondeinference.com to get these.
+// The dashboard lets you assign a model to your app — the SDK fetches
+// it automatically. If no model is assigned, the platform default is used.
+const String ondeAppId = String.fromEnvironment('ONDE_APP_ID');
+const String ondeAppSecret = String.fromEnvironment('ONDE_APP_SECRET');
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -193,10 +201,20 @@ class _ChatScreenState extends State<ChatScreen> {
       _errorBanner = null;
     });
     try {
-      final elapsed = await _engine.loadDefaultModel(
-        systemPrompt: 'You are a helpful, concise assistant.',
-        sampling: _samplingPreset.config,
-      );
+      final double elapsed;
+      if (ondeAppId.isNotEmpty && ondeAppSecret.isNotEmpty) {
+        elapsed = await _engine.loadAssignedModel(
+          appId: ondeAppId,
+          appSecret: ondeAppSecret,
+          systemPrompt: 'You are a helpful, concise assistant.',
+          sampling: _samplingPreset.config,
+        );
+      } else {
+        elapsed = await _engine.loadDefaultModel(
+          systemPrompt: 'You are a helpful, concise assistant.',
+          sampling: _samplingPreset.config,
+        );
+      }
       final info = await _engine.info();
       setState(() {
         _isModelLoading = false;

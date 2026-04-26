@@ -19,12 +19,18 @@ export interface OndeInferenceNativeModule {
   // Async (returns JSON strings)
   loadDefaultModel(
     systemPrompt: string | null,
-    samplingJson: string | null
+    samplingJson: string | null,
+  ): Promise<string>;
+  loadAssignedModel(
+    appId: string,
+    appSecret: string,
+    systemPrompt: string | null,
+    samplingJson: string | null,
   ): Promise<string>;
   loadModel(
     configJson: string,
     systemPrompt: string | null,
-    samplingJson: string | null
+    samplingJson: string | null,
   ): Promise<string>;
   unloadModel(): Promise<string>;
   info(): Promise<string>;
