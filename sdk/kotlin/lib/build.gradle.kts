@@ -22,34 +22,131 @@ kotlin {
         }
     }
 
-    sourceSets {
-        // Both androidMain and jvmMain share the code in src/shared/kotlin/
-        // and the UniFFI-generated bindings in src/generated/kotlin/.
-        // This avoids the complexity of intermediate source sets while keeping
-        // the shared engine wrapper code DRY.
+    // ── iOS targets ────────────────────────────────────────────────────────
+    //
+    // Kotlin/Native targets for iOS device and simulator.
+    // These use cinterop to call the Rust C API (ffi/c_api.rs) directly,
+    // bypassing the JNA-based UniFFI bindings used on Android/JVM.
+    //
+    // Prerequisites:
+    //   1. Run scripts/build-ios.sh to compile libonde.a for each target
+    //      and generate the C header (onde_c_api.h).
+    //   2. The static libraries must be placed at:
+    //        src/iosArm64Main/libs/libonde.a
+    //        src/iosSimulatorArm64Main/libs/libonde.a
 
-        androidMain.dependencies {
-            // JNA — UniFFI-generated onde.kt uses com.sun.jna.* for its FFI bridge.
-            // The @aar suffix pulls the Android-specific build with native .so files.
-            implementation("net.java.dev.jna:jna:5.14.0@aar")
-            // Coroutines — suspend funs and Flow streaming in OndeInference
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    iosArm64 {
+        compilations.getByName("main") {
+            cinterops {
+                val onde by creating {
+                    defFile("src/nativeInterop/cinterop/onde.def")
+                    includeDirs("src/nativeInterop/cinterop")
+                }
+            }
         }
+        binaries.all {
+            linkerOpts("-L${projectDir}/src/iosArm64Main/libs", "-londe")
+            // System frameworks required by the Rust static library
+            linkerOpts("-framework", "Metal")
+            linkerOpts("-framework", "MetalPerformanceShaders")
+            linkerOpts("-framework", "Foundation")
+            linkerOpts("-framework", "Security")
+            linkerOpts("-framework", "SystemConfiguration")
+            linkerOpts("-lz", "-lc++")
+        }
+    }
 
-        jvmMain.dependencies {
-            // Desktop JNA with native libs for macOS/Linux/Windows
-            implementation("net.java.dev.jna:jna:5.14.0")
-            // Coroutines
+    iosSimulatorArm64 {
+        compilations.getByName("main") {
+            cinterops {
+                val onde by creating {
+                    defFile("src/nativeInterop/cinterop/onde.def")
+                    includeDirs("src/nativeInterop/cinterop")
+                }
+            }
+        }
+        binaries.all {
+            linkerOpts("-L${projectDir}/src/iosSimulatorArm64Main/libs", "-londe")
+            linkerOpts("-framework", "Metal")
+            linkerOpts("-framework", "MetalPerformanceShaders")
+            linkerOpts("-framework", "Foundation")
+            linkerOpts("-framework", "Security")
+            linkerOpts("-framework", "SystemConfiguration")
+            linkerOpts("-lz", "-lc++")
+        }
+    }
+
+    // ── Source set hierarchy ────────────────────────────────────────────────
+    //
+    //   commonMain
+    //   ├── jvmBasedMain          (intermediate: Android + JVM shared code)
+    //   │   ├── androidMain
+    //   │   └── jvmMain
+    //   └── iosMain               (intermediate: all iOS targets)
+    //       ├── iosArm64Main
+    //       └── iosSimulatorArm64Main
+
+    sourceSets {
+        // ── commonMain ─────────────────────────────────────────────────────
+        // Pure Kotlin types (Types.kt), expect class OndeInference,
+        // expect objects OndeSampling / OndeModels / OndeMessage.
+        // No JVM or Native platform dependencies here.
+        commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
         }
 
-        // Add shared source directories to both JVM-based targets.
-        // src/shared/kotlin/ — hand-written OndeInference wrapper + convenience objects
+        // ── jvmBasedMain ───────────────────────────────────────────────────
+        // Intermediate source set shared by Android and JVM.
+        // Contains actual class OndeInference (JNA/UniFFI-based),
+        // actual convenience objects, PlatformSupport interface,
+        // and the UniFFI-generated bindings.
+        val jvmBasedMain by creating {
+            dependsOn(commonMain.get())
+        }
+
+        androidMain {
+            dependsOn(jvmBasedMain)
+            dependencies {
+                // JNA: UniFFI-generated onde.kt uses com.sun.jna.* for its FFI bridge.
+                // The @aar suffix pulls the Android-specific build with native .so files.
+                implementation("net.java.dev.jna:jna:5.14.0@aar")
+                // Coroutines: suspend funs and Flow streaming in OndeInference
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+            }
+        }
+
+        jvmMain {
+            dependsOn(jvmBasedMain)
+            dependencies {
+                // Desktop JNA with native libs for macOS/Linux/Windows
+                implementation("net.java.dev.jna:jna:5.14.0")
+                // Coroutines
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+            }
+        }
+
+        // Add shared source directories to jvmBasedMain.
         // src/generated/kotlin/ — UniFFI-generated onde.kt (gitignored, regenerated)
-        androidMain.get().kotlin.srcDir("src/shared/kotlin")
-        androidMain.get().kotlin.srcDir("src/generated/kotlin")
-        jvmMain.get().kotlin.srcDir("src/shared/kotlin")
-        jvmMain.get().kotlin.srcDir("src/generated/kotlin")
+        jvmBasedMain.kotlin.srcDir("src/generated/kotlin")
+
+        // ── iosMain ────────────────────────────────────────────────────────
+        // Intermediate source set shared by all iOS targets.
+        // Contains actual class OndeInference (cinterop/C API-based),
+        // actual convenience objects, and the iOS factory function.
+        val iosMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+            }
+        }
+
+        val iosArm64Main by getting {
+            dependsOn(iosMain)
+        }
+
+        val iosSimulatorArm64Main by getting {
+            dependsOn(iosMain)
+        }
     }
 }
 
@@ -130,8 +227,8 @@ mavenPublishing {
     pom {
         name.set("Onde Inference")
         description.set(
-            "On-device LLM inference for Android and JVM (macOS Apple Silicon). " +
-            "Run Qwen 2.5 models locally — no cloud, no API key, no data leaving the device."
+            "On-device LLM inference for Android, JVM (macOS Apple Silicon), and iOS. " +
+            "Run Qwen 2.5 models locally. No cloud, no API key, no data leaves the device."
         )
         url.set("https://ondeinference.com")
         inceptionYear.set("2025")

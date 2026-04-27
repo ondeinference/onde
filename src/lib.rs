@@ -44,6 +44,7 @@
 
 pub mod hf_cache;
 
+pub mod ffi;
 pub mod inference;
 pub mod pulse;
 

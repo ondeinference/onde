@@ -1,0 +1,3 @@
+package = onde.native
+headers = onde_c_api.h
+headerFilter = onde_c_api.h

@@ -315,3 +315,109 @@ jobs:
         with:
           key: windows-x86_64
       - run: cargo check --target x86_64-pc-windows-msvc
+
+  # ── SDK bridge regression checks ─────────────────────────────────────────
+  #
+  # Check that SDK wrapper crates still compile against the core onde crate.
+  # Without these, you can add a field to GgufModelConfig and not notice the
+  # Dart bridge is broken until release day.
+
+  check-sdk-bridges:
+    name: Check SDK (${{ matrix.sdk }} bridge)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk: Dart
+            path: sdk/dart/rust
+            cache-key: sdk-dart
+          - sdk: React Native
+            path: sdk/react-native/rust
+            cache-key: sdk-react-native
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.cache-key }}
+          workspaces: "${{ matrix.path }} -> target"
+      - name: cargo check (${{ matrix.sdk }} bridge)
+        run: cargo check --manifest-path ${{ matrix.path }}/Cargo.toml
+
+  check-sdk-kotlin-c-api:
+    name: Check SDK Kotlin (C header sync)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify C header covers all Rust C API functions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RUST_SRC="src/ffi/c_api.rs"
+          HEADER="sdk/kotlin/lib/src/nativeInterop/cinterop/onde_c_api.h"
+
+          # Extract #[no_mangle] extern "C" function names from Rust source.
+          # Matches both `pub extern "C" fn name(` and `pub unsafe extern "C" fn name(`
+          rust_fns=$(grep -E 'pub\s+(unsafe\s+)?extern\s+"C"\s+fn\s+' "$RUST_SRC" \
+            | sed -E 's/.*fn ([a-zA-Z_][a-zA-Z0-9_]*).*/\1/' \
+            | sort -u)
+
+          # Extract onde_* function names from the C header (skip comments and typedefs).
+          header_fns=$(grep -v '^\s*//' "$HEADER" \
+            | grep -v typedef \
+            | grep -oE 'onde_[a-zA-Z0-9_]+' \
+            | sort -u)
+
+          echo "=== Rust C API ($(echo "$rust_fns" | wc -l | tr -d ' ') functions) ==="
+          echo "$rust_fns"
+          echo ""
+          echo "=== C header ($(echo "$header_fns" | wc -l | tr -d ' ') functions) ==="
+          echo "$header_fns"
+          echo ""
+
+          missing=$(comm -23 <(echo "$rust_fns") <(echo "$header_fns") || true)
+          extra=$(comm -13 <(echo "$rust_fns") <(echo "$header_fns") || true)
+
+          rc=0
+
+          if [[ -n "$missing" ]]; then
+            echo "::error file=$HEADER::Functions exported in Rust but MISSING from C header: $(echo $missing | tr '\n' ' ')"
+            echo "$missing"
+            rc=1
+          fi
+
+          if [[ -n "$extra" ]]; then
+            echo "::warning file=$HEADER::Functions in C header but NOT in Rust (possibly stale): $(echo $extra | tr '\n' ' ')"
+            echo "$extra"
+          fi
+
+          if [[ $rc -eq 0 ]]; then
+            echo "✅ C header is in sync with Rust C API."
+          else
+            echo ""
+            echo "Fix: update $HEADER to match $RUST_SRC"
+            exit 1
+          fi
+
+  check-sdk-kotlin-gradle:
+    name: Check SDK Kotlin (Gradle config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 21
+      # Runs the Gradle configuration phase (targets, source sets, deps).
+      # No compilation, no native libs, no NDK needed.
+      - name: Validate Gradle configuration
+        working-directory: sdk/kotlin
+        run: ./gradlew :lib:dependencies --no-daemon

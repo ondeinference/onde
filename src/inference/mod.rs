@@ -57,15 +57,14 @@
 //! ```
 
 pub mod engine;
-pub mod ffi;
 pub mod models;
 pub mod token;
 pub mod types;
 
 // Re-export the most commonly used items at the `inference::` level for
 // ergonomic imports like `use onde::inference::{ChatEngine, ChatMessage, ...}`.
+pub use crate::ffi::{OndeChatEngine, StreamChunkListener};
 pub use engine::ChatEngine;
-pub use ffi::{OndeChatEngine, StreamChunkListener};
 pub use types::{
     ChatMessage,
     ChatRole,

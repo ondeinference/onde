@@ -131,6 +131,8 @@ pub struct GgufModelConfig {
     pub display_name: String,
     /// Approximate memory footprint, e.g. `"~941 MB (GGUF Q4_K_M)"`.
     pub approx_memory: String,
+    /// Optional Jinja chat template override. When set, overrides the template embedded in the GGUF file.
+    pub chat_template: Option<String>,
 }
 
 impl From<OndeGgufModelConfig> for GgufModelConfig {
@@ -141,6 +143,7 @@ impl From<OndeGgufModelConfig> for GgufModelConfig {
             tok_model_id: c.tok_model_id,
             display_name: c.display_name,
             approx_memory: c.approx_memory,
+            chat_template: c.chat_template,
         }
     }
 }
@@ -153,6 +156,7 @@ impl From<GgufModelConfig> for OndeGgufModelConfig {
             tok_model_id: c.tok_model_id,
             display_name: c.display_name,
             approx_memory: c.approx_memory,
+            chat_template: c.chat_template,
         }
     }
 }

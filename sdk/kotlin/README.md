@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference Kotlin SDK</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device from Kotlin. No cloud, no API key, and no user data leaving the device.</strong>
+  <strong>Run LLMs on-device from Kotlin. No cloud, no API key, no user data leaves the device.</strong>
 </p>
 
 <p align="center">
@@ -22,14 +22,14 @@
 
 ## What is Onde?
 
-Onde is an on-device LLM inference SDK for Kotlin apps. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) in a Kotlin-friendly API, with model downloads from Hugging Face, local cache management, and native inference under the hood.
+Onde is an on-device LLM inference SDK for Kotlin apps. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) in a Kotlin-friendly API with model downloads from Hugging Face, local cache management, and native inference.
 
-- **Runs locally**: no cloud, no API key, no user data leaving the device
+- **Runs locally**: no cloud, no API key, no user data leaves the device
 - **Kotlin-friendly**: suspend functions and `Flow<StreamChunk>` for streaming
-- **Rust underneath**: powered by [uniffi-rs](https://github.com/mozilla/uniffi-rs)
-- **Published on Maven Central**: add one Gradle dependency and you're done
+- **Rust core**: built on [uniffi-rs](https://github.com/mozilla/uniffi-rs)
+- **One dependency**: add it from Maven Central and you're done
 
-This package is built as a Kotlin Multiplatform library. Today that means Android and JVM support, with the same Rust core underneath both.
+It's a Kotlin Multiplatform library. Right now that means Android and JVM, with the same Rust core underneath both.
 
 ---
 
@@ -43,7 +43,7 @@ dependencies {
 }
 ```
 
-Add `INTERNET` permission to `AndroidManifest.xml` (required for the initial model download):
+Add `INTERNET` permission to `AndroidManifest.xml` (the initial model download needs it):
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             // 1. Load the default model (Qwen 2.5 1.5B on Android, ~941 MB)
-            //    It downloads from Hugging Face the first time you run it.
+            //    Downloads from Hugging Face on first run.
             val elapsed = onde.loadDefaultModel(
                 systemPrompt = "You are a helpful, concise assistant."
             )
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
 
 ## Streaming
 
-If you want tokens as they arrive, use `Flow`:
+To get tokens as they arrive, use `Flow`:
 
 ```kotlin
 lifecycleScope.launch {
@@ -112,7 +112,7 @@ lifecycleScope.launch {
 
 ## Multi-turn conversation
 
-Onde keeps conversation history for you:
+Onde tracks conversation history for you:
 
 ```kotlin
 lifecycleScope.launch {
@@ -156,10 +156,10 @@ lifecycleScope.launch {
     // Default chat settings: temperature 0.7, top_p 0.95, max 512 tokens
     onde.loadDefaultModel(sampling = OndeSampling.default())
 
-    // Deterministic output, useful for factual answers and code
+    // Deterministic output, good for factual answers and code
     onde.loadDefaultModel(sampling = OndeSampling.deterministic())
 
-    // Shorter responses, usually better for lower-end devices
+    // Shorter responses, better for lower-end devices
     onde.loadDefaultModel(sampling = OndeSampling.mobile())
 }
 ```
@@ -201,8 +201,7 @@ lifecycleScope.launch {
 
 ## File system layout
 
-Onde stores model files in the app's internal `filesDir`. You do not need external
-storage permissions. `INTERNET` is only needed for the initial download.
+Onde stores model files in the app's internal `filesDir`. No external storage permissions needed. `INTERNET` is only for the initial download.
 
 ```
 <filesDir>/
@@ -213,7 +212,7 @@ storage permissions. `INTERNET` is only needed for the initial download.
 └── tmp/
 ```
 
-You can inspect the cache location at runtime:
+You can check the cache location at runtime:
 
 ```kotlin
 println(onde.modelCacheDir.absolutePath)
@@ -263,7 +262,7 @@ On Android, the Rust engine is compiled for four ABIs and bundled as JNI libs:
 # Rust Android targets
 rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 
-# cargo-ndk — manages NDK toolchain for cross-compilation
+# cargo-ndk manages NDK toolchain for cross-compilation
 cargo install cargo-ndk
 
 # Android NDK (via Android Studio or SDK manager)
@@ -285,8 +284,7 @@ This produces `.so` files in `sdk/kotlin/lib/src/androidMain/jniLibs/`.
 ./sdk/kotlin/scripts/generate-bindings.sh
 ```
 
-This generates `onde.kt` in `sdk/kotlin/lib/src/generated/kotlin/`. The generated file
-is gitignored, so regenerate it whenever the Rust API changes.
+This generates `onde.kt` in `sdk/kotlin/lib/src/generated/kotlin/`. The generated file is gitignored, so regenerate it whenever the Rust API changes.
 
 ### Build the Android artifact
 
@@ -300,7 +298,7 @@ cd sdk/kotlin
 
 ## Publishing to Maven Central
 
-Publishing is handled by CI. It requires:
+CI handles publishing. It needs these secrets:
 
 | Secret | Description |
 |--------|-------------|
@@ -317,8 +315,7 @@ Tag a release to trigger the workflow:
 git tag 0.1.4 && git push origin 0.1.4
 ```
 
-The CI workflow builds the native libraries, generates bindings, packages the Android
-artifact, signs it, and publishes to Maven Central automatically.
+The CI workflow builds the native libraries, generates bindings, packages the Android artifact, signs it, and publishes to Maven Central.
 
 ---
 

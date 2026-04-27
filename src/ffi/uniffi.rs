@@ -41,8 +41,8 @@
 
 use std::sync::Arc;
 
-use super::engine::ChatEngine;
-use super::types::*;
+use crate::inference::engine::ChatEngine;
+use crate::inference::types::*;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Callback interface for streaming (used by free function, not Object method)

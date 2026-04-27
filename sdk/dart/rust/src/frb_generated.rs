@@ -1252,12 +1252,14 @@ impl SseDecode for crate::api::GgufModelConfig {
         let mut var_tokModelId = <Option<String>>::sse_decode(deserializer);
         let mut var_displayName = <String>::sse_decode(deserializer);
         let mut var_approxMemory = <String>::sse_decode(deserializer);
+        let mut var_chatTemplate = <Option<String>>::sse_decode(deserializer);
         return crate::api::GgufModelConfig {
             model_id: var_modelId,
             files: var_files,
             tok_model_id: var_tokModelId,
             display_name: var_displayName,
             approx_memory: var_approxMemory,
+            chat_template: var_chatTemplate,
         };
     }
 }
@@ -1857,6 +1859,7 @@ impl SseEncode for crate::api::GgufModelConfig {
         <Option<String>>::sse_encode(self.tok_model_id, serializer);
         <String>::sse_encode(self.display_name, serializer);
         <String>::sse_encode(self.approx_memory, serializer);
+        <Option<String>>::sse_encode(self.chat_template, serializer);
     }
 }
 
