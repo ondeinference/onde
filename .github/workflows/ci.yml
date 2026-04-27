@@ -416,8 +416,12 @@ jobs:
         with:
           distribution: "temurin"
           java-version: 21
+      # The wrapper JAR is gitignored in sdk/kotlin/, so install Gradle directly.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
       # Runs the Gradle configuration phase (targets, source sets, deps).
       # No compilation, no native libs, no NDK needed.
       - name: Validate Gradle configuration
         working-directory: sdk/kotlin
-        run: ./gradlew :lib:dependencies --no-daemon
+        run: gradle :lib:dependencies --no-daemon
