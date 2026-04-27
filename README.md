@@ -28,9 +28,9 @@
 
 Onde is already shipping in real App Store apps. Chat runs fully on-device, so there is no server round trip and no user data leaving the device.
 
-<p align="center">
+<p align="left">
   <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993" target="_blank">
-    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="44">
+    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="69">
   </a>
 </p>
 
