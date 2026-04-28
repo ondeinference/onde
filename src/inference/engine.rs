@@ -242,7 +242,7 @@ enum HistoryEntry {
 ))]
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
-    pulse: Option<crate::pulse::PulseClient>,
+    pulse: std::sync::OnceLock<Option<crate::pulse::PulseClient>>,
 }
 
 #[cfg(any(
@@ -260,24 +260,39 @@ impl ChatEngine {
 
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
-        let environment = Self::pulse_environment();
-        let edge_id = std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
-        let pulse = crate::pulse::PulseClient::new(environment, edge_id);
-
-        match &pulse {
-            Some(_) => {
-                log::info!("ChatEngine: pulse telemetry enabled (environment={environment})")
-            }
-            None => log::info!(
-                "ChatEngine: pulse telemetry disabled \
-                 (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
-            ),
-        }
-
         Self {
             inner: Mutex::new(None),
-            pulse,
+            pulse: std::sync::OnceLock::new(),
         }
+    }
+
+    /// Lazily initialise the pulse telemetry client.
+    ///
+    /// The underlying GresIQ SDK creates a `reqwest::Client`, which needs
+    /// a Tokio runtime.  `ChatEngine::new()` is called from a sync UniFFI
+    /// constructor where no runtime exists yet, so we defer creation to the
+    /// first async call site (e.g. `load_gguf_model` or `send_message`).
+    fn pulse(&self) -> Option<&crate::pulse::PulseClient> {
+        self.pulse
+            .get_or_init(|| {
+                let environment = Self::pulse_environment();
+                let edge_id =
+                    std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
+                let client = crate::pulse::PulseClient::new(environment, edge_id);
+
+                match &client {
+                    Some(_) => log::info!(
+                        "ChatEngine: pulse telemetry enabled (environment={environment})"
+                    ),
+                    None => log::info!(
+                        "ChatEngine: pulse telemetry disabled \
+                         (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
+                    ),
+                }
+
+                client
+            })
+            .as_ref()
     }
 
     /// Resolve the pulse environment from the `GRESIQ_ENVIRONMENT` env var.
@@ -456,7 +471,7 @@ impl ChatEngine {
         };
         drop(old_model); // free old weights outside the lock
 
-        if let Some(ref pulse) = self.pulse {
+        if let Some(pulse) = self.pulse() {
             pulse
                 .record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64)
                 .await;
@@ -867,7 +882,7 @@ impl ChatEngine {
             }
         }
 
-        if let Some(ref pulse) = self.pulse {
+        if let Some(pulse) = self.pulse() {
             pulse.record_inference(
                 pulse_model_id,
                 crate::pulse::next_request_id(),
