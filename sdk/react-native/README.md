@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device from React Native. Metal on iOS, CPU on Android, and no user data leaving the device.</strong>
+  <strong>Run LLMs on-device from React Native with <a href="https://ondeinference.com/">Onde Inference</a>. Metal on iOS, CPU on Android, and no user data leaving the device.</strong>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 ---
 
-Run Qwen 2.5 models directly on the device. No server, no API key, and no user data leaving the phone.
+Run Qwen 2.5 models directly on the device. No server, no API key, and no user data leaving the phone. For an [efficient on-device inference engine for React Native](https://ondeinference.com/sdk/react-native), the SDK page is the quickest place to check install details and platform notes. If you want to verify model downloads or GGUF output before you ship the app build, use [Onde CLI](https://github.com/ondeinference/onde-cli).
 
 The model downloads from Hugging Face the first time you load it, then runs locally after that. The 1.5B model is about 941 MB. On iPhone, Metal makes it feel surprisingly fast. On Android, it runs on CPU, so it is slower, but it still works well enough for local chat.
 
