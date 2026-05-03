@@ -34,9 +34,9 @@ export 'frb_generated.dart/api.dart'
 /// High-level wrapper around the FRB-generated [api.OndeChatEngine] opaque type.
 ///
 /// Provides:
-/// - [OndeChatEngineX.loadDefaultModel] — convenience method not in generated code
-/// - [OndeChatEngineX.clearHistoryCount] — returns `int` instead of `BigInt`
-/// - [OndeInference] — static initialisation + config/sampling factory helpers
+/// - [OndeChatEngineX.loadDefaultModel]: convenience method not present in generated code
+/// - [OndeChatEngineX.clearHistoryCount]: returns `int` instead of `BigInt`
+/// - [OndeInference]: static initialisation plus config and sampling helpers
 ///
 /// ## Lifecycle
 ///
@@ -44,7 +44,7 @@ export 'frb_generated.dart/api.dart'
 /// // 1. Initialise once at app startup (idempotent).
 /// await OndeInference.init();
 ///
-/// // 2. Create a native engine instance (sync — no Future).
+/// // 2. Create a native engine instance (sync, no Future).
 /// final engine = OndeChatEngine();
 ///
 /// // 3a. Load your assigned model (recommended for production).
@@ -80,7 +80,7 @@ export 'frb_generated.dart/api.dart'
 /// serialised internally.
 extension OndeChatEngineX on api.OndeChatEngine {
   // -------------------------------------------------------------------------
-  // loadDefaultModel — implemented in Dart (not in generated bridge)
+  // loadDefaultModel: implemented in Dart, not in the generated bridge.
   // -------------------------------------------------------------------------
 
   /// Loads the platform-appropriate default model.
@@ -107,7 +107,7 @@ extension OndeChatEngineX on api.OndeChatEngine {
   );
 
   // -------------------------------------------------------------------------
-  // clearHistoryCount — int-typed convenience over clearHistory() → BigInt
+  // clearHistoryCount: int-typed convenience over clearHistory() -> BigInt.
   // -------------------------------------------------------------------------
 
   /// Clears the conversation history and returns the count as a plain [int].
@@ -118,7 +118,7 @@ extension OndeChatEngineX on api.OndeChatEngine {
 }
 
 // ---------------------------------------------------------------------------
-// OndeInference — static SDK helpers
+// OndeInference static SDK helpers
 // ---------------------------------------------------------------------------
 
 /// Static helper namespace for Onde SDK initialisation and configuration.
@@ -140,14 +140,14 @@ abstract final class OndeInference {
 
   /// Initialises the Rust shared library.
   ///
-  /// Must be called before creating any [OndeChatEngine].  Subsequent calls
-  /// are safe no-ops — the library is only initialised once per process.
+  /// Must be called before creating any [OndeChatEngine]. Subsequent calls
+  /// are safe no-ops. The library is only initialised once per process.
   ///
   /// Call this in `main()` or in a Flutter `initState` override before any
   /// user interaction that could trigger model loading.
   ///
   /// On macOS the Rust static library is force-loaded into the
-  /// `onde_inference.framework` CocoaPods dynamic framework — we must
+  /// `onde_inference.framework` CocoaPods dynamic framework, so we must
   /// `dlopen` that framework by name.
   ///
   /// On iOS the pod is statically linked into the Runner executable
@@ -155,17 +155,17 @@ abstract final class OndeInference {
   /// `DynamicLibrary.process()` (`RTLD_DEFAULT`) which searches the
   /// main executable and all loaded images.
   ///
-  /// On Android / Linux / Windows the default FRB stem-based loader
-  /// finds the `.so` / `.dll` automatically — no override needed.
+  /// On Android, Linux, and Windows, the default FRB stem-based loader
+  /// finds the `.so` or `.dll` automatically. No override needed.
   static Future<void> init() async {
     ExternalLibrary? lib;
     if (Platform.isMacOS) {
-      // CocoaPods + use_frameworks! → pod is a dynamic framework.
-      // DynamicLibrary.process() can't resolve symbols inside it.
+      // With CocoaPods + use_frameworks!, the pod is a dynamic framework.
+      // DynamicLibrary.process() cannot resolve symbols inside it.
       lib = ExternalLibrary.open('onde_inference.framework/onde_inference');
     } else if (Platform.isIOS) {
-      // CocoaPods on iOS statically links the pod into the Runner
-      // binary via -force_load.  Symbols live in the main executable.
+      // On iOS, CocoaPods statically links the pod into the Runner binary
+      // through -force_load, so the symbols live in the main executable.
       lib = ExternalLibrary.process(iKnowHowToUseIt: true);
     }
     await frb.RustLib.init(externalLibrary: lib);
@@ -186,10 +186,10 @@ abstract final class OndeInference {
   /// unavailable (entitlement missing, group not registered), it falls back
   /// to [fallbackDir] if provided.
   ///
-  /// On **Android** there is no App Group equivalent — pass [fallbackDir]
+  /// On **Android** there is no App Group equivalent. Pass [fallbackDir]
   /// (e.g. from `getApplicationSupportDirectory().path`).
   ///
-  /// On **desktop Linux / Windows** this is a no-op — the default
+  /// On **desktop Linux / Windows** this is a no-op. The default
   /// `~/.cache/huggingface` works without intervention.
   ///
   /// Call **once** at startup, after [init] and before any model load:
@@ -202,7 +202,7 @@ abstract final class OndeInference {
   /// await OndeInference.setupCacheDir(fallbackDir: dir.path);
   /// ```
   static Future<void> setupCacheDir({String? fallbackDir}) async {
-    // 1. Apple platforms — try the shared App Group container.
+    // 1. On Apple platforms, try the shared App Group container first.
     if (Platform.isIOS || Platform.isMacOS) {
       try {
         final String? groupPath = await _channel.invokeMethod<String>(
@@ -218,7 +218,7 @@ abstract final class OndeInference {
       }
     }
 
-    // 2. Fallback — use the caller-provided directory (app sandbox).
+    // 2. Otherwise use the caller-provided directory in the app sandbox.
     if (fallbackDir != null && fallbackDir.isNotEmpty) {
       api.configureCacheDir(appDataDir: fallbackDir);
     }
