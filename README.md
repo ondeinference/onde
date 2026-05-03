@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
+  <strong>Run LLMs on-device with <a href="https://ondeinference.com/">Onde Inference</a>, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 ## In production
 
-Onde is already shipping in real App Store apps. Chat runs fully on-device, so there is no server round trip and no user data leaving the device.
+Onde is already shipping in real App Store apps. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
 
 <p align="left">
   <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993" target="_blank">
