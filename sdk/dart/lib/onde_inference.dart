@@ -5,7 +5,7 @@
 /// On-device LLM inference SDK for Flutter & Dart.
 ///
 /// Runs Qwen 2.5 models locally with Metal (Apple silicon) and CPU
-/// acceleration — no cloud, no data leaving the device.
+/// acceleration, with no cloud hop and no data leaving the device.
 /// Powered by the Onde Rust engine and [mistral.rs](https://github.com/EricLBuehler/mistral.rs).
 ///
 /// ## Quick start
@@ -90,10 +90,10 @@
 /// instructions.
 library;
 
-// All core data types (ChatMessage, SamplingConfig, GgufModelConfig, etc.)
-// re-exported from the FRB-generated api.dart via types.dart.
+// Re-export the core data types (ChatMessage, SamplingConfig,
+// GgufModelConfig, and friends) from the FRB-generated api.dart via types.dart.
 export 'src/types.dart';
 
-// Engine API — OndeChatEngineX extension, OndeInference static helpers,
-// OndeChatEngine opaque type, OndeError sealed class, and RustLib.
+// Engine API: OndeChatEngineX helpers, OndeInference static helpers,
+// the OndeChatEngine opaque type, the OndeError sealed class, and RustLib.
 export 'src/engine.dart';

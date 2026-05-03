@@ -3,14 +3,15 @@
 //
 // example/lib/main.dart
 //
-// Complete Material 3 Flutter chat app demonstrating the onde_inference SDK:
-//   * Synchronous OndeChatEngine() factory constructor (no await, no null)
-//   * Platform-aware default model loading via loadDefaultModel() extension
-//   * Multi-turn streaming chat via streamMessage(message:)
-//   * EngineInfo display using EngineInfoX.historyLengthInt extension
-//   * OndeError sealed-class error handling (not OndeException)
-//   * Sampling preset selector (creative / precise / fast)
-//   * Unload / reload model flow with live status bar
+// A complete Material 3 Flutter chat app that shows the main onde_inference
+// pieces in one place:
+//   * synchronous OndeChatEngine() construction (no await, no null)
+//   * platform-aware default model loading via loadDefaultModel()
+//   * multi-turn streaming chat via streamMessage(message:)
+//   * EngineInfo display through EngineInfoX.historyLengthInt
+//   * OndeError sealed-class handling (not OndeException)
+//   * sampling preset selection (creative / precise / fast)
+//   * unload / reload flow with a live status bar
 
 import 'dart:async';
 
@@ -23,8 +24,8 @@ import 'package:path_provider/path_provider.dart'
 
 // ── Onde app credentials ──────────────────────────────────────────────────
 // Register your app at https://ondeinference.com to get these.
-// The dashboard lets you assign a model to your app — the SDK fetches
-// it automatically. If no model is assigned, the platform default is used.
+// The dashboard lets you assign a model to the app. The SDK fetches it
+// automatically. If nothing is assigned, it falls back to the platform default.
 const String ondeAppId = String.fromEnvironment('ONDE_APP_ID');
 const String ondeAppSecret = String.fromEnvironment('ONDE_APP_SECRET');
 
@@ -36,16 +37,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await OndeInference.init();
 
-  // Resolve the model cache directory for sandboxed platforms.
+  // Pick a cache directory that works inside app sandboxes.
   //
-  // On iOS/macOS this tries the App Group shared container first
-  // (group.com.ondeinference.apps) so all Onde-powered apps share
-  // downloaded models.  If the App Group is unavailable it falls back
-  // to the app's private Application Support directory.
+  // On iOS and macOS, try the shared App Group container first
+  // (group.com.ondeinference.apps) so Onde-powered apps can reuse
+  // downloaded models. If that is not available, fall back to the app's
+  // own Application Support directory.
   //
-  // On Android there is no App Group — the fallback is always used.
+  // Android has no App Group, so it always uses the fallback.
   //
-  // On desktop Linux/Windows this is a no-op (default ~/.cache works).
+  // Linux and Windows do nothing special here. The default ~/.cache path works.
   String? fallback;
   if (Platform.isIOS || Platform.isAndroid) {
     final dir = await getApplicationSupportDirectory();
@@ -143,7 +144,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // OndeChatEngine() is a synchronous factory constructor -- no Future, no null.
+  // OndeChatEngine() is synchronous. No Future, no null.
   final OndeChatEngine _engine = OndeChatEngine();
 
   EngineInfo _engineInfo = EngineInfo(
