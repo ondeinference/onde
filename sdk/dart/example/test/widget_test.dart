@@ -8,10 +8,10 @@ import 'package:onde_inference_example/main.dart';
 void main() {
   testWidgets('OndeInferenceApp builds without crashing',
       (WidgetTester tester) async {
-    // Verify the root widget can be constructed.
-    // Full integration tests require the native inference library to be
-    // compiled first — run `flutter build` or `cargo build` in sdk/dart/rust/
-    // before running widget tests that exercise the engine.
+    // Make sure the root widget can be constructed.
+    // Full integration tests need the native inference library first.
+    // Run `flutter build` or `cargo build` in sdk/dart/rust/ before running
+    // widget tests that actually hit the engine.
     expect(const OndeInferenceApp(), isA<OndeInferenceApp>());
   });
 }
