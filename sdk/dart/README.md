@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device from Flutter and Dart. Metal on iOS and macOS, CPU everywhere else.</strong>
+  <strong>Run LLMs on-device from Flutter and Dart with <a href="https://ondeinference.com/">Onde Inference</a>. Metal on iOS and macOS, CPU everywhere else.</strong>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 ---
 
-Run Qwen 2.5 models directly inside your Flutter app. The model downloads from Hugging Face on first launch, then everything runs locally. No server, no API key, and no user data leaving the device. On an iPhone 15 Pro, Metal gets you around 15 tok/s. Android and desktop run on CPU, so they are slower, but they work well for local inference.
+Run Qwen 2.5 models directly inside your Flutter app. The model downloads from Hugging Face on first launch, then everything runs locally. No server, no API key, and no user data leaving the device. On an iPhone 15 Pro, Metal gets you around 15 tok/s. Android and desktop run on CPU, so they are slower, but they work well for local inference. For [on-device AI inference for Flutter and Dart](https://ondeinference.com/sdk/dart), the SDK page covers install details, platform notes, and package links. If you want to test model downloads or GGUF exports before you wire up UI code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
 
 You get multi-turn chat, streaming, one-shot generation, and configurable sampling in a single package.
 

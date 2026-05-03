@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference Kotlin SDK</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device from Kotlin. No cloud, no API key, and no user data leaving the device.</strong>
+  <strong>Run LLMs on-device from Kotlin with <a href="https://ondeinference.com/">Onde Inference</a>. No cloud, no API key, and no user data leaving the device.</strong>
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@ Onde is an on-device LLM inference SDK for Kotlin apps. It wraps [mistral.rs](ht
 - **Rust underneath**: powered by [uniffi-rs](https://github.com/mozilla/uniffi-rs)
 - **Published on Maven Central**: add one Gradle dependency and you're done
 
-This package is built as a Kotlin Multiplatform library. Today that means Android and JVM support, with the same Rust core underneath both.
+This package is built as a Kotlin Multiplatform library. Today that means Android and JVM support, with the same Rust core underneath both. For [on-device AI inference for Kotlin and Android](https://ondeinference.com/sdk), the SDK page is the quickest way to check package docs and platform scope. If you want to test model downloads or fine-tune outputs before moving into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
 
 ---
 
