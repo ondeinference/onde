@@ -5,9 +5,9 @@
 <h1 align="center">onde_inference — Example App</h1>
 
 <p align="center">
-  <strong>A Flutter chat app that runs LLM inference fully on-device with <a href="https://ondeinference.com/">Onde Inference</a>.</strong><br>
+  <strong>A Flutter chat app that runs LLM inference fully on-device.</strong><br>
   No server. No API key. No data leaving the device.
-</p>
+</p>a
 
 <p align="center">
   <a href="https://pub.dev/packages/onde_inference"><img src="https://img.shields.io/pub/v/onde_inference?style=flat-square&color=235843&labelColor=17211D&label=pub.dev" alt="pub.dev"></a>
