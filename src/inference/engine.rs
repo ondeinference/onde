@@ -457,7 +457,9 @@ impl ChatEngine {
         drop(old_model); // free old weights outside the lock
 
         if let Some(ref pulse) = self.pulse {
-            pulse.record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64);
+            pulse
+                .record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64)
+                .await;
         }
 
         Ok(elapsed)
