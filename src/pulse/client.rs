@@ -59,25 +59,33 @@ impl PulseClient {
         Some(PulseClient { inner, edge_id })
     }
 
-    /// Spawns a background task that writes the model-load event to the
-    /// pulse/model_loaded table, then returns immediately.  Slow network
-    /// responses don't block the first inference request.
+    /// Writes the model-load event to the pulse/model_loaded table and
+    /// **awaits** the result before returning.
     ///
-    /// Failed writes emit a warn! log line — no retry, no queue,
-    /// and no effect on the caller.
-    pub fn record_model_loaded(&self, model_id: String, model_name: String, load_duration_ms: u64) {
-        let client = self.clone();
-        tokio::spawn(async move {
-            let event = ModelLoadedEvent {
-                edge_id: client.edge_id.clone(),
-                model_id,
-                model_name,
-                load_duration_ms,
-            };
-            if let Err(error) = client.inner.insert("pulse/model_loaded", &event).await {
-                log::warn!("pulse: model_loaded failed: {}", error);
-            }
-        });
+    /// This must complete before any `record_inference` call for the same
+    /// edge + model is made, because the API enforces a foreign-key
+    /// constraint: an `inference_event` row is rejected with HTTP 404
+    /// ("Call model_loaded first") if no matching `model_loaded` row exists.
+    ///
+    /// Keeping this synchronous with respect to the model-load path means
+    /// the row is always present by the time the first inference event fires.
+    /// A failed write emits a warn! log line — no retry, no queue, and no
+    /// effect on the caller.
+    pub async fn record_model_loaded(
+        &self,
+        model_id: String,
+        model_name: String,
+        load_duration_ms: u64,
+    ) {
+        let event = ModelLoadedEvent {
+            edge_id: self.edge_id.clone(),
+            model_id,
+            model_name,
+            load_duration_ms,
+        };
+        if let Err(error) = self.inner.insert("pulse/model_loaded", &event).await {
+            log::warn!("pulse: model_loaded failed: {}", error);
+        }
     }
 
     /// Same fire-and-forget pattern as record_model_loaded but for inference

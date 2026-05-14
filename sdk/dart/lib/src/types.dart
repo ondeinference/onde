@@ -38,20 +38,17 @@ import 'frb_generated.dart/api.dart';
 // OndeException
 // ---------------------------------------------------------------------------
 
-/// A Dart [Exception] that wraps an [OndeError] from the Rust engine.
+/// Optional Dart [Exception] wrapper around an [OndeError].
 ///
-/// All inference methods on [OndeChatEngine] throw this instead of letting
-/// raw [OndeError] values propagate, keeping the public API consistent with
-/// Dart error-handling conventions.
+/// The generated bridge throws [OndeError] values directly. If your app prefers
+/// working with `Exception`, you can wrap a caught [OndeError] in
+/// [OndeException].
 ///
 /// ```dart
 /// try {
-///   await engine.sendMessage('Hello!');
-/// } on OndeException catch (e) {
-///   debugPrint('Inference error: ${e.message}');
-///   if (e.error is OndeError_NoModelLoaded) {
-///     await engine.loadDefaultModel();
-///   }
+///   await engine.sendMessage(message: 'Hello!');
+/// } on OndeError catch (e) {
+///   throw OndeException(e);
 /// }
 /// ```
 class OndeException implements Exception {

@@ -5,7 +5,7 @@
 <h1 align="center">onde_inference — Example App</h1>
 
 <p align="center">
-  <strong>A Flutter chat app that runs LLM inference fully on-device with <a href="https://ondeinference.com/">Onde Inference</a>.</strong><br>
+  <strong>A Flutter chat app that runs LLM inference fully on-device.</strong><br>
   No server. No API key. No data leaving the device.
 </p>
 
@@ -120,6 +120,6 @@ example/
 
 ---
 
-<p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a>, MIT License</sub>
-</p>
+## Copyright
+
+© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB). Licensed under the MIT License.
