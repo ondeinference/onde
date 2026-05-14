@@ -120,6 +120,6 @@ example/
 
 ---
 
-<p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a>, MIT License</sub>
-</p>
+## Copyright
+
+© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).

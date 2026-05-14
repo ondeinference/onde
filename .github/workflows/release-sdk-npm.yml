@@ -68,9 +68,9 @@ jobs:
         working-directory: sdk/react-native
         run: npm run build
 
-      - name: Dry-run publish
+      - name: Dry-run package
         working-directory: sdk/react-native
-        run: npm publish --dry-run --access public
+        run: npm pack --dry-run
 
   # ── Publish to npm (tag push only) ────────────────────────────────────────
   publish:

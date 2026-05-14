@@ -326,4 +326,6 @@ artifact, signs it, and publishes to Maven Central automatically.
 
 MIT OR Apache-2.0. See [LICENSE](../../LICENSE).
 
-Built by [Onde Inference / Splitfire AB](https://ondeinference.com).
+## Copyright
+
+© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).

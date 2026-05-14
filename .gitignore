@@ -6,6 +6,9 @@ sdk/python/target/
 # uniffi
 generated/
 
+# local release / XCFramework build artifacts
+dist/
+
 # sdk
 sdk/Onde
 sdk/kotlin/onde/src/main/jniLibs/**/*.so

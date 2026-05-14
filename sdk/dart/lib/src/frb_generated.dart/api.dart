@@ -3,14 +3,14 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Return the platform-appropriate default `GgufModelConfig`.
 ///
@@ -99,11 +99,7 @@ abstract class OndeChatEngine implements RustOpaqueInterface {
   /// Returns `true` if a model is currently loaded and ready.
   Future<bool> isLoaded();
 
-  /// Load the model assigned to this app via the Onde dashboard.
-  ///
-  /// The [appId] and [appSecret] identify your app on
-  /// [ondeinference.com](https://ondeinference.com). If no model is
-  /// assigned, the platform default is loaded instead.
+  /// Load the model assigned to this Onde app from the dashboard.
   ///
   /// Returns the wall-clock seconds taken to load the model.
   Future<double> loadAssignedModel({
@@ -239,16 +235,12 @@ class GgufModelConfig {
   /// Approximate memory footprint, e.g. `"~941 MB (GGUF Q4_K_M)"`.
   final String approxMemory;
 
-  /// Optional chat template override (Jinja format).
-  final String? chatTemplate;
-
   const GgufModelConfig({
     required this.modelId,
     required this.files,
     this.tokModelId,
     required this.displayName,
     required this.approxMemory,
-    this.chatTemplate,
   });
 
   @override
@@ -257,8 +249,7 @@ class GgufModelConfig {
       files.hashCode ^
       tokModelId.hashCode ^
       displayName.hashCode ^
-      approxMemory.hashCode ^
-      chatTemplate.hashCode;
+      approxMemory.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -269,8 +260,7 @@ class GgufModelConfig {
           files == other.files &&
           tokModelId == other.tokModelId &&
           displayName == other.displayName &&
-          approxMemory == other.approxMemory &&
-          chatTemplate == other.chatTemplate;
+          approxMemory == other.approxMemory;
 }
 
 /// The result of a completed inference request.
@@ -408,15 +398,10 @@ class StreamChunk {
           finishReason == other.finishReason;
 }
 
-/// Metadata about a tool call requested by the model.
+/// Structured tool-call request emitted by the model.
 class ToolCallInfo {
-  /// Unique identifier for this tool call.
   final String id;
-
-  /// Name of the function to call.
   final String functionName;
-
-  /// JSON-encoded arguments for the function.
   final String arguments;
 
   const ToolCallInfo({

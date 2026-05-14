@@ -12,17 +12,20 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RUST_DIR="$SCRIPT_DIR/../rust"
 IOS_XCFRAMEWORK_OUT="$SCRIPT_DIR/../ios/rust/OndeReactNative.xcframework"
 ANDROID_OUT="$SCRIPT_DIR/../android/src/main/jniLibs"
+IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-16.0}"
 
 build_ios() {
     echo "=== Building Rust for iOS ==="
 
     # Device (arm64)
     echo "  → aarch64-apple-ios"
+    IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" \
     cargo build --manifest-path "$RUST_DIR/Cargo.toml" \
         --target aarch64-apple-ios --release
 
     # Simulator (arm64 Apple Silicon)
     echo "  → aarch64-apple-ios-sim"
+    IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" \
     cargo build --manifest-path "$RUST_DIR/Cargo.toml" \
         --target aarch64-apple-ios-sim --release
 
@@ -37,6 +40,7 @@ build_ios() {
         -output "$IOS_XCFRAMEWORK_OUT"
 
     echo "  ✓ iOS XCFramework created at ios/rust/OndeReactNative.xcframework"
+    echo "  ✓ Built with IPHONEOS_DEPLOYMENT_TARGET=$IOS_DEPLOYMENT_TARGET"
 }
 
 build_android() {

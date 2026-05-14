@@ -14,6 +14,7 @@ use onde::inference::{
     EngineInfo as OndeEngineInfo, EngineStatus as OndeEngineStatus,
     GgufModelConfig as OndeGgufModelConfig, InferenceError, InferenceResult as OndeInferenceResult,
     SamplingConfig as OndeSamplingConfig, StreamChunk as OndeStreamChunk,
+    ToolCallInfo as OndeToolCallInfo,
 };
 
 // ── Mirror: ChatRole ──────────────────────────────────────────────────────────
@@ -153,6 +154,27 @@ impl From<GgufModelConfig> for OndeGgufModelConfig {
             tok_model_id: c.tok_model_id,
             display_name: c.display_name,
             approx_memory: c.approx_memory,
+            chat_template: None,
+        }
+    }
+}
+
+// ── Mirror: ToolCallInfo ────────────────────────────────────────────────────
+
+/// Structured tool-call request emitted by the model.
+#[derive(Debug, Clone)]
+pub struct ToolCallInfo {
+    pub id: String,
+    pub function_name: String,
+    pub arguments: String,
+}
+
+impl From<OndeToolCallInfo> for ToolCallInfo {
+    fn from(t: OndeToolCallInfo) -> Self {
+        Self {
+            id: t.id,
+            function_name: t.function_name,
+            arguments: t.arguments,
         }
     }
 }
@@ -170,6 +192,8 @@ pub struct InferenceResult {
     pub duration_display: String,
     /// Finish reason reported by the model, e.g. `"stop"` or `"length"`.
     pub finish_reason: String,
+    /// Tool calls requested by the model (empty if none).
+    pub tool_calls: Vec<ToolCallInfo>,
 }
 
 impl From<OndeInferenceResult> for InferenceResult {
@@ -179,6 +203,7 @@ impl From<OndeInferenceResult> for InferenceResult {
             duration_secs: r.duration_secs,
             duration_display: r.duration_display,
             finish_reason: r.finish_reason,
+            tool_calls: r.tool_calls.into_iter().map(ToolCallInfo::from).collect(),
         }
     }
 }
@@ -327,6 +352,30 @@ impl OndeChatEngine {
         let elapsed = self
             .inner
             .load_gguf_model(config.into(), system_prompt, sampling.map(Into::into))
+            .await
+            .map_err(OndeError::from)?;
+        Ok(elapsed.as_secs_f64())
+    }
+
+    /// Load the model assigned to this Onde app from the dashboard.
+    ///
+    /// Returns the wall-clock seconds taken to load the model.
+    pub async fn load_assigned_model(
+        &self,
+        app_id: String,
+        app_secret: String,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<f64, OndeError> {
+        let elapsed = self
+            .inner
+            .load_assigned_model(
+                smbcloud_gresiq_sdk::Environment::Production,
+                &app_id,
+                &app_secret,
+                system_prompt,
+                sampling.map(Into::into),
+            )
             .await
             .map_err(OndeError::from)?;
         Ok(elapsed.as_secs_f64())
