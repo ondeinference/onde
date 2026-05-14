@@ -42,7 +42,7 @@ Web is not supported. On-device inference needs native system access that browse
 
 ```yaml
 dependencies:
-  onde_inference: ^1.0.0
+  onde_inference: ^1.0.1
 ```
 
 The inference engine is written in Rust and connected to Dart through [flutter_rust_bridge](https://pub.dev/packages/flutter_rust_bridge). You need a working [Rust toolchain](https://rustup.rs). The first build is usually slow because it compiles the full native dependency tree.
