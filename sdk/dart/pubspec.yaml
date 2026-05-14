@@ -5,8 +5,22 @@ description: >-
 version: 1.0.0
 repository: https://github.com/ondeinference/onde
 homepage: https://ondeinference.com
+documentation: https://ondeinference.com/sdk/dart
 issue_tracker: https://github.com/ondeinference/onde/issues
 license: MIT OR Apache-2.0
+topics:
+  - flutter
+  - llm
+  - on-device-ai
+  - offline-ai
+  - ai-inference
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
