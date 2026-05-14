@@ -3689,6 +3689,7 @@ dependencies = [
  "flutter_rust_bridge",
  "log",
  "onde",
+ "smbcloud-gresiq-sdk",
  "thiserror 2.0.18",
  "tokio",
 ]

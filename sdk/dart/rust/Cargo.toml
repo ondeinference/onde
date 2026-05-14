@@ -13,3 +13,4 @@ onde = { path = "../../../" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 thiserror = "2"
 log = "0.4"
+smbcloud-gresiq-sdk = "0.3"
