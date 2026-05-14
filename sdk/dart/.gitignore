@@ -17,6 +17,9 @@ macos/*.a
 **/*.dll
 **/*.lib
 
+# Flutter / Dart build outputs
+build/
+
 # Flutter example app build outputs
 example/build/
 example/.dart_tool/

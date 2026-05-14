@@ -13,6 +13,33 @@ permissions:
   contents: read
 
 jobs:
+  # ── Dart / Flutter SDK validation ────────────────────────────────────────
+  dart-sdk:
+    name: Dart SDK (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: sdk/dart/.flutter-version
+          channel: stable
+          cache: true
+      - name: Install Dart dependencies
+        working-directory: sdk/dart
+        run: flutter pub get
+      - name: Analyze Dart package
+        working-directory: sdk/dart
+        run: flutter analyze --no-fatal-infos
+      - name: Run Dart package tests
+        working-directory: sdk/dart
+        run: flutter test
+      - name: Restore generated files modified by flutter pub get
+        working-directory: sdk/dart
+        run: git checkout -- . 2>/dev/null || true
+      - name: Dry-run Dart publish
+        working-directory: sdk/dart
+        run: flutter pub publish --dry-run
+
   # ── Formatting ────────────────────────────────────────────────────────────
   fmt:
     name: Format
