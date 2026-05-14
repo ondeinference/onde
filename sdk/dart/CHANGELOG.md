@@ -1,3 +1,9 @@
+## 1.0.2
+
+* **pub.dev:** Added Apple plugin Swift Package Manager manifests at `ios/onde_inference/Package.swift` and `macos/onde_inference/Package.swift` so pub.dev recognizes modern iOS and macOS plugin toolchain support.
+* **pub.dev:** Removed redundant analyzer ignore directives from generated Dart bridge files to recover the remaining static-analysis points.
+* **Tooling:** Ignore Swift Package Manager build directories (`.build/`, `.swiftpm/`) in both Git and pub publishing.
+
 ## 1.0.1
 
 * **pub.dev:** Fixed stale README and API examples so the published package matches the current API (`OndeChatEngine()`, named `message:` arguments, current sampling helpers, and `OndeError` handling).

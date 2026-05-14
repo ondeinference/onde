@@ -30,6 +30,19 @@ jobs:
       - name: Analyze Dart package
         working-directory: sdk/dart
         run: flutter analyze --no-fatal-infos
+      - name: Analyze score-sensitive generated Dart files
+        working-directory: sdk/dart
+        run: |
+          flutter analyze lib/src/frb_generated.dart/api.dart
+          flutter analyze lib/src/frb_generated.dart/frb_generated.dart
+          flutter analyze lib/src/frb_generated.dart/frb_generated.io.dart
+      - name: Verify Apple SwiftPM manifests exist
+        working-directory: sdk/dart
+        run: |
+          test -f ios/onde_inference/Package.swift
+          test -f ios/onde_inference/Sources/onde_inference/OndeInferencePlugin.swift
+          test -f macos/onde_inference/Package.swift
+          test -f macos/onde_inference/Sources/onde_inference/OndeInferencePlugin.swift
       - name: Run Dart package tests
         working-directory: sdk/dart
         run: flutter test

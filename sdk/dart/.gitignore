@@ -19,6 +19,8 @@ macos/*.a
 
 # Flutter / Dart build outputs
 build/
+.build/
+.swiftpm/
 
 # Flutter example app build outputs
 example/build/
