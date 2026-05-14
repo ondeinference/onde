@@ -1,432 +1,337 @@
-# Onde — Kotlin (Android) Library
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ondeinference/onde/main/assets/onde-inference-logo.svg" alt="Onde Inference" width="96">
+</p>
 
-Kotlin bindings for the [Onde](https://ondeinference.com) on-device inference engine, generated via [UniFFI](https://github.com/mozilla/uniffi-rs).
+<h1 align="center">Onde Inference Kotlin SDK</h1>
 
-This library provides Android apps with:
+<p align="center">
+  <strong>Run LLMs on-device from Kotlin with <a href="https://ondeinference.com/">Onde Inference</a>. No cloud, no API key, and no user data leaving the device.</strong>
+</p>
 
-- **LLM chat inference** — load GGUF-quantized models (Qwen 2.5) and run multi-turn conversations entirely on-device.
-- **Streaming generation** — token-by-token callbacks for real-time UI updates.
-- **Whisper speech-to-text** — transcribe audio files and raw PCM samples using whisper.cpp (feature-gated behind `whisper`).
-- **HuggingFace Hub integration** — download, cache, inspect, and manage models from HuggingFace.
+<p align="center">
+  <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference?style=flat-square&color=235843&labelColor=17211D&label=maven" alt="Maven Central"></a>
+  <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+  <a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+</p>
 
-All inference runs locally on the device CPU (ARM NEON). No network connection is required after the model is downloaded.
+<p align="center">
+  <a href="https://github.com/ondeinference/onde">Rust SDK</a> · <a href="https://github.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://pub.dev/packages/onde_inference">Flutter SDK</a> · <a href="https://www.npmjs.com/package/@ondeinference/react-native">React Native SDK</a> · <a href="https://ondeinference.com">Website</a>
+</p>
 
-## Prerequisites
+---
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Rust | stable (1.80+) | `rustup update stable` |
-| Android NDK | r27+ | Via Android Studio SDK Manager |
-| Android SDK | compileSdk 36 | API 24+ (minSdk) |
-| Cargo | latest | Ships with Rust |
+## What is Onde?
 
-Install the Rust Android cross-compilation targets:
+Onde is an on-device LLM inference SDK for Kotlin apps. It wraps the shared Rust core built on top of [mistral.rs](https://github.com/EricLBuehler/mistral.rs) in a Kotlin-friendly API with model downloads from Hugging Face, local cache management, and native inference under the hood.
 
-```sh
-rustup target add \
-    aarch64-linux-android \
-    armv7-linux-androideabi \
-    x86_64-linux-android \
-    i686-linux-android
+- **Runs locally**: no cloud, no API key, no user data leaving the device
+- **Kotlin-friendly**: `suspend` functions and `Flow<StreamChunk>` for streaming
+- **Shared Rust core**: the same engine powers the Rust, Swift, Flutter, and React Native SDKs
+- **Kotlin Multiplatform**: today this package targets Android and JVM
+- **Published on Maven Central**: add one Gradle dependency and start integrating
+
+If you want to experiment with models before wiring them into an app, use [Onde CLI](https://github.com/ondeinference/onde-cli).
+
+---
+
+## Installation
+
+Add the SDK to your app's `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("com.ondeinference:onde-inference:1.0.0")
+}
 ```
 
-Set the NDK path (or let the build script auto-detect it):
+Add `INTERNET` permission to `AndroidManifest.xml` for the initial model download:
 
-```sh
-export ANDROID_NDK_HOME="$HOME/Library/Android/sdk/ndk/27.2.12479018"
-# — or —
-export ANDROID_HOME="$HOME/Library/Android/sdk"  # NDK auto-detected under ndk/
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
 ```
 
-## Building
+### Minimum requirements
 
-From the `onde/` crate root:
+- **Android**: API 26+ (Android 8.0+)
+- **Storage**: about 1.1 GB free for the default Android model
+- **JVM**: a supported desktop target with the bundled native Onde library
 
-```sh
-# Full release build for all four Android ABIs + Kotlin codegen
-./build-kotlin.sh
+---
 
-# Debug build, arm64 only (faster iteration)
-./build-kotlin.sh --debug --target aarch64-linux-android
+## Quick start on Android
 
-# Regenerate Kotlin source without recompiling Rust
-./build-kotlin.sh --generate-only
+```kotlin
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import com.ondeinference.onde.OndeInference
+import kotlinx.coroutines.launch
 
-# Build with the Whisper feature enabled
-ONDE_FEATURES=whisper ./build-kotlin.sh
+class MainActivity : ComponentActivity() {
+    private val onde by lazy { OndeInference(applicationContext) }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            val elapsed = onde.loadDefaultModel(
+                systemPrompt = "You are a helpful, concise assistant."
+            )
+            println("Model loaded in ${elapsed}s")
+
+            val result = onde.chat("What is the capital of Sweden?")
+            println(result.text)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        onde.close()
+    }
+}
 ```
 
-The script performs three steps:
+On Android, the default model is **Qwen 2.5 1.5B Instruct (GGUF Q4_K_M, ~941 MB)**.
 
-1. **Builds `uniffi-bindgen`** — a host binary that reads UniFFI metadata from the compiled library.
-2. **Cross-compiles `libonde.so`** — for each Android target (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`).
-3. **Generates Kotlin source** — runs `uniffi-bindgen generate --language kotlin` to produce `onde.kt` in the library's source set.
+---
 
-After a successful build, the directory structure looks like:
+## Quick start on JVM
 
+```kotlin
+import com.ondeinference.onde.OndeInference
+import kotlinx.coroutines.runBlocking
+
+fun main() = runBlocking {
+    val onde = OndeInference()
+    try {
+        onde.loadDefaultModel(systemPrompt = "You are a helpful assistant.")
+        val reply = onde.chat("Give me three Kotlin tips.")
+        println(reply.text)
+    } finally {
+        onde.close()
+    }
+}
 ```
-kotlin/
-├── onde/
-│   └── src/main/
-│       ├── jniLibs/
-│       │   ├── arm64-v8a/libonde.so
-│       │   ├── armeabi-v7a/libonde.so
-│       │   ├── x86_64/libonde.so
-│       │   └── x86/libonde.so
-│       └── kotlin/com/ondeinference/onde/
-│           └── onde.kt            ← generated UniFFI bindings
+
+On desktop JVM targets, the default model is **Qwen 2.5 3B Instruct (GGUF Q4_K_M, ~1.93 GB)**.
+
+---
+
+## Streaming
+
+If you want tokens as they arrive, collect a `Flow<StreamChunk>`:
+
+```kotlin
+lifecycleScope.launch {
+    onde.stream("Write a haiku about the ocean.").collect { chunk ->
+        textView.append(chunk.delta)
+        if (chunk.done) println("\n[done]")
+    }
+}
+```
+
+---
+
+## Multi-turn conversation
+
+Onde keeps conversation history for you:
+
+```kotlin
+lifecycleScope.launch {
+    onde.loadDefaultModel(systemPrompt = "You are a Rust tutor.")
+
+    val r1 = onde.chat("What is ownership?")
+    println(r1.text)
+
+    val r2 = onde.chat("Can you give me a code example?")
+    println(r2.text)
+
+    onde.clearHistory()
+}
+```
+
+---
+
+## Models and sampling
+
+The SDK exposes convenience helpers for supported models and sampling presets:
+
+```kotlin
+import com.ondeinference.onde.OndeModels
+import com.ondeinference.onde.OndeSampling
+
+lifecycleScope.launch {
+    onde.loadModel(
+        config = OndeModels.qwen25_1_5b(),
+        systemPrompt = "You are a coding assistant.",
+        sampling = OndeSampling.deterministic(),
+    )
+}
+```
+
+Available helpers include:
+
+- `OndeModels.default()`
+- `OndeModels.qwen25_1_5b()`
+- `OndeModels.qwen25_3b()`
+- `OndeSampling.default()`
+- `OndeSampling.deterministic()`
+- `OndeSampling.mobile()`
+
+---
+
+## One-shot generation
+
+Use `generate()` when you want a response without mutating chat history:
+
+```kotlin
+import com.ondeinference.onde.OndeMessage
+import com.ondeinference.onde.OndeSampling
+
+lifecycleScope.launch {
+    val result = onde.generate(
+        messages = listOf(
+            OndeMessage.system("You are a summariser."),
+            OndeMessage.user("Summarise this article in five bullet points."),
+        ),
+        sampling = OndeSampling.deterministic(),
+    )
+    println(result.text)
+}
+```
+
+---
+
+## Engine status and cache location
+
+```kotlin
+lifecycleScope.launch {
+    val info = onde.info()
+    println("Status: ${info.status}")
+    println("Model: ${info.modelName}")
+    println("History: ${info.historyLength} turns")
+}
+
+println(onde.modelCacheDir.absolutePath)
+```
+
+Onde stores model files inside the configured data directory:
+
+```text
+<dataDir>/
+├── models/
+│   └── hub/
+│       └── models--bartowski--Qwen2.5-1.5B-Instruct-GGUF/
+│           └── ...
+└── tmp/
+```
+
+On Android, the default `dataDir` is `context.filesDir`.
+
+---
+
+## Building from source
+
+The Kotlin SDK lives in `sdk/kotlin/` and is built from the shared Rust crate in the repository root.
+
+### Prerequisites
+
+```bash
+# Rust Android targets
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+
+# cargo-ndk for Android cross-compilation
+cargo install cargo-ndk
+
+# Android NDK
+export ANDROID_NDK_HOME=$HOME/Library/Android/sdk/ndk/26.1.10909125
+```
+
+### Build Android native libraries
+
+```bash
+./sdk/kotlin/scripts/build-android.sh
+```
+
+This produces `.so` files in `sdk/kotlin/lib/src/androidMain/jniLibs/`.
+
+### Build JVM native library
+
+```bash
+./sdk/kotlin/scripts/build-jvm.sh
+```
+
+This bundles the desktop native library into `sdk/kotlin/lib/src/jvmMain/resources/native/`.
+
+### Generate Kotlin UniFFI bindings
+
+```bash
+./sdk/kotlin/scripts/generate-bindings.sh
+```
+
+This generates the Kotlin bindings in `sdk/kotlin/lib/src/generated/kotlin/`.
+
+> The generated bindings and compiled native libraries are intentionally gitignored and should be regenerated from source.
+
+### Build the Gradle modules
+
+```bash
+cd sdk/kotlin
+./gradlew :lib:assembleRelease
+./gradlew :example:assembleDebug
+```
+
+---
+
+## Publishing to Maven Central
+
+Publishing is handled by CI. The published coordinates are controlled by `sdk/kotlin/gradle.properties`:
+
+- `GROUP=com.ondeinference`
+- `POM_ARTIFACT_ID=onde-inference`
+- `VERSION_NAME=1.0.0`
+
+Tag a release after bumping the Rust and Kotlin versions together.
+
+---
+
+## Project layout
+
+```text
+sdk/kotlin/
 ├── build.gradle.kts
 ├── settings.gradle.kts
-└── ...
+├── gradle.properties
+├── README.md
+├── example/                 # Android demo app
+├── lib/                     # Kotlin Multiplatform SDK module
+│   └── src/
+│       ├── androidMain/
+│       ├── jvmMain/
+│       ├── shared/
+│       └── generated/
+└── scripts/
+    ├── build-android.sh
+    ├── build-jvm.sh
+    └── generate-bindings.sh
 ```
 
-## Integration
-
-### Option A: Composite build (recommended for monorepo)
-
-In your app's `settings.gradle.kts`:
-
-```kotlin
-includeBuild("path/to/onde/kotlin") {
-    dependencySubstitution {
-        substitute(module("com.ondeinference:onde")).using(project(":onde"))
-    }
-}
-```
-
-Then in your app's `build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation("com.ondeinference:onde")
-}
-```
-
-### Option B: Direct project dependency
-
-In your app's `settings.gradle.kts`:
-
-```kotlin
-include(":onde")
-project(":onde").projectDir = file("path/to/onde/kotlin/onde")
-```
-
-Then in your app's `build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation(project(":onde"))
-}
-```
-
-### Option C: Publish as AAR
-
-```sh
-cd kotlin
-./gradlew :onde:assembleRelease
-```
-
-The AAR is produced at `onde/build/outputs/aar/onde-release.aar`. Publish it to your local Maven repository or a private artifact server.
-
-## API Usage
-
-### Chat Inference
-
-```kotlin
-import com.ondeinference.onde.*
-import kotlinx.coroutines.*
-
-// Create an engine instance.
-val engine = OndeChatEngine()
-
-// Load the platform-appropriate default model (Qwen 2.5 1.5B on Android).
-val loadTimeSecs = engine.loadDefaultModel(
-    systemPrompt = "You are a helpful assistant.",
-    sampling = null  // use defaults
-)
-println("Model loaded in ${loadTimeSecs}s")
-
-// Multi-turn chat — history is managed automatically.
-val reply = engine.sendMessage("What is Kotlin?")
-println(reply.text)            // "Kotlin is a modern programming language..."
-println(reply.durationDisplay) // "4.2s"
-
-// One-shot generation (does NOT modify conversation history).
-val enhanced = engine.generate(
-    messages = listOf(userMessage("Expand: a cat in space")),
-    sampling = deterministicSamplingConfig()
-)
-println(enhanced.text)
-
-// Check engine status.
-val info = engine.info()
-println("Status: ${info.status}, History: ${info.historyLength} turns")
-
-// Conversation management.
-val history: List<ChatMessage> = engine.history()
-engine.clearHistory()
-engine.setSystemPrompt("You are a pirate.")
-
-// Cleanup — frees model memory.
-engine.unloadModel()
-```
-
-### Streaming Inference
-
-```kotlin
-import com.ondeinference.onde.*
-
-// Implement the callback interface.
-class MyStreamHandler : StreamChunkListener {
-    private val buffer = StringBuilder()
-
-    override fun onChunk(chunk: StreamChunk): Boolean {
-        buffer.append(chunk.delta)
-        print(chunk.delta)  // Real-time token output
-
-        // Return true to continue, false to cancel early.
-        return !chunk.done
-    }
-}
-
-// Stream through the free function (UniFFI 0.31 callback_interface pattern).
-streamChatMessage(
-    engine = engine,
-    message = "Tell me a story about a brave robot.",
-    listener = MyStreamHandler()
-)
-```
-
-### Model Configuration
-
-```kotlin
-import com.ondeinference.onde.*
-
-// Platform default (Qwen 2.5 1.5B on Android, 3B on desktop).
-val defaultConfig = defaultModelConfig()
-
-// Explicit model configs.
-val small = qwen251_5bConfig()   // ~941 MB, ideal for mobile
-val medium = qwen253bConfig()    // ~1.93 GB, for devices with more RAM
-
-// Custom config.
-val custom = GgufModelConfig(
-    modelId = "bartowski/Qwen2.5-1.5B-Instruct-GGUF",
-    files = listOf("Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"),
-    tokModelId = "Qwen/Qwen2.5-1.5B-Instruct",  // required on Android
-    displayName = "Qwen 2.5 1.5B",
-    approxMemory = "~941 MB (GGUF Q4_K_M)"
-)
-
-engine.loadGgufModel(
-    config = custom,
-    systemPrompt = "You are helpful.",
-    sampling = mobileSamplingConfig()  // conservative defaults for mobile
-)
-```
-
-### Sampling Configuration
-
-```kotlin
-import com.ondeinference.onde.*
-
-// Creative chat defaults (temperature=0.7, top_p=0.95, max_tokens=512).
-val creative = defaultSamplingConfig()
-
-// Deterministic / greedy (temperature=0.0).
-val greedy = deterministicSamplingConfig()
-
-// Mobile-optimised (max_tokens=128 for faster response on CPU).
-val mobile = mobileSamplingConfig()
-
-// Fully custom.
-val custom = SamplingConfig(
-    temperature = 0.9,
-    topP = 0.95,
-    topK = 50u,
-    minP = null,
-    maxTokens = 256u,
-    frequencyPenalty = 0.1f,
-    presencePenalty = 0.1f
-)
-
-engine.setSampling(custom)
-```
-
-### Whisper Speech-to-Text (requires `whisper` feature)
-
-```kotlin
-import com.ondeinference.onde.*
-
-// Create and load a Whisper engine.
-val whisper = OndeWhisperEngine()
-
-// Download or find a cached model.
-val modelPath = findOrDownloadWhisperModelFfi(
-    modelDir = "/data/user/0/com.myapp/files/whisper",
-    modelName = null,  // platform default (ggml-base.bin on Android)
-    listener = object : WhisperProgressListener {
-        override fun onProgress(progress: WhisperModelDownloadProgress) {
-            println("${progress.downloadedDisplay} / ${progress.totalDisplay}")
-        }
-    },
-    appDataDir = context.filesDir.absolutePath
-)
-
-whisper.loadModel(modelPath)
-
-// Transcribe from a file.
-val result = whisper.transcribeFile(
-    path = "/path/to/audio.wav",
-    language = "en"  // or null for auto-detect
-)
-println(result.text)
-result.segments.forEach { seg ->
-    println("[${seg.startSecs}s - ${seg.endSecs}s] ${seg.text}")
-}
-
-// Transcribe from raw PCM samples.
-val samples: List<Float> = readWavSamplesFfi("/path/to/audio.wav")
-val result2 = whisper.transcribeSamples(samples, language = null)
-println(result2.text)
-```
-
-### Helper Functions
-
-```kotlin
-import com.ondeinference.onde.*
-
-// Message constructors.
-val sys = systemMessage("You are helpful.")
-val usr = userMessage("Hello!")
-val ast = assistantMessage("Hi there!")
-
-// Platform default Whisper model name.
-val whisperModel = defaultModelForPlatform() // "ggml-base.bin" on Android
-
-// All available Whisper model candidates.
-val candidates = whisperModelCandidates()
-// ["ggml-large-v3-turbo.bin", "ggml-large-v3.bin", ..., "ggml-tiny.en.bin"]
-```
-
-## Error Handling
-
-All fallible operations throw typed exceptions generated from the Rust error enums:
-
-```kotlin
-try {
-    engine.sendMessage("Hello")
-} catch (e: InferenceError.NoModelLoaded) {
-    // No model loaded — call loadGgufModel() or loadDefaultModel() first.
-} catch (e: InferenceError.Inference) {
-    // Inference failed: ${e.reason}
-} catch (e: InferenceError.ModelBuild) {
-    // Failed to build model: ${e.reason}
-} catch (e: InferenceError.AlreadyLoaded) {
-    // Model is already loaded: ${e.modelName}
-} catch (e: InferenceError.Cancelled) {
-    // Model loading was cancelled.
-} catch (e: InferenceError.Other) {
-    // Generic error: ${e.reason}
-}
-```
-
-Whisper operations throw `WhisperError` variants:
-
-```kotlin
-try {
-    whisper.transcribeFile(path, language)
-} catch (e: WhisperError.ModelNotLoaded) { ... }
-  catch (e: WhisperError.ModelLoadFailed) { ... }
-  catch (e: WhisperError.TranscriptionFailed) { ... }
-  catch (e: WhisperError.DownloadFailed) { ... }
-  catch (e: WhisperError.Io) { ... }
-```
-
-## Threading Model
-
-- **`OndeChatEngine`** methods are `suspend` functions — call them from a coroutine scope (e.g. `viewModelScope`, `lifecycleScope`).
-- **`OndeWhisperEngine`** methods are synchronous (blocking). Call them from `Dispatchers.IO` or a background thread:
-
-  ```kotlin
-  withContext(Dispatchers.IO) {
-      whisper.loadModel(path)
-      val result = whisper.transcribeFile(audioPath, "en")
-  }
-  ```
-
-- The underlying Rust engine is thread-safe (`Send + Sync`). Multiple coroutines can safely share a single `OndeChatEngine` instance.
-
-## Project Structure
-
-```
-onde/
-├── build-kotlin.sh            # Build script (cross-compile + bindgen)
-├── uniffi.toml                # UniFFI config (Kotlin package name)
-├── uniffi-bindgen/            # Host binary for generating bindings
-│   ├── Cargo.toml
-│   └── uniffi-bindgen.rs
-├── kotlin/                    # Android library project (Gradle)
-│   ├── build.gradle.kts       # Root Gradle build
-│   ├── settings.gradle.kts
-│   ├── gradle.properties
-│   ├── README.md              # ← You are here
-│   └── onde/                  # Library module
-│       ├── build.gradle.kts
-│       ├── proguard-rules.pro
-│       ├── consumer-rules.pro
-│       └── src/main/
-│           ├── AndroidManifest.xml
-│           ├── jniLibs/       # Native .so files (build artifact)
-│           └── kotlin/com/ondeinference/onde/
-│               └── onde.kt    # Generated UniFFI Kotlin bindings
-├── src/                       # Rust source (the actual engine)
-│   ├── lib.rs
-│   ├── hf_cache.rs
-│   ├── whisper.rs
-│   └── inference/
-│       ├── engine.rs
-│       ├── ffi.rs             # UniFFI-exported wrappers
-│       ├── models.rs
-│       ├── token.rs
-│       └── types.rs           # Records, Enums, Errors
-└── Cargo.toml
-```
+---
 
 ## Troubleshooting
 
-### `ANDROID_NDK_HOME not found`
+**Download never finishes** — check your internet connection. Hugging Face Hub can rate-limit anonymous downloads.
 
-Set the environment variable to your NDK installation:
+**App crashes immediately on Android** — make sure the device is running API 26 or newer. The Android platform setup uses `Os.setenv`.
 
-```sh
-export ANDROID_NDK_HOME="$HOME/Library/Android/sdk/ndk/27.2.12479018"
-```
+**Inference is very slow** — Android emulators are slow for CPU inference. A physical ARM device is much faster.
 
-Or install the NDK via Android Studio → SDK Manager → SDK Tools → NDK (Side by side).
+**Out of memory while loading** — the default Android model needs roughly 1–1.5 GB of free RAM.
 
-### `linker not found` during cross-compilation
+**Native library not found on desktop** — rebuild the JVM native library with `./sdk/kotlin/scripts/build-jvm.sh` so the expected resource bundle is present.
 
-Ensure the NDK toolchain binaries are present:
-
-```sh
-ls $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android24-clang
-```
-
-If missing, your NDK installation may be incomplete. Reinstall it.
-
-### `UnsatisfiedLinkError: libonde.so` at runtime
-
-The `.so` file is missing from the APK's `jniLibs` for the device's ABI. Verify:
-
-1. `build-kotlin.sh` completed successfully for the target ABI.
-2. The `.so` exists at `onde/src/main/jniLibs/<abi>/libonde.so`.
-3. Your app's `build.gradle.kts` doesn't filter out the ABI via `ndk { abiFilters ... }`.
-
-### `uniffi-bindgen` version mismatch
-
-The `uniffi` version in `uniffi-bindgen/Cargo.toml` **must** exactly match the version in the main `onde` crate's `Cargo.toml` (`=0.31.0`). A mismatch causes a runtime panic with a checksum error.
+---
 
 ## License
 
-MIT OR Apache-2.0 — same as the `onde` crate.
+MIT OR Apache-2.0. See [LICENSE](../../LICENSE).

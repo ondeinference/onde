@@ -3,7 +3,7 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
+// ignore_for_file: unused_element, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
 import 'dart:async';
@@ -37,12 +37,8 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   /// Initialize flutter_rust_bridge in mock mode.
   /// No libraries for FFI are loaded.
-  static void initMock({
-    required RustLibApi api,
-  }) {
-    instance.initMockImpl(
-      api: api,
-    );
+  static void initMock({required RustLibApi api}) {
+    instance.initMockImpl(api: api);
   }
 
   /// Dispose flutter_rust_bridge
@@ -70,61 +66,85 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -2049740590;
+  int get rustContentHash => -467241906;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-    stem: 'onde_inference_dart',
-    ioDirectory: 'rust/target/release/',
-    webPrefix: 'pkg/',
-    wasmBindgenName: 'wasm_bindgen',
-  );
+        stem: 'onde_inference_dart',
+        ioDirectory: 'rust/target/release/',
+        webPrefix: 'pkg/',
+        wasmBindgenName: 'wasm_bindgen',
+      );
 }
 
 abstract class RustLibApi extends BaseApi {
-  Future<BigInt> crateApiOndeChatEngineClearHistory(
-      {required OndeChatEngine that});
+  Future<BigInt> crateApiOndeChatEngineClearHistory({
+    required OndeChatEngine that,
+  });
 
-  Future<void> crateApiOndeChatEngineClearSystemPrompt(
-      {required OndeChatEngine that});
+  Future<void> crateApiOndeChatEngineClearSystemPrompt({
+    required OndeChatEngine that,
+  });
 
-  Future<InferenceResult> crateApiOndeChatEngineGenerate(
-      {required OndeChatEngine that,
-      required List<ChatMessage> messages,
-      SamplingConfig? sampling});
+  Future<InferenceResult> crateApiOndeChatEngineGenerate({
+    required OndeChatEngine that,
+    required List<ChatMessage> messages,
+    SamplingConfig? sampling,
+  });
 
-  Future<List<ChatMessage>> crateApiOndeChatEngineHistory(
-      {required OndeChatEngine that});
+  Future<List<ChatMessage>> crateApiOndeChatEngineHistory({
+    required OndeChatEngine that,
+  });
 
   Future<EngineInfo> crateApiOndeChatEngineInfo({required OndeChatEngine that});
 
   Future<bool> crateApiOndeChatEngineIsLoaded({required OndeChatEngine that});
 
-  Future<double> crateApiOndeChatEngineLoadGgufModel(
-      {required OndeChatEngine that,
-      required GgufModelConfig config,
-      String? systemPrompt,
-      SamplingConfig? sampling});
+  Future<double> crateApiOndeChatEngineLoadAssignedModel({
+    required OndeChatEngine that,
+    required String appId,
+    required String appSecret,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  });
+
+  Future<double> crateApiOndeChatEngineLoadGgufModel({
+    required OndeChatEngine that,
+    required GgufModelConfig config,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  });
 
   OndeChatEngine crateApiOndeChatEngineNew();
 
-  Future<void> crateApiOndeChatEnginePushHistory(
-      {required OndeChatEngine that, required ChatMessage message});
+  Future<void> crateApiOndeChatEnginePushHistory({
+    required OndeChatEngine that,
+    required ChatMessage message,
+  });
 
-  Future<InferenceResult> crateApiOndeChatEngineSendMessage(
-      {required OndeChatEngine that, required String message});
+  Future<InferenceResult> crateApiOndeChatEngineSendMessage({
+    required OndeChatEngine that,
+    required String message,
+  });
 
-  Future<void> crateApiOndeChatEngineSetSampling(
-      {required OndeChatEngine that, required SamplingConfig sampling});
+  Future<void> crateApiOndeChatEngineSetSampling({
+    required OndeChatEngine that,
+    required SamplingConfig sampling,
+  });
 
-  Future<void> crateApiOndeChatEngineSetSystemPrompt(
-      {required OndeChatEngine that, required String prompt});
+  Future<void> crateApiOndeChatEngineSetSystemPrompt({
+    required OndeChatEngine that,
+    required String prompt,
+  });
 
-  Stream<StreamChunk> crateApiOndeChatEngineStreamMessage(
-      {required OndeChatEngine that, required String message});
+  Stream<StreamChunk> crateApiOndeChatEngineStreamMessage({
+    required OndeChatEngine that,
+    required String message,
+  });
 
-  Future<String?> crateApiOndeChatEngineUnloadModel(
-      {required OndeChatEngine that});
+  Future<String?> crateApiOndeChatEngineUnloadModel({
+    required OndeChatEngine that,
+  });
 
   void crateApiConfigureCacheDir({required String appDataDir});
 
@@ -145,13 +165,13 @@ abstract class RustLibApi extends BaseApi {
   GgufModelConfig crateApiQwen25Coder3BConfig();
 
   RustArcIncrementStrongCountFnType
-      get rust_arc_increment_strong_count_OndeChatEngine;
+  get rust_arc_increment_strong_count_OndeChatEngine;
 
   RustArcDecrementStrongCountFnType
-      get rust_arc_decrement_strong_count_OndeChatEngine;
+  get rust_arc_decrement_strong_count_OndeChatEngine;
 
   CrossPlatformFinalizerArg
-      get rust_arc_decrement_strong_count_OndeChatEnginePtr;
+  get rust_arc_decrement_strong_count_OndeChatEnginePtr;
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -163,24 +183,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  Future<BigInt> crateApiOndeChatEngineClearHistory(
-      {required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 1, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_u_64,
-        decodeErrorData: null,
+  Future<BigInt> crateApiOndeChatEngineClearHistory({
+    required OndeChatEngine that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_64,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineClearHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineClearHistoryConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineClearHistoryConstMeta =>
@@ -190,24 +219,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiOndeChatEngineClearSystemPrompt(
-      {required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 2, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: null,
+  Future<void> crateApiOndeChatEngineClearSystemPrompt({
+    required OndeChatEngine that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineClearSystemPromptConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineClearSystemPromptConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineClearSystemPromptConstMeta =>
@@ -217,28 +255,37 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<InferenceResult> crateApiOndeChatEngineGenerate(
-      {required OndeChatEngine that,
-      required List<ChatMessage> messages,
-      SamplingConfig? sampling}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_list_chat_message(messages, serializer);
-        sse_encode_opt_box_autoadd_sampling_config(sampling, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 3, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_inference_result,
-        decodeErrorData: sse_decode_onde_error,
+  Future<InferenceResult> crateApiOndeChatEngineGenerate({
+    required OndeChatEngine that,
+    required List<ChatMessage> messages,
+    SamplingConfig? sampling,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_list_chat_message(messages, serializer);
+          sse_encode_opt_box_autoadd_sampling_config(sampling, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_inference_result,
+          decodeErrorData: sse_decode_onde_error,
+        ),
+        constMeta: kCrateApiOndeChatEngineGenerateConstMeta,
+        argValues: [that, messages, sampling],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineGenerateConstMeta,
-      argValues: [that, messages, sampling],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineGenerateConstMeta =>
@@ -248,24 +295,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<ChatMessage>> crateApiOndeChatEngineHistory(
-      {required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 4, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_list_chat_message,
-        decodeErrorData: null,
+  Future<List<ChatMessage>> crateApiOndeChatEngineHistory({
+    required OndeChatEngine that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_chat_message,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineHistoryConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineHistoryConstMeta =>
@@ -275,49 +331,64 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<EngineInfo> crateApiOndeChatEngineInfo(
-      {required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 5, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_engine_info,
-        decodeErrorData: null,
+  Future<EngineInfo> crateApiOndeChatEngineInfo({
+    required OndeChatEngine that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_engine_info,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineInfoConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineInfoConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiOndeChatEngineInfoConstMeta => const TaskConstMeta(
-        debugName: "OndeChatEngine_info",
-        argNames: ["that"],
-      );
+  TaskConstMeta get kCrateApiOndeChatEngineInfoConstMeta =>
+      const TaskConstMeta(debugName: "OndeChatEngine_info", argNames: ["that"]);
 
   @override
   Future<bool> crateApiOndeChatEngineIsLoaded({required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 6, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_bool,
-        decodeErrorData: null,
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineIsLoadedConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineIsLoadedConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineIsLoadedConstMeta =>
@@ -327,30 +398,83 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<double> crateApiOndeChatEngineLoadGgufModel(
-      {required OndeChatEngine that,
-      required GgufModelConfig config,
-      String? systemPrompt,
-      SamplingConfig? sampling}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_box_autoadd_gguf_model_config(config, serializer);
-        sse_encode_opt_String(systemPrompt, serializer);
-        sse_encode_opt_box_autoadd_sampling_config(sampling, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 7, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_f_64,
-        decodeErrorData: sse_decode_onde_error,
+  Future<double> crateApiOndeChatEngineLoadAssignedModel({
+    required OndeChatEngine that,
+    required String appId,
+    required String appSecret,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_String(appId, serializer);
+          sse_encode_String(appSecret, serializer);
+          sse_encode_opt_String(systemPrompt, serializer);
+          sse_encode_opt_box_autoadd_sampling_config(sampling, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 7,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_f_64,
+          decodeErrorData: sse_decode_onde_error,
+        ),
+        constMeta: kCrateApiOndeChatEngineLoadAssignedModelConstMeta,
+        argValues: [that, appId, appSecret, systemPrompt, sampling],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineLoadGgufModelConstMeta,
-      argValues: [that, config, systemPrompt, sampling],
-      apiImpl: this,
-    ));
+    );
+  }
+
+  TaskConstMeta get kCrateApiOndeChatEngineLoadAssignedModelConstMeta =>
+      const TaskConstMeta(
+        debugName: "OndeChatEngine_load_assigned_model",
+        argNames: ["that", "appId", "appSecret", "systemPrompt", "sampling"],
+      );
+
+  @override
+  Future<double> crateApiOndeChatEngineLoadGgufModel({
+    required OndeChatEngine that,
+    required GgufModelConfig config,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_gguf_model_config(config, serializer);
+          sse_encode_opt_String(systemPrompt, serializer);
+          sse_encode_opt_box_autoadd_sampling_config(sampling, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 8,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_f_64,
+          decodeErrorData: sse_decode_onde_error,
+        ),
+        constMeta: kCrateApiOndeChatEngineLoadGgufModelConstMeta,
+        argValues: [that, config, systemPrompt, sampling],
+        apiImpl: this,
+      ),
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineLoadGgufModelConstMeta =>
@@ -361,47 +485,57 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   OndeChatEngine crateApiOndeChatEngineNew() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData:
-            sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineNewConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineNewConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiOndeChatEngineNewConstMeta => const TaskConstMeta(
-        debugName: "OndeChatEngine_new",
-        argNames: [],
-      );
+  TaskConstMeta get kCrateApiOndeChatEngineNewConstMeta =>
+      const TaskConstMeta(debugName: "OndeChatEngine_new", argNames: []);
 
   @override
-  Future<void> crateApiOndeChatEnginePushHistory(
-      {required OndeChatEngine that, required ChatMessage message}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_box_autoadd_chat_message(message, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 9, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: null,
+  Future<void> crateApiOndeChatEnginePushHistory({
+    required OndeChatEngine that,
+    required ChatMessage message,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_chat_message(message, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 10,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEnginePushHistoryConstMeta,
+        argValues: [that, message],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEnginePushHistoryConstMeta,
-      argValues: [that, message],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEnginePushHistoryConstMeta =>
@@ -411,25 +545,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<InferenceResult> crateApiOndeChatEngineSendMessage(
-      {required OndeChatEngine that, required String message}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_String(message, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 10, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_inference_result,
-        decodeErrorData: sse_decode_onde_error,
+  Future<InferenceResult> crateApiOndeChatEngineSendMessage({
+    required OndeChatEngine that,
+    required String message,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_String(message, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_inference_result,
+          decodeErrorData: sse_decode_onde_error,
+        ),
+        constMeta: kCrateApiOndeChatEngineSendMessageConstMeta,
+        argValues: [that, message],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineSendMessageConstMeta,
-      argValues: [that, message],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineSendMessageConstMeta =>
@@ -439,25 +583,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiOndeChatEngineSetSampling(
-      {required OndeChatEngine that, required SamplingConfig sampling}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_box_autoadd_sampling_config(sampling, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 11, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: null,
+  Future<void> crateApiOndeChatEngineSetSampling({
+    required OndeChatEngine that,
+    required SamplingConfig sampling,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_sampling_config(sampling, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineSetSamplingConstMeta,
+        argValues: [that, sampling],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineSetSamplingConstMeta,
-      argValues: [that, sampling],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineSetSamplingConstMeta =>
@@ -467,25 +621,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiOndeChatEngineSetSystemPrompt(
-      {required OndeChatEngine that, required String prompt}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_String(prompt, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 12, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: null,
+  Future<void> crateApiOndeChatEngineSetSystemPrompt({
+    required OndeChatEngine that,
+    required String prompt,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          sse_encode_String(prompt, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 13,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineSetSystemPromptConstMeta,
+        argValues: [that, prompt],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineSetSystemPromptConstMeta,
-      argValues: [that, prompt],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineSetSystemPromptConstMeta =>
@@ -495,27 +659,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Stream<StreamChunk> crateApiOndeChatEngineStreamMessage(
-      {required OndeChatEngine that, required String message}) {
+  Stream<StreamChunk> crateApiOndeChatEngineStreamMessage({
+    required OndeChatEngine that,
+    required String message,
+  }) {
     final sink = RustStreamSink<StreamChunk>();
-    unawaited(handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        sse_encode_String(message, serializer);
-        sse_encode_StreamSink_stream_chunk_Sse(sink, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 13, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: sse_decode_onde_error,
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+              that,
+              serializer,
+            );
+            sse_encode_String(message, serializer);
+            sse_encode_StreamSink_stream_chunk_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 14,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_onde_error,
+          ),
+          constMeta: kCrateApiOndeChatEngineStreamMessageConstMeta,
+          argValues: [that, message, sink],
+          apiImpl: this,
+        ),
       ),
-      constMeta: kCrateApiOndeChatEngineStreamMessageConstMeta,
-      argValues: [that, message, sink],
-      apiImpl: this,
-    )));
+    );
     return sink.stream;
   }
 
@@ -526,24 +702,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<String?> crateApiOndeChatEngineUnloadModel(
-      {required OndeChatEngine that}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-            that, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 14, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_opt_String,
-        decodeErrorData: null,
+  Future<String?> crateApiOndeChatEngineUnloadModel({
+    required OndeChatEngine that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiOndeChatEngineUnloadModelConstMeta,
+        argValues: [that],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiOndeChatEngineUnloadModelConstMeta,
-      argValues: [that],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiOndeChatEngineUnloadModelConstMeta =>
@@ -554,87 +739,90 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   void crateApiConfigureCacheDir({required String appDataDir}) {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_String(appDataDir, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: sse_decode_onde_error,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(appDataDir, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_onde_error,
+        ),
+        constMeta: kCrateApiConfigureCacheDirConstMeta,
+        argValues: [appDataDir],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiConfigureCacheDirConstMeta,
-      argValues: [appDataDir],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiConfigureCacheDirConstMeta => const TaskConstMeta(
-        debugName: "configure_cache_dir",
-        argNames: ["appDataDir"],
-      );
+    debugName: "configure_cache_dir",
+    argNames: ["appDataDir"],
+  );
 
   @override
   GgufModelConfig crateApiDefaultModelConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_gguf_model_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDefaultModelConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiDefaultModelConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiDefaultModelConfigConstMeta => const TaskConstMeta(
-        debugName: "default_model_config",
-        argNames: [],
-      );
+  TaskConstMeta get kCrateApiDefaultModelConfigConstMeta =>
+      const TaskConstMeta(debugName: "default_model_config", argNames: []);
 
   @override
   SamplingConfig crateApiDefaultSamplingConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_sampling_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sampling_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDefaultSamplingConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiDefaultSamplingConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiDefaultSamplingConfigConstMeta =>
-      const TaskConstMeta(
-        debugName: "default_sampling_config",
-        argNames: [],
-      );
+      const TaskConstMeta(debugName: "default_sampling_config", argNames: []);
 
   @override
   SamplingConfig crateApiDeterministicSamplingConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_sampling_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sampling_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeterministicSamplingConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiDeterministicSamplingConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiDeterministicSamplingConfigConstMeta =>
@@ -645,124 +833,121 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   SamplingConfig crateApiMobileSamplingConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_sampling_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sampling_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiMobileSamplingConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiMobileSamplingConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiMobileSamplingConfigConstMeta =>
-      const TaskConstMeta(
-        debugName: "mobile_sampling_config",
-        argNames: [],
-      );
+      const TaskConstMeta(debugName: "mobile_sampling_config", argNames: []);
 
   @override
   GgufModelConfig crateApiQwen2515BConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_gguf_model_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen2515BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiQwen2515BConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiQwen2515BConfigConstMeta => const TaskConstMeta(
-        debugName: "qwen25_1_5b_config",
-        argNames: [],
-      );
+  TaskConstMeta get kCrateApiQwen2515BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen25_1_5b_config", argNames: []);
 
   @override
   GgufModelConfig crateApiQwen253BConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_gguf_model_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen253BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiQwen253BConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiQwen253BConfigConstMeta => const TaskConstMeta(
-        debugName: "qwen25_3b_config",
-        argNames: [],
-      );
+  TaskConstMeta get kCrateApiQwen253BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen25_3b_config", argNames: []);
 
   @override
   GgufModelConfig crateApiQwen25Coder15BConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_gguf_model_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen25Coder15BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiQwen25Coder15BConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiQwen25Coder15BConfigConstMeta =>
-      const TaskConstMeta(
-        debugName: "qwen25_coder_1_5b_config",
-        argNames: [],
-      );
+      const TaskConstMeta(debugName: "qwen25_coder_1_5b_config", argNames: []);
 
   @override
   GgufModelConfig crateApiQwen25Coder3BConfig() {
-    return handler.executeSync(SyncTask(
-      callFfi: () {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_gguf_model_config,
-        decodeErrorData: null,
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen25Coder3BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiQwen25Coder3BConfigConstMeta,
-      argValues: [],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiQwen25Coder3BConfigConstMeta =>
-      const TaskConstMeta(
-        debugName: "qwen25_coder_3b_config",
-        argNames: [],
-      );
+      const TaskConstMeta(debugName: "qwen25_coder_3b_config", argNames: []);
 
   RustArcIncrementStrongCountFnType
-      get rust_arc_increment_strong_count_OndeChatEngine => wire
-          .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine;
+  get rust_arc_increment_strong_count_OndeChatEngine => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine;
 
   RustArcDecrementStrongCountFnType
-      get rust_arc_decrement_strong_count_OndeChatEngine => wire
-          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine;
+  get rust_arc_decrement_strong_count_OndeChatEngine => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine;
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
@@ -772,31 +957,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   OndeChatEngine
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          dynamic raw) {
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
   OndeChatEngine
-      dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          dynamic raw) {
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
   OndeChatEngine
-      dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          dynamic raw) {
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
   RustStreamSink<StreamChunk> dco_decode_StreamSink_stream_chunk_Sse(
-      dynamic raw) {
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
   }
@@ -924,13 +1113,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   InferenceResult dco_decode_inference_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return InferenceResult(
       text: dco_decode_String(arr[0]),
       durationSecs: dco_decode_f_64(arr[1]),
       durationDisplay: dco_decode_String(arr[2]),
       finishReason: dco_decode_String(arr[3]),
+      toolCalls: dco_decode_list_tool_call_info(arr[4]),
     );
   }
 
@@ -953,29 +1143,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<ToolCallInfo> dco_decode_list_tool_call_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tool_call_info).toList();
+  }
+
+  @protected
   OndeError dco_decode_onde_error(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     switch (raw[0]) {
       case 0:
         return OndeError_NoModelLoaded();
       case 1:
-        return OndeError_AlreadyLoaded(
-          modelName: dco_decode_String(raw[1]),
-        );
+        return OndeError_AlreadyLoaded(modelName: dco_decode_String(raw[1]));
       case 2:
-        return OndeError_ModelBuild(
-          reason: dco_decode_String(raw[1]),
-        );
+        return OndeError_ModelBuild(reason: dco_decode_String(raw[1]));
       case 3:
-        return OndeError_Inference(
-          reason: dco_decode_String(raw[1]),
-        );
+        return OndeError_Inference(reason: dco_decode_String(raw[1]));
       case 4:
         return OndeError_Cancelled();
       case 5:
-        return OndeError_Other(
-          reason: dco_decode_String(raw[1]),
-        );
+        return OndeError_Other(reason: dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
     }
@@ -1042,6 +1230,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ToolCallInfo dco_decode_tool_call_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return ToolCallInfo(
+      id: dco_decode_String(arr[0]),
+      functionName: dco_decode_String(arr[1]),
+      arguments: dco_decode_String(arr[2]),
+    );
+  }
+
+  @protected
   BigInt dco_decode_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeU64(raw);
@@ -1074,34 +1275,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   OndeChatEngine
-      sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          SseDeserializer deserializer) {
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalSseDecode(
-        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
   }
 
   @protected
   OndeChatEngine
-      sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          SseDeserializer deserializer) {
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalSseDecode(
-        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
   }
 
   @protected
   OndeChatEngine
-      sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          SseDeserializer deserializer) {
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return OndeChatEngineImpl.frbInternalSseDecode(
-        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
   }
 
   @protected
   RustStreamSink<StreamChunk> sse_decode_StreamSink_stream_chunk_Sse(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     throw UnimplementedError('Unreachable ()');
   }
@@ -1121,7 +1332,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   ChatMessage sse_decode_box_autoadd_chat_message(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_chat_message(deserializer));
   }
@@ -1140,14 +1352,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   GgufModelConfig sse_decode_box_autoadd_gguf_model_config(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_gguf_model_config(deserializer));
   }
 
   @protected
   SamplingConfig sse_decode_box_autoadd_sampling_config(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_sampling_config(deserializer));
   }
@@ -1181,10 +1395,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_approxMemory = sse_decode_opt_String(deserializer);
     var var_historyLength = sse_decode_u_64(deserializer);
     return EngineInfo(
-        status: var_status,
-        modelName: var_modelName,
-        approxMemory: var_approxMemory,
-        historyLength: var_historyLength);
+      status: var_status,
+      modelName: var_modelName,
+      approxMemory: var_approxMemory,
+      historyLength: var_historyLength,
+    );
   }
 
   @protected
@@ -1215,11 +1430,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_displayName = sse_decode_String(deserializer);
     var var_approxMemory = sse_decode_String(deserializer);
     return GgufModelConfig(
-        modelId: var_modelId,
-        files: var_files,
-        tokModelId: var_tokModelId,
-        displayName: var_displayName,
-        approxMemory: var_approxMemory);
+      modelId: var_modelId,
+      files: var_files,
+      tokModelId: var_tokModelId,
+      displayName: var_displayName,
+      approxMemory: var_approxMemory,
+    );
   }
 
   @protected
@@ -1235,11 +1451,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_durationSecs = sse_decode_f_64(deserializer);
     var var_durationDisplay = sse_decode_String(deserializer);
     var var_finishReason = sse_decode_String(deserializer);
+    var var_toolCalls = sse_decode_list_tool_call_info(deserializer);
     return InferenceResult(
-        text: var_text,
-        durationSecs: var_durationSecs,
-        durationDisplay: var_durationDisplay,
-        finishReason: var_finishReason);
+      text: var_text,
+      durationSecs: var_durationSecs,
+      durationDisplay: var_durationDisplay,
+      finishReason: var_finishReason,
+      toolCalls: var_toolCalls,
+    );
   }
 
   @protected
@@ -1271,6 +1490,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<ToolCallInfo> sse_decode_list_tool_call_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ToolCallInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tool_call_info(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -1335,7 +1568,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   SamplingConfig? sse_decode_opt_box_autoadd_sampling_config(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     if (sse_decode_bool(deserializer)) {
@@ -1367,13 +1601,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_frequencyPenalty = sse_decode_opt_box_autoadd_f_32(deserializer);
     var var_presencePenalty = sse_decode_opt_box_autoadd_f_32(deserializer);
     return SamplingConfig(
-        temperature: var_temperature,
-        topP: var_topP,
-        topK: var_topK,
-        minP: var_minP,
-        maxTokens: var_maxTokens,
-        frequencyPenalty: var_frequencyPenalty,
-        presencePenalty: var_presencePenalty);
+      temperature: var_temperature,
+      topP: var_topP,
+      topK: var_topK,
+      minP: var_minP,
+      maxTokens: var_maxTokens,
+      frequencyPenalty: var_frequencyPenalty,
+      presencePenalty: var_presencePenalty,
+    );
   }
 
   @protected
@@ -1383,7 +1618,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_done = sse_decode_bool(deserializer);
     var var_finishReason = sse_decode_opt_String(deserializer);
     return StreamChunk(
-        delta: var_delta, done: var_done, finishReason: var_finishReason);
+      delta: var_delta,
+      done: var_done,
+      finishReason: var_finishReason,
+    );
+  }
+
+  @protected
+  ToolCallInfo sse_decode_tool_call_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_functionName = sse_decode_String(deserializer);
+    var var_arguments = sse_decode_String(deserializer);
+    return ToolCallInfo(
+      id: var_id,
+      functionName: var_functionName,
+      arguments: var_arguments,
+    );
   }
 
   @protected
@@ -1411,52 +1662,67 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_AnyhowException(
-      AnyhowException self, SseSerializer serializer) {
+    AnyhowException self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.message, serializer);
   }
 
   @protected
   void
-      sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          OndeChatEngine self, SseSerializer serializer) {
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    OndeChatEngine self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
-        (self as OndeChatEngineImpl).frbInternalSseEncode(move: true),
-        serializer);
+      (self as OndeChatEngineImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
   }
 
   @protected
   void
-      sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          OndeChatEngine self, SseSerializer serializer) {
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    OndeChatEngine self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
-        (self as OndeChatEngineImpl).frbInternalSseEncode(move: false),
-        serializer);
+      (self as OndeChatEngineImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
   }
 
   @protected
   void
-      sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
-          OndeChatEngine self, SseSerializer serializer) {
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOndeChatEngine(
+    OndeChatEngine self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
-        (self as OndeChatEngineImpl).frbInternalSseEncode(move: null),
-        serializer);
+      (self as OndeChatEngineImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
   }
 
   @protected
   void sse_encode_StreamSink_stream_chunk_Sse(
-      RustStreamSink<StreamChunk> self, SseSerializer serializer) {
+    RustStreamSink<StreamChunk> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(
-        self.setupAndSerialize(
-            codec: SseCodec(
+      self.setupAndSerialize(
+        codec: SseCodec(
           decodeSuccessData: sse_decode_stream_chunk,
           decodeErrorData: sse_decode_AnyhowException,
-        )),
-        serializer);
+        ),
+      ),
+      serializer,
+    );
   }
 
   @protected
@@ -1473,7 +1739,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_box_autoadd_chat_message(
-      ChatMessage self, SseSerializer serializer) {
+    ChatMessage self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_chat_message(self, serializer);
   }
@@ -1492,14 +1760,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_box_autoadd_gguf_model_config(
-      GgufModelConfig self, SseSerializer serializer) {
+    GgufModelConfig self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_gguf_model_config(self, serializer);
   }
 
   @protected
   void sse_encode_box_autoadd_sampling_config(
-      SamplingConfig self, SseSerializer serializer) {
+    SamplingConfig self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_sampling_config(self, serializer);
   }
@@ -1552,7 +1824,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_gguf_model_config(
-      GgufModelConfig self, SseSerializer serializer) {
+    GgufModelConfig self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.modelId, serializer);
     sse_encode_list_String(self.files, serializer);
@@ -1569,12 +1843,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_inference_result(
-      InferenceResult self, SseSerializer serializer) {
+    InferenceResult self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.text, serializer);
     sse_encode_f_64(self.durationSecs, serializer);
     sse_encode_String(self.durationDisplay, serializer);
     sse_encode_String(self.finishReason, serializer);
+    sse_encode_list_tool_call_info(self.toolCalls, serializer);
   }
 
   @protected
@@ -1588,7 +1865,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_chat_message(
-      List<ChatMessage> self, SseSerializer serializer) {
+    List<ChatMessage> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -1598,10 +1877,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_prim_u_8_strict(
-      Uint8List self, SseSerializer serializer) {
+    Uint8List self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_list_tool_call_info(
+    List<ToolCallInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tool_call_info(item, serializer);
+    }
   }
 
   @protected
@@ -1659,7 +1952,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_opt_box_autoadd_sampling_config(
-      SamplingConfig? self, SseSerializer serializer) {
+    SamplingConfig? self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     sse_encode_bool(self != null, serializer);
@@ -1680,7 +1975,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_sampling_config(
-      SamplingConfig self, SseSerializer serializer) {
+    SamplingConfig self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_opt_box_autoadd_f_64(self.temperature, serializer);
     sse_encode_opt_box_autoadd_f_64(self.topP, serializer);
@@ -1697,6 +1994,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.delta, serializer);
     sse_encode_bool(self.done, serializer);
     sse_encode_opt_String(self.finishReason, serializer);
+  }
+
+  @protected
+  void sse_encode_tool_call_info(ToolCallInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.functionName, serializer);
+    sse_encode_String(self.arguments, serializer);
   }
 
   @protected
@@ -1727,11 +2032,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 class OndeChatEngineImpl extends RustOpaque implements OndeChatEngine {
   // Not to be used by end users
   OndeChatEngineImpl.frbInternalDcoDecode(List<dynamic> wire)
-      : super.frbInternalDcoDecode(wire, _kStaticData);
+    : super.frbInternalDcoDecode(wire, _kStaticData);
 
   // Not to be used by end users
   OndeChatEngineImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
-      : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
 
   static final _kStaticData = RustArcStaticData(
     rustArcIncrementStrongCount:
@@ -1746,73 +2051,88 @@ class OndeChatEngineImpl extends RustOpaque implements OndeChatEngine {
   ///
   /// Returns the number of turns that were removed.
   Future<BigInt> clearHistory() =>
-      RustLib.instance.api.crateApiOndeChatEngineClearHistory(
-        that: this,
-      );
+      RustLib.instance.api.crateApiOndeChatEngineClearHistory(that: this);
 
   /// Clear the current system prompt.
   Future<void> clearSystemPrompt() =>
-      RustLib.instance.api.crateApiOndeChatEngineClearSystemPrompt(
-        that: this,
-      );
+      RustLib.instance.api.crateApiOndeChatEngineClearSystemPrompt(that: this);
 
   /// One-shot generation from an explicit message list.
   ///
   /// Does **not** modify the conversation history.
-  Future<InferenceResult> generate(
-          {required List<ChatMessage> messages, SamplingConfig? sampling}) =>
-      RustLib.instance.api.crateApiOndeChatEngineGenerate(
-          that: this, messages: messages, sampling: sampling);
+  Future<InferenceResult> generate({
+    required List<ChatMessage> messages,
+    SamplingConfig? sampling,
+  }) => RustLib.instance.api.crateApiOndeChatEngineGenerate(
+    that: this,
+    messages: messages,
+    sampling: sampling,
+  );
 
   /// Returns a clone of the full conversation history.
   Future<List<ChatMessage>> history() =>
-      RustLib.instance.api.crateApiOndeChatEngineHistory(
-        that: this,
-      );
+      RustLib.instance.api.crateApiOndeChatEngineHistory(that: this);
 
   /// Returns a point-in-time snapshot of the engine's state.
-  Future<EngineInfo> info() => RustLib.instance.api.crateApiOndeChatEngineInfo(
-        that: this,
-      );
+  Future<EngineInfo> info() =>
+      RustLib.instance.api.crateApiOndeChatEngineInfo(that: this);
 
   /// Returns `true` if a model is currently loaded and ready.
   Future<bool> isLoaded() =>
-      RustLib.instance.api.crateApiOndeChatEngineIsLoaded(
-        that: this,
-      );
+      RustLib.instance.api.crateApiOndeChatEngineIsLoaded(that: this);
+
+  /// Load the model assigned to this Onde app from the dashboard.
+  ///
+  /// Returns the wall-clock seconds taken to load the model.
+  Future<double> loadAssignedModel({
+    required String appId,
+    required String appSecret,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  }) => RustLib.instance.api.crateApiOndeChatEngineLoadAssignedModel(
+    that: this,
+    appId: appId,
+    appSecret: appSecret,
+    systemPrompt: systemPrompt,
+    sampling: sampling,
+  );
 
   /// Load a GGUF model into the engine.
   ///
   /// Returns the load duration in seconds on success.
-  Future<double> loadGgufModel(
-          {required GgufModelConfig config,
-          String? systemPrompt,
-          SamplingConfig? sampling}) =>
-      RustLib.instance.api.crateApiOndeChatEngineLoadGgufModel(
-          that: this,
-          config: config,
-          systemPrompt: systemPrompt,
-          sampling: sampling);
+  Future<double> loadGgufModel({
+    required GgufModelConfig config,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  }) => RustLib.instance.api.crateApiOndeChatEngineLoadGgufModel(
+    that: this,
+    config: config,
+    systemPrompt: systemPrompt,
+    sampling: sampling,
+  );
 
   /// Append a message to history without running inference.
   ///
   /// Useful for restoring a saved conversation or injecting context.
-  Future<void> pushHistory({required ChatMessage message}) =>
-      RustLib.instance.api
-          .crateApiOndeChatEnginePushHistory(that: this, message: message);
+  Future<void> pushHistory({required ChatMessage message}) => RustLib
+      .instance
+      .api
+      .crateApiOndeChatEnginePushHistory(that: this, message: message);
 
   /// Send a user message and receive a complete assistant reply.
   ///
   /// Both the user message and assistant reply are appended to the
   /// conversation history on success.
-  Future<InferenceResult> sendMessage({required String message}) =>
-      RustLib.instance.api
-          .crateApiOndeChatEngineSendMessage(that: this, message: message);
+  Future<InferenceResult> sendMessage({required String message}) => RustLib
+      .instance
+      .api
+      .crateApiOndeChatEngineSendMessage(that: this, message: message);
 
   /// Replace the sampling configuration used for all subsequent inference.
-  Future<void> setSampling({required SamplingConfig sampling}) =>
-      RustLib.instance.api
-          .crateApiOndeChatEngineSetSampling(that: this, sampling: sampling);
+  Future<void> setSampling({required SamplingConfig sampling}) => RustLib
+      .instance
+      .api
+      .crateApiOndeChatEngineSetSampling(that: this, sampling: sampling);
 
   /// Set or replace the system prompt.
   ///
@@ -1826,16 +2146,15 @@ class OndeChatEngineImpl extends RustOpaque implements OndeChatEngine {
   /// Each [`StreamChunk`] carries a `delta` string.  The final chunk has
   /// `done == true`.  The `sink` is closed automatically when the stream
   /// ends or if the receiver is dropped.
-  Stream<StreamChunk> streamMessage({required String message}) =>
-      RustLib.instance.api
-          .crateApiOndeChatEngineStreamMessage(that: this, message: message);
+  Stream<StreamChunk> streamMessage({required String message}) => RustLib
+      .instance
+      .api
+      .crateApiOndeChatEngineStreamMessage(that: this, message: message);
 
   /// Unload the current model and release its memory.
   ///
   /// Returns the display name of the model that was unloaded, or `None`
   /// if no model was loaded.
   Future<String?> unloadModel() =>
-      RustLib.instance.api.crateApiOndeChatEngineUnloadModel(
-        that: this,
-      );
+      RustLib.instance.api.crateApiOndeChatEngineUnloadModel(that: this);
 }

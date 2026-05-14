@@ -155,20 +155,71 @@ Width: `96` for top-level READMEs. Use `72` for secondary pages (example apps, s
 
 ### Badge row
 
-Use this exact pattern in every top-level README. Adjust the registry badge to match the file's context (pub.dev for Dart, crates.io for Rust):
+Badge policy depends on the README type.
 
-**Dart / Flutter SDK:**
+**Root README (`onde/README.md`)**
+
+Use the full ecosystem badge wall here. This is the hub page for the whole SDK family.
+
+```html
+<a href="https://crates.io/crates/onde"><img src="https://img.shields.io/crates/v/onde?style=flat-square&color=235843&labelColor=17211D&label=crates.io" alt="crates.io"></a>
+<a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference?style=flat-square&color=235843&labelColor=17211D&label=maven" alt="Maven Central"></a>
+<a href="https://swiftpackageindex.com/ondeinference/onde-swift"><img src="https://img.shields.io/badge/Swift%20Package%20Index-onde--swift-235843?style=flat-square&labelColor=17211D" alt="Swift Package Index"></a>
+<a href="https://pub.dev/packages/onde_inference"><img src="https://img.shields.io/pub/v/onde_inference?style=flat-square&color=235843&labelColor=17211D&label=pub.dev" alt="pub.dev"></a>
+<a href="https://www.npmjs.com/package/@ondeinference/react-native"><img src="https://img.shields.io/npm/v/@ondeinference/react-native?style=flat-square&color=235843&labelColor=17211D&label=npm" alt="npm"></a>
+<a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+<a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="https://img.shields.io/badge/App%20Store-live-235843?style=flat-square&labelColor=17211D" alt="App Store"></a>
+```
+
+**SDK README**
+
+Use one primary registry badge for that SDK, plus `Website` and `License`. Do not repeat the full ecosystem badge wall on every SDK page.
+
+**Flutter / Dart SDK:**
 ```html
 <a href="https://pub.dev/packages/onde_inference"><img src="https://img.shields.io/pub/v/onde_inference?style=flat-square&color=235843&labelColor=17211D&label=pub.dev" alt="pub.dev"></a>
 <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
-<a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="https://img.shields.io/badge/App%20Store-live-235843?style=flat-square&labelColor=17211D" alt="App Store"></a>
+<a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
 ```
 
 **Rust SDK:**
 ```html
 <a href="https://crates.io/crates/onde"><img src="https://img.shields.io/crates/v/onde?style=flat-square&color=235843&labelColor=17211D&label=crates.io" alt="crates.io"></a>
 <a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
-<a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="https://img.shields.io/badge/App%20Store-live-235843?style=flat-square&labelColor=17211D" alt="App Store"></a>
+<a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+```
+
+**Kotlin Multiplatform SDK:**
+```html
+<a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference"><img src="https://img.shields.io/maven-central/v/com.ondeinference/onde-inference?style=flat-square&color=235843&labelColor=17211D&label=maven" alt="Maven Central"></a>
+<a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+<a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+```
+
+**React Native SDK:**
+```html
+<a href="https://www.npmjs.com/package/@ondeinference/react-native"><img src="https://img.shields.io/npm/v/@ondeinference/react-native?style=flat-square&color=235843&labelColor=17211D&label=npm" alt="npm"></a>
+<a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+<a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+```
+
+**Swift SDK:**
+```html
+<a href="https://swiftpackageindex.com/ondeinference/onde-swift"><img src="https://img.shields.io/badge/Swift%20Package%20Index-onde--swift-235843?style=flat-square&labelColor=17211D" alt="Swift Package Index"></a>
+<a href="https://ondeinference.com"><img src="https://img.shields.io/badge/ondeinference.com-235843?style=flat-square&labelColor=17211D" alt="Website"></a>
+<a href="https://github.com/ondeinference/onde/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-235843?style=flat-square&labelColor=17211D" alt="License"></a>
+```
+
+### Cross-SDK nav row
+
+Every SDK README should include a centered text-link row under the badges. These sibling links matter for discovery, branding, and cross-SDK navigation.
+
+Use this pattern and adjust the current page's own SDK label if needed:
+
+```html
+<p align="center">
+  <a href="https://github.com/ondeinference/onde">Rust SDK</a> · <a href="https://github.com/ondeinference/onde-swift">Swift SDK</a> · <a href="https://central.sonatype.com/artifact/com.ondeinference/onde-inference">Kotlin Multiplatform SDK</a> · <a href="https://pub.dev/packages/onde_inference">Flutter SDK</a> · <a href="https://www.npmjs.com/package/@ondeinference/react-native">React Native SDK</a> · <a href="https://ondeinference.com">Website</a>
+</p>
 ```
 
 ### Footer
@@ -192,15 +243,15 @@ Use `— MIT License` on sub-pages (example apps, package-level docs). Omit it o
 1. Centered logo block
 2. Centered `<h1>` with SDK name
 3. Centered tagline (`<p><strong>...</strong></p>`)
-4. Centered badge row
-5. Centered cross-SDK nav links (`Rust SDK · Swift SDK · Website`)
+4. Centered badge row with the SDK's primary registry badge, `Website`, and `License`
+5. Centered cross-SDK nav links (`Rust SDK · Swift SDK · Kotlin Multiplatform SDK · Flutter SDK · React Native SDK · Website`)
 6. `---` divider
-7. `## Features` — bullet list with emoji prefix per feature
+7. A direct intro paragraph that explains what runs where and what the user gets
 8. `## Platform support` — table: Platform | GPU backend | Default model | Notes
-9. `## Quick start` — `### Add the dependency`, `### Initialize`, then usage sections
-10. `## Model selection` — table + code examples
-11. `## Sampling` — presets table + code
-12. `## Error handling`
+9. `## Quick start` — install snippet, initialization, then usage sections
+10. `## Model selection` — table + code examples when relevant
+11. `## Sampling` — presets table + code when relevant
+12. `## Error handling` when relevant
 13. `## Contributing`
 14. `## License`
 15. Footer
@@ -208,26 +259,29 @@ Use `— MIT License` on sub-pages (example apps, package-level docs). Omit it o
 ### Example app README
 
 1. Centered logo block (width `96`)
-2. Centered `<h1>` with `— Example App` suffix
+2. Centered `<h1>` with `Example App` in the title
 3. Centered one-line description (bold) + second line: `No server. No API key. No data leaving the device.`
-4. Centered badge row (identical to SDK README)
+4. Centered badge row for the parent SDK or example context
 5. `---` divider
-6. `## What this example demonstrates` — feature table mapping feature → file/function
+6. `## What this example shows` — feature table mapping feature → file/function
 7. `## Running the example` — Prerequisites, Steps, Platform notes table
 8. `## SDK quick reference` — minimal happy-path snippet (load → stream → unload)
 9. `## Project structure` — directory tree
-10. `## Learn more` — links to pub.dev, ondeinference.com, GitHub
+10. `## Learn more` — links to the package page, ondeinference.com, and GitHub
 11. Footer
 
 ### Taglines
 
-Use these verbatim. Do not paraphrase.
+Use these as the default direction, but keep them natural if the page needs slightly different wording. Avoid stiff marketing language and avoid em dashes in prose.
 
 | Context | Tagline |
 |---|---|
-| Rust crate | `On-device LLM inference — optimized for Apple silicon.` |
-| Flutter SDK | `On-device LLM inference for Flutter & Dart — optimized for Apple silicon.` |
-| Example app | `A complete Flutter chat app running fully on-device LLM inference.` |
+| Rust crate | `Run LLMs on-device, with first-class support for Apple silicon.` |
+| Flutter SDK | `Run LLMs on-device from Flutter and Dart. Metal on iOS and macOS, CPU everywhere else.` |
+| Kotlin SDK | `Run LLMs on-device from Kotlin. No cloud, no API key, and no user data leaving the device.` |
+| React Native SDK | `Run LLMs on-device from React Native. Metal on iOS, CPU on Android, and no user data leaving the device.` |
+| Swift SDK | `Run LLMs on-device from Swift, with first-class support for Apple silicon.` |
+| Example app | `A Flutter chat app that runs LLM inference fully on-device.` |
 
 ---
 

@@ -1,0 +1,207 @@
+name: Release SDK Kotlin (Maven Central)
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build and publish KMP library to Maven Central
+    runs-on: macos-15
+
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # ── Java ──────────────────────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      # ── Gradle ───────────────────────────────────────────────────────────────
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          build-root-directory: sdk/kotlin
+
+      # ── Rust ──────────────────────────────────────────────────────────────────
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: >-
+            aarch64-linux-android,
+            armv7-linux-androideabi,
+            x86_64-linux-android,
+            i686-linux-android,
+            aarch64-apple-darwin
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: rust-kotlin-sdk-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'src/**/*.rs') }}
+          restore-keys: rust-kotlin-sdk-
+
+      # ── Android NDK ───────────────────────────────────────────────────────────
+      - name: Install Android NDK 29
+        run: |
+          echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "ndk;29.0.13113456" || true
+          # Fall back to whatever 29.x is already installed
+          NDK_PATH=$(ls -d $ANDROID_SDK_ROOT/ndk/29.* 2>/dev/null | sort -V | tail -1)
+          if [ -z "$NDK_PATH" ]; then
+            echo "Error: No NDK 29.x found"
+            exit 1
+          fi
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
+          echo "Using NDK: $NDK_PATH"
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      # ── Native builds ─────────────────────────────────────────────────────────
+      - name: Build Android .so files (all 4 ABIs)
+        run: |
+          chmod +x sdk/kotlin/scripts/build-android.sh
+          sdk/kotlin/scripts/build-android.sh
+
+      - name: Build JVM native library (macOS Apple Silicon)
+        run: |
+          chmod +x sdk/kotlin/scripts/build-jvm.sh
+          sdk/kotlin/scripts/build-jvm.sh
+
+      # ── UniFFI bindings ───────────────────────────────────────────────────────
+      - name: Build uniffi-bindgen
+        run: cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
+
+      - name: Generate Kotlin UniFFI bindings
+        run: |
+          chmod +x sdk/kotlin/scripts/generate-bindings.sh
+          sdk/kotlin/scripts/generate-bindings.sh
+
+      # ── Verify ────────────────────────────────────────────────────────────────
+      - name: Verify build inputs
+        run: |
+          echo "=== Android JNI libs ==="
+          find sdk/kotlin/lib/src/androidMain/jniLibs -name "*.so" | sort
+
+          echo "=== JVM native libs ==="
+          find sdk/kotlin/lib/src/jvmMain/resources/native -type f | sort
+
+          echo "=== UniFFI bindings ==="
+          ls -lh sdk/kotlin/lib/src/generated/kotlin/uniffi/onde/
+
+      # ── Version validation ────────────────────────────────────────────────────
+      - name: Validate tag matches Cargo.toml version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          CARGO_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/version = "//;s/"//')
+          GRADLE_VERSION=$(grep '^VERSION_NAME' sdk/kotlin/gradle.properties | sed 's/VERSION_NAME=//')
+          echo "Tag:              $TAG"
+          echo "Cargo.toml:       $CARGO_VERSION"
+          echo "gradle.properties: $GRADLE_VERSION"
+          if [ "$TAG" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match Cargo.toml version '$CARGO_VERSION'."
+            exit 1
+          fi
+          if [ "$TAG" != "$GRADLE_VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match gradle.properties VERSION_NAME '$GRADLE_VERSION'."
+            exit 1
+          fi
+
+      # ── Publish ───────────────────────────────────────────────────────────────
+      - name: Dry-run publish (always)
+        working-directory: sdk/kotlin
+        run: ./gradlew :lib:publishToMavenCentral --dry-run --no-configuration-cache
+
+      - name: Publish and release to Maven Central (tag push only)
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: sdk/kotlin
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALUSERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALPASSWORD }}
+          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEYID }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGKEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGPASSWORD }}
+        run: ./gradlew :lib:publishAndReleaseToMavenCentral --no-configuration-cache
+
+      # ── Artifacts ────────────────────────────────────────────────────────────
+      - name: Collect build outputs
+        run: |
+          mkdir -p dist/kotlin
+          find sdk/kotlin/lib/build/outputs/aar -name "*.aar" -exec cp {} dist/kotlin/ \;
+          find sdk/kotlin/lib/build/libs       -name "*.jar" -exec cp {} dist/kotlin/ \;
+
+      - name: Upload build outputs as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onde-inference-kotlin-${{ github.ref_name }}
+          path: dist/kotlin/
+          retention-days: 90
+
+      # ── GitHub Release ────────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Kotlin SDK ${{ github.ref_name }}
+          body: |
+            ## Onde Inference Kotlin SDK ${{ github.ref_name }}
+
+            On-device LLM inference for **Android** and **JVM (macOS Apple Silicon)**.
+
+            ### Add to your project
+
+            ```kotlin
+            // build.gradle.kts
+            dependencies {
+                implementation("com.ondeinference:onde-inference:${{ github.ref_name }}")
+            }
+            ```
+
+            ### What's included
+
+            | Target | Backend | Default model |
+            |--------|---------|---------------|
+            | Android (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) | CPU (Candle) | Qwen 2.5 1.5B (~941 MB) |
+            | JVM (macOS Apple Silicon) | Metal | Qwen 2.5 3B (~1.93 GB) |
+
+            ### Usage
+
+            ```kotlin
+            // Android
+            val onde = OndeInference(applicationContext)
+
+            // JVM (macOS)
+            val onde = OndeInference()
+
+            // Shared API
+            val elapsed = onde.loadDefaultModel(systemPrompt = "You are helpful.")
+            val result  = onde.chat("Hello!")
+            onde.stream("Tell me a story.").collect { chunk -> print(chunk.delta) }
+            ```
+
+            See the [README](https://github.com/ondeinference/onde/tree/main/sdk/kotlin/README.md) for full API docs.
+          files: dist/kotlin/*
+          draft: false
+          prerelease: false

@@ -6,10 +6,10 @@
 // Native iOS plugin for onde_inference.
 //
 // Responsibilities:
-// 1. Provides a method channel ("com.ondeinference.onde_inference") so Dart
+// 1. Provide a method channel ("com.ondeinference.onde_inference") so Dart
 //    can resolve the App Group shared container path at runtime.
-// 2. Acts as the CocoaPods framework host — the Rust static library
-//    (libonde_inference_dart.a) is force-loaded into this framework via
+// 2. Act as the CocoaPods framework host. The Rust static library
+//    (libonde_inference_dart.a) is force-loaded into this framework through
 //    OTHER_LDFLAGS in the podspec.
 
 import Flutter
@@ -41,8 +41,8 @@ public class OndeInferencePlugin: NSObject, FlutterPlugin {
             ) {
                 result(url.path)
             } else {
-                // App Group not configured or not entitled — fall back to nil
-                // so the Dart side can use getApplicationSupportDirectory() instead.
+                // If the App Group is missing or not entitled, return nil.
+                // Dart can fall back to getApplicationSupportDirectory() instead.
                 result(nil)
             }
         default:

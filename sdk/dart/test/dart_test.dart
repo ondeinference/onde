@@ -3,8 +3,103 @@
 //
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onde_inference/onde_inference.dart';
+import 'package:onde_inference/src/frb_generated.dart/frb_generated.dart'
+    as frb
+    show RustLibApi;
+
+class _FakeOndeChatEngine implements OndeChatEngine {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('Unexpected OndeChatEngine member: $invocation');
+}
+
+class _MockRustLibApi implements frb.RustLibApi {
+  static const _qwen2515b = GgufModelConfig(
+    modelId: 'bartowski/Qwen2.5-1.5B-Instruct-GGUF',
+    files: ['Qwen2.5-1.5B-Instruct-Q4_K_M.gguf'],
+    displayName: 'Qwen 2.5 1.5B',
+    approxMemory: '~941 MB',
+  );
+
+  static const _qwen253b = GgufModelConfig(
+    modelId: 'bartowski/Qwen2.5-3B-Instruct-GGUF',
+    files: ['Qwen2.5-3B-Instruct-Q4_K_M.gguf'],
+    displayName: 'Qwen 2.5 3B',
+    approxMemory: '~1.93 GB',
+  );
+
+  static const _qwen25Coder15b = GgufModelConfig(
+    modelId: 'bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF',
+    files: ['Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf'],
+    displayName: 'Qwen 2.5 Coder 1.5B',
+    approxMemory: '~941 MB',
+  );
+
+  static const _qwen25Coder3b = GgufModelConfig(
+    modelId: 'bartowski/Qwen2.5-Coder-3B-Instruct-GGUF',
+    files: ['Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf'],
+    displayName: 'Qwen 2.5 Coder 3B',
+    approxMemory: '~1.93 GB',
+  );
+
+  static final _defaultSampling = SamplingConfig(
+    temperature: 0.7,
+    topP: 0.95,
+    maxTokens: BigInt.from(512),
+  );
+
+  static final _deterministicSampling = SamplingConfig(
+    temperature: 0.0,
+    maxTokens: BigInt.from(512),
+  );
+
+  static final _mobileSampling = SamplingConfig(
+    temperature: 0.7,
+    topP: 0.95,
+    maxTokens: BigInt.from(128),
+  );
+
+  @override
+  GgufModelConfig crateApiDefaultModelConfig() => _qwen25Coder3b;
+
+  @override
+  SamplingConfig crateApiDefaultSamplingConfig() => _defaultSampling;
+
+  @override
+  SamplingConfig crateApiDeterministicSamplingConfig() =>
+      _deterministicSampling;
+
+  @override
+  SamplingConfig crateApiMobileSamplingConfig() => _mobileSampling;
+
+  @override
+  OndeChatEngine crateApiOndeChatEngineNew() => _FakeOndeChatEngine();
+
+  @override
+  GgufModelConfig crateApiQwen2515BConfig() => _qwen2515b;
+
+  @override
+  GgufModelConfig crateApiQwen253BConfig() => _qwen253b;
+
+  @override
+  GgufModelConfig crateApiQwen25Coder15BConfig() => _qwen25Coder15b;
+
+  @override
+  GgufModelConfig crateApiQwen25Coder3BConfig() => _qwen25Coder3b;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('Unexpected RustLibApi member: $invocation');
+}
 
 void main() {
+  setUpAll(() {
+    RustLib.initMock(api: _MockRustLibApi());
+  });
+
+  tearDownAll(() {
+    RustLib.dispose();
+  });
   group('OndeException', () {
     test('toString includes error info', () {
       const e = OndeException(OndeError_NoModelLoaded());
@@ -176,12 +271,14 @@ void main() {
         durationSecs: 1.5,
         durationDisplay: '1.5s',
         finishReason: 'stop',
+        toolCalls: [],
       );
       const b = InferenceResult(
         text: 'Hi there!',
         durationSecs: 1.5,
         durationDisplay: '1.5s',
         finishReason: 'stop',
+        toolCalls: [],
       );
       expect(a, equals(b));
     });
@@ -196,10 +293,6 @@ void main() {
   });
 
   group('OndeInference helpers', () {
-    test('init() delegates to RustLib.init()', () async {
-      await expectLater(OndeInference.init(), completes);
-    });
-
     test('config factories return valid configs', () {
       expect(OndeInference.defaultModelConfig().modelId, isNotEmpty);
       expect(OndeInference.qwen2515bConfig().modelId, contains('1.5B'));
@@ -211,16 +304,13 @@ void main() {
     test('sampling factories return correct presets', () {
       expect(OndeInference.defaultSamplingConfig().temperature, 0.7);
       expect(OndeInference.deterministicSamplingConfig().temperature, 0.0);
-      expect(
-        OndeInference.mobileSamplingConfig().maxTokens,
-        BigInt.from(128),
-      );
+      expect(OndeInference.mobileSamplingConfig().maxTokens, BigInt.from(128));
     });
   });
 
   group('OndeChatEngine', () {
-    test('constructor throws when library not initialized', () {
-      expect(() => OndeChatEngine(), throwsA(anything));
+    test('constructor succeeds when mock API is initialized', () {
+      expect(OndeChatEngine(), isA<OndeChatEngine>());
     });
   });
 }

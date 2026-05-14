@@ -25,8 +25,32 @@ When given text to humanize:
 1. **Identify AI patterns** - Scan for the 24 patterns listed below
 2. **Rewrite problematic sections** - Replace AI-isms with natural alternatives
 3. **Preserve meaning** - Keep the core message intact
-4. **Add soul** - Don't just remove bad patterns; inject actual personality
-5. **Final audit pass** - Ask "What makes this obviously AI generated?" then revise again
+4. **Protect exact names** - Do not change brand casing, package names, commands, file paths, JSON keys, or code just to make a sentence feel smoother
+5. **Add soul** - Don't just remove bad patterns; inject actual personality
+6. **Final audit pass** - Ask "What makes this obviously AI generated?" then revise again
+
+---
+
+## BRAND AND NAMING GUARDRAILS
+
+Humanizing copy does **not** give you permission to rename things.
+
+Preserve exact casing and spelling for:
+
+- product and company names
+- package names
+- CLI commands
+- protocol names and acronyms
+- JSON keys, environment variables, paths, and code identifiers
+
+If a sentence feels stiff because a brand name is rigid, rewrite the sentence around the name. Do not "fix" the name.
+
+Examples:
+
+- Keep `siGit Code` as `siGit Code`, not `siGit`, `Sigit Code`, or `sigit Code`
+- Keep `smbCloud` as `smbCloud`
+- Keep `Onde Inference` as `Onde Inference`
+- Keep `sigit`, `@smbcloud/sigit`, `sigit-code`, and `onde` exactly as written when they refer to commands or packages
 
 ---
 
@@ -195,13 +219,27 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### Style Patterns
 
-#### 13. Em Dash Overuse
+#### 13. No Em Dashes
+
+Em dashes are the single biggest AI tell. Never use them. Replace with commas, parentheses, colons, or just split into two sentences.
 
 **Before:**
 > The term is promoted by institutions—not the people themselves—yet this continues—even in documents.
 
 **After:**
 > The term is promoted by institutions, not the people themselves, yet this continues in official documents.
+
+**Before:**
+> The tools are useful—especially for boilerplate—but they have limits.
+
+**After:**
+> The tools are useful (especially for boilerplate), but they have limits.
+
+**Before:**
+> There's one problem—nobody tested it.
+
+**After:**
+> There's one problem: nobody tested it.
 
 #### 14. Boldface Overuse
 

@@ -10,7 +10,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Return the platform-appropriate default `GgufModelConfig`.
 ///
@@ -85,8 +85,10 @@ abstract class OndeChatEngine implements RustOpaqueInterface {
   /// One-shot generation from an explicit message list.
   ///
   /// Does **not** modify the conversation history.
-  Future<InferenceResult> generate(
-      {required List<ChatMessage> messages, SamplingConfig? sampling});
+  Future<InferenceResult> generate({
+    required List<ChatMessage> messages,
+    SamplingConfig? sampling,
+  });
 
   /// Returns a clone of the full conversation history.
   Future<List<ChatMessage>> history();
@@ -97,13 +99,24 @@ abstract class OndeChatEngine implements RustOpaqueInterface {
   /// Returns `true` if a model is currently loaded and ready.
   Future<bool> isLoaded();
 
+  /// Load the model assigned to this Onde app from the dashboard.
+  ///
+  /// Returns the wall-clock seconds taken to load the model.
+  Future<double> loadAssignedModel({
+    required String appId,
+    required String appSecret,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  });
+
   /// Load a GGUF model into the engine.
   ///
   /// Returns the load duration in seconds on success.
-  Future<double> loadGgufModel(
-      {required GgufModelConfig config,
-      String? systemPrompt,
-      SamplingConfig? sampling});
+  Future<double> loadGgufModel({
+    required GgufModelConfig config,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  });
 
   /// Create a new engine with no model loaded.
   factory OndeChatEngine() => RustLib.instance.api.crateApiOndeChatEngineNew();
@@ -147,10 +160,7 @@ class ChatMessage {
   final ChatRole role;
   final String content;
 
-  const ChatMessage({
-    required this.role,
-    required this.content,
-  });
+  const ChatMessage({required this.role, required this.content});
 
   @override
   int get hashCode => role.hashCode ^ content.hashCode;
@@ -165,12 +175,7 @@ class ChatMessage {
 }
 
 /// Role of a participant in a chat conversation.
-enum ChatRole {
-  system,
-  user,
-  assistant,
-  ;
-}
+enum ChatRole { system, user, assistant }
 
 /// A point-in-time snapshot of the engine's state.
 class EngineInfo {
@@ -211,14 +216,7 @@ class EngineInfo {
 }
 
 /// Lifecycle status of the inference engine.
-enum EngineStatus {
-  unloaded,
-  loading,
-  ready,
-  generating,
-  error,
-  ;
-}
+enum EngineStatus { unloaded, loading, ready, generating, error }
 
 /// Configuration for loading a pre-quantised GGUF model.
 class GgufModelConfig {
@@ -279,11 +277,15 @@ class InferenceResult {
   /// Finish reason reported by the model, e.g. `"stop"` or `"length"`.
   final String finishReason;
 
+  /// Tool calls requested by the model (empty if none).
+  final List<ToolCallInfo> toolCalls;
+
   const InferenceResult({
     required this.text,
     required this.durationSecs,
     required this.durationDisplay,
     required this.finishReason,
+    required this.toolCalls,
   });
 
   @override
@@ -291,7 +293,8 @@ class InferenceResult {
       text.hashCode ^
       durationSecs.hashCode ^
       durationDisplay.hashCode ^
-      finishReason.hashCode;
+      finishReason.hashCode ^
+      toolCalls.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -301,7 +304,8 @@ class InferenceResult {
           text == other.text &&
           durationSecs == other.durationSecs &&
           durationDisplay == other.durationDisplay &&
-          finishReason == other.finishReason;
+          finishReason == other.finishReason &&
+          toolCalls == other.toolCalls;
 }
 
 @freezed
@@ -309,19 +313,14 @@ sealed class OndeError with _$OndeError implements FrbException {
   const OndeError._();
 
   const factory OndeError.noModelLoaded() = OndeError_NoModelLoaded;
-  const factory OndeError.alreadyLoaded({
-    required String modelName,
-  }) = OndeError_AlreadyLoaded;
-  const factory OndeError.modelBuild({
-    required String reason,
-  }) = OndeError_ModelBuild;
-  const factory OndeError.inference({
-    required String reason,
-  }) = OndeError_Inference;
+  const factory OndeError.alreadyLoaded({required String modelName}) =
+      OndeError_AlreadyLoaded;
+  const factory OndeError.modelBuild({required String reason}) =
+      OndeError_ModelBuild;
+  const factory OndeError.inference({required String reason}) =
+      OndeError_Inference;
   const factory OndeError.cancelled() = OndeError_Cancelled;
-  const factory OndeError.other({
-    required String reason,
-  }) = OndeError_Other;
+  const factory OndeError.other({required String reason}) = OndeError_Other;
 }
 
 /// Sampling parameters for text generation.  All fields are optional — `None`
@@ -397,4 +396,29 @@ class StreamChunk {
           delta == other.delta &&
           done == other.done &&
           finishReason == other.finishReason;
+}
+
+/// Structured tool-call request emitted by the model.
+class ToolCallInfo {
+  final String id;
+  final String functionName;
+  final String arguments;
+
+  const ToolCallInfo({
+    required this.id,
+    required this.functionName,
+    required this.arguments,
+  });
+
+  @override
+  int get hashCode => id.hashCode ^ functionName.hashCode ^ arguments.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ToolCallInfo &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          functionName == other.functionName &&
+          arguments == other.arguments;
 }

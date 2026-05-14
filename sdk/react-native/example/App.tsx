@@ -19,6 +19,13 @@ import {
   type EngineStatus,
 } from "@ondeinference/react-native";
 
+// ── Onde app credentials ─────────────────────────────────────────────────
+// Register your app at https://ondeinference.com to get these.
+// The dashboard lets you assign a model to your app — the SDK fetches
+// it automatically. If no model is assigned, the platform default is used.
+const ONDE_APP_ID = "";
+const ONDE_APP_SECRET = "";
+
 interface DisplayMessage {
   id: string;
   role: "user" | "assistant";
@@ -74,9 +81,18 @@ const App: React.FC = () => {
     setIsLoading(true);
     setEngineStatus("Loading");
     try {
-      const seconds = await OndeChatEngine.loadDefaultModel(
-        "You are a helpful, concise assistant.",
-      );
+      let seconds: number;
+      if (ONDE_APP_ID && ONDE_APP_SECRET) {
+        seconds = await OndeChatEngine.loadAssignedModel(
+          ONDE_APP_ID,
+          ONDE_APP_SECRET,
+          "You are a helpful, concise assistant.",
+        );
+      } else {
+        seconds = await OndeChatEngine.loadDefaultModel(
+          "You are a helpful, concise assistant.",
+        );
+      }
       await refreshStatus();
       Alert.alert("Model Loaded", `Ready in ${seconds.toFixed(1)}s`);
     } catch (error: unknown) {

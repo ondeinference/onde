@@ -1,6 +1,6 @@
 ---
 name: sdk-regressions
-description: Cross-compilation regression checks for the onde crate. Covers macOS, iOS, tvOS (nightly), Android, Windows, and Linux target verification. Run before merging any change that touches platform-gated code, Cargo.toml, .cargo/config.toml, or build.rs.
+description: Cross-compilation regression checks for the onde crate. Covers macOS, iOS, tvOS (nightly), Android, Windows, and Linux target verification. Run before merging any change that touches platform-gated code, Cargo.toml, .cargo/config.toml, or build.rs. Also documents the onde-mistralrs fork publishing strategy and cargo publish workflow.
 allowed-tools: Read, Edit, Glob, Grep, Terminal
 user-invocable: true
 ---
@@ -24,6 +24,9 @@ macOS can silently break iOS, tvOS, or Android because:
 - Tier-3 targets (tvOS) require nightly + `-Z build-std`
 - Assembly stubs (`tvos_chkstk.s`) and `build.rs` gating
 - `.cargo/config.toml` sets `+fp16` rustflags on 5 Apple targets
+
+See also: **[`cargo publish` workflow](#cargo-publish-workflow)** at the bottom
+of this file — must be followed when releasing a new `onde` version.
 
 ---
 
@@ -303,6 +306,214 @@ Any other match means a sandboxed path is using the wrong subdirectory.
 
 ---
 
+---
+
+## Publishing to crates.io
+
+### Why we don't use upstream `mistralrs` directly
+
+The short version: our PRs aren't merged yet.
+
+`onde` depends on a personal fork of Eric Buehler's `mistral.rs`, kept at
+`github.com/setoelkahfi/mistral.rs` on the `fix/all-platform-fixes` branch.
+The fork is ahead of upstream by ~41 commits carrying fixes that only matter
+for Apple and Android targets — things upstream hasn't needed to care about:
+
+| Fix | Status |
+|-----|--------|
+| iOS Metal 3.0 support | PR open |
+| Android 32-bit memory limit constants | PR open |
+| HF_HOME propagation in diffusion/flux pipelines | PR open |
+| `metallib` link step `--sdk` / `-std` flags | PR open |
+
+Dropping the fork and pointing at upstream `mistralrs 0.8.1` would silently
+break iOS on entry-level devices and Android on 32-bit targets. Don't do it
+until those PRs land.
+
+**Legal note:** The fork is a derivative of Eric Buehler's MIT-licensed
+`mistral.rs`. His `LICENSE` file — including `Copyright (c) 2024 Eric Buehler`
+— must remain intact and unmodified in the fork at all times. See
+[`legal-and-trademarks/SKILL.md`](../legal-and-trademarks/SKILL.md) for full
+attribution obligations.
+
+### The `onde-mistralrs` workaround
+
+`cargo publish` strips every `git =` field before uploading to crates.io.
+That means a git-only dep is useless to anyone who installs `onde` from the
+registry — they can't resolve it.
+
+The solution: publish the fork to crates.io under the name `onde-mistralrs`
+(and `onde-mistralrs-core`, etc.), then reference it with `package =` so the
+rest of the code still compiles unchanged with `use mistralrs::...`:
+
+```toml
+# In onde/Cargo.toml — each platform target section looks like this.
+# Cargo resolves it as "onde-mistralrs" from crates.io,
+# but the Rust code sees it as `mistralrs`.
+mistralrs = { version = "0.8.2", package = "onde-mistralrs", features = ["metal"] }
+```
+
+This is the only supported publish path until the upstream PRs merge. Don't
+swap it for plain `mistralrs` from crates.io without checking every platform
+target first.
+
+---
+
+### Step 1 — check if `onde-mistralrs` needs a new publish
+
+First, see how far the fork has drifted from upstream:
+
+```bash
+curl -s "https://api.github.com/repos/setoelkahfi/mistral.rs/compare/EricLBuehler:mistral.rs:master...setoelkahfi:mistral.rs:fix%2Fall-platform-fixes" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print('ahead:', d['ahead_by'], 'behind:', d['behind_by'])"
+```
+
+If there are new commits since the last `onde-mistralrs` publish, or if
+upstream cut a new release that the fork has rebased onto, bump the workspace
+version in the fork and publish. Sub-crates must go in dependency order:
+
+```bash
+# 1. Edit the root Cargo.toml in setoelkahfi/mistral.rs
+#    bump version, e.g. 0.8.1 → 0.8.2
+
+# 2. Publish in order — each one depends on the previous:
+cargo publish -p onde-mistralrs-macros
+cargo publish -p onde-mistralrs-paged-attn
+cargo publish -p onde-mistralrs-quant
+cargo publish -p onde-mistralrs-core
+cargo publish -p onde-mistralrs
+
+# 3. Give the index ~30 s to propagate before moving on.
+```
+
+---
+
+### Step 2 — update `onde/Cargo.toml`
+
+Every platform target section has its own `onde-mistralrs` line. They all need
+to move to the new version together — leaving one target on an older version
+causes a dependency conflict.
+
+```bash
+# All occurrences should print the same version number:
+grep 'onde-mistralrs' onde/Cargo.toml
+```
+
+---
+
+### Step 3 — dry-run first
+
+```bash
+cd onde
+cargo publish --dry-run --allow-dirty 2>&1 | tail -20
+```
+
+A clean run ends with `Finished` and no errors. Common things that go wrong:
+
+| Error | What to do |
+|-------|------------|
+| `all dependencies must have a version` | add `version = "..."` to the dep |
+| `no matching package named onde-mistralrs` | publish the fork first (step 1) |
+| `git specification will be removed` | expected — cargo is just telling you the git field gets stripped |
+| `files in working directory contain changes` | add `--allow-dirty` |
+
+---
+
+### Step 4 — publish `onde`, then update `sigit`
+
+```bash
+cargo publish
+```
+
+Then bump the version in `sigit/Cargo.toml`:
+
+```toml
+# git = is used for local dev; crates.io consumers resolve via version =
+onde = { version = "0.1.9", git = "https://github.com/ondeinference/onde", branch = "development" }
+```
+
+Keep both fields. The `git =` field takes precedence during local development;
+crates.io strips it and falls back to `version =` for anyone installing from
+the registry.
+
+---
+
+### GresIQ credentials and `HF_TOKEN`
+
+People building `onde` from crates.io don't need to do anything about secrets.
+Here's why.
+
+`build.rs` passes credentials to the compiler via `option_env!()`. That macro
+resolves at compile time — if the env var isn't set, it compiles to `None` and
+the feature that needs it is silently disabled. No crash, no partial state, no
+mystery error at runtime.
+
+```rust
+// pulse/client.rs — GresIQ telemetry (Onde Inference internal infrastructure)
+const EMBEDDED_API_KEY_DEV: Option<&str> = option_env!("GRESIQ_API_KEY_DEV");
+const EMBEDDED_API_SECRET_DEV: Option<&str> = option_env!("GRESIQ_API_SECRET_DEV");
+
+// token.rs — HuggingFace Hub authentication
+const BUILD_TIME_HF_TOKEN: Option<&str> = option_env!("HF_TOKEN");
+```
+
+Who gets what:
+
+| Who is building | Env vars present? | What happens |
+|-----------------|-------------------|--------------|
+| Our CI (official builds) | yes, via GitHub secrets | telemetry on; HF token baked into binary |
+| Someone who ran `cargo add onde` | no | telemetry off; HF token read from `~/.cache/huggingface/token` at runtime |
+| iOS/tvOS builds via XCFramework | yes, via `.env` file | HF token baked in — required because there's no writable filesystem on device |
+
+The GresIQ credentials are Onde Inference's own infrastructure secrets — they
+exist so the SDK can phone home for usage telemetry on official builds. External
+consumers don't have them, don't need them, and won't be affected by not having
+them.
+
+Never put `GRESIQ_API_KEY_*` or `HF_TOKEN` in `README.md`, `.env.example`, or
+any committed file. The `.env` in the crate root is git-ignored for a reason:
+
+```bash
+# onde/.env — git-ignored, never commit
+GRESIQ_API_KEY_DEV=...
+GRESIQ_API_SECRET_DEV=...
+GRESIQ_API_KEY_PRODUCTION=...
+GRESIQ_API_SECRET_PRODUCTION=...
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+### Working against the git fork locally
+
+If you're making changes to the fork and want `onde` to pick them up without
+publishing, uncomment the patch block in `onde/Cargo.toml`:
+
+```toml
+[patch.crates-io]
+onde-mistralrs      = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", package = "mistralrs" }
+onde-mistralrs-core = { git = "https://github.com/setoelkahfi/mistral.rs", branch = "fix/all-platform-fixes", package = "mistralrs-core" }
+```
+
+Re-comment it before running `cargo publish`. Cargo strips `[patch.crates-io]`
+from the published manifest automatically, so it won't affect registry
+consumers either way — but leaving it active makes the dry-run confusing.
+
+---
+
+### Pre-publish checklist
+
+- [ ] all `onde-mistralrs` version numbers in `onde/Cargo.toml` are the same
+- [ ] `onde/Cargo.toml` `[package] version` is bumped
+- [ ] `sigit/Cargo.toml` `onde` version matches
+- [ ] `[patch.crates-io]` git override is commented out
+- [ ] `cargo publish --dry-run --allow-dirty` passes clean
+- [ ] `.env` is not listed in the dry-run's packaged file output
+- [ ] Eric Buehler's `LICENSE` in the `mistral.rs` fork is unmodified
+
+---
+
 *Last updated: July 2025 — added hf-hub/mistralrs-core iOS/tvOS deps,
-cache path consistency checks, App Group convention.*
+cache path consistency checks, App Group convention, onde-mistralrs publish
+strategy, GresIQ/HF_TOKEN secrets documentation.*
 

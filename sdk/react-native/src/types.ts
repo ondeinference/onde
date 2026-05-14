@@ -48,6 +48,8 @@ export interface GgufModelConfig {
   displayName: string;
   /** Approximate memory footprint description. */
   approxMemory: string;
+  /** Optional Jinja chat template override. */
+  chatTemplate?: string;
 }
 
 // ── Inference result ─────────────────────────────────────────────────────────
@@ -62,6 +64,18 @@ export interface InferenceResult {
   durationDisplay: string;
   /** Finish reason, if available. */
   finishReason?: string;
+  /** Tool calls requested by the model, if any. */
+  toolCalls: ToolCallInfo[];
+}
+
+/** Metadata about a tool call requested by the model. */
+export interface ToolCallInfo {
+  /** Unique identifier for this tool call. */
+  id: string;
+  /** Name of the function to call. */
+  functionName: string;
+  /** JSON-encoded arguments for the function. */
+  arguments: string;
 }
 
 // ── Streaming ────────────────────────────────────────────────────────────────
