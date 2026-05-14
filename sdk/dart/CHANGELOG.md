@@ -1,3 +1,9 @@
+## 1.0.1
+
+* **pub.dev:** Fixed stale README and API examples so the published package matches the current API (`OndeChatEngine()`, named `message:` arguments, current sampling helpers, and `OndeError` handling).
+* **pub.dev:** Added explicit package metadata for documentation, topics, and supported platforms to improve pub.dev platform detection and package discoverability.
+* **pub.dev:** Verified lower-bound compatibility again after the FRB-generated `toolCalls` and `loadAssignedModel` changes that previously hurt the package score on 1.0.0.
+
 ## 1.0.0
 
 This is the first stable release. Onde has already been running in real App Store apps for months, so keeping it on `0.x` no longer felt right.
