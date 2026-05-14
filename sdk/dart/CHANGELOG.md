@@ -1,3 +1,9 @@
+## 1.1.0
+
+* **Swift / UniFFI stability:** Pulls in the Onde Rust core `1.1.0` runtime fixes for Swift/Kotlin/Apple-hosted SDKs, including Tokio runtime annotations and panic-safe pulse telemetry initialization.
+* **Telemetry:** Pulse telemetry now gracefully disables itself if a Tokio reactor is unavailable and can be explicitly disabled with `ONDE_DISABLE_PULSE=1` during local validation.
+* **Release alignment:** Aligns the Flutter/Dart package version with the Rust, Swift, Kotlin, and React Native SDKs.
+
 ## 1.0.2
 
 * **pub.dev:** Added Apple plugin Swift Package Manager manifests at `ios/onde_inference/Package.swift` and `macos/onde_inference/Package.swift` so pub.dev recognizes modern iOS and macOS plugin toolchain support.
