@@ -8,7 +8,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Onde Example</string>
+    <string>OIE React</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -45,6 +45,9 @@
       <key>NSAllowsLocalNetworking</key>
       <true />
     </dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string
+        >Onde Example connects to the local Metro development server on your Mac while you are developing the app.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

@@ -62,5 +62,22 @@ target 'OndeExample' do
         end
       end
     end
+
+    # Xcode 26 with the optional Metal Toolchain can point TOOLCHAIN_DIR at
+    # Metal.xctoolchain, which does not ship the Swift compatibility libraries
+    # CocoaPods expects in LIBRARY_SEARCH_PATHS. That leads to noisy linker
+    # warnings and, on some projects, missing swiftCompatibility* symbols.
+    #
+    # Force CocoaPods-generated xcconfigs to reference the default Xcode
+    # toolchain instead of TOOLCHAIN_DIR for Swift runtime search paths.
+    Dir.glob(File.join(installer.sandbox.root.to_s, 'Target Support Files', '**', '*.xcconfig')).each do |path|
+      contents = File.read(path)
+      updated = contents.gsub(
+        '${TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}',
+        '$(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME)" "$(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)'
+      )
+
+      File.write(path, updated) if updated != contents
+    end
   end
 end
