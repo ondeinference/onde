@@ -28,7 +28,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.ondeinference.example</string>
+          <string>com.ondeinference.OndeExampleSDKReactNative</string>
         </array>
       </dict>
     </array>

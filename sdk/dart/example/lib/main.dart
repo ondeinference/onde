@@ -39,10 +39,10 @@ void main() async {
 
   // Pick a cache directory that works inside app sandboxes.
   //
-  // On iOS and macOS, try the shared App Group container first
-  // (group.com.ondeinference.apps) so Onde-powered apps can reuse
-  // downloaded models. If that is not available, fall back to the app's
-  // own Application Support directory.
+  // On iOS and macOS, the SDK examples use the shared Onde App Group
+  // (group.com.ondeinference.apps) so Swift, Flutter, and React Native sample
+  // apps can reuse the same downloaded models. If the entitlement is missing,
+  // fall back to the app's own Application Support directory.
   //
   // Android has no App Group, so it always uses the fallback.
   //

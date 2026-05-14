@@ -3,13 +3,11 @@
     "name": "Onde Example",
     "slug": "onde-example",
     "version": "0.0.1",
+    "icon": "./assets/icon.png",
     "orientation": "portrait",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "ios": {
-      "bundleIdentifier": "com.ondeinference.example",
+      "bundleIdentifier": "com.ondeinference.OndeExampleSDKReactNative",
       "supportsTablet": true,
       "deploymentTarget": "16.0",
       "appleTeamId": "2TQF86ZACD"
