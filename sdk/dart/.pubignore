@@ -22,6 +22,8 @@ rust/target/
 .packages
 pubspec.lock
 build/
+.build/
+.swiftpm/
 
 # Flutter-generated plugin registration files — regenerated on every `flutter pub get`
 example/**/GeneratedPluginRegistrant.java

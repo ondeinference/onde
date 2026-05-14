@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'onde_inference'
-  s.version          = '0.1.0'
+  s.version          = '1.0.2'
   s.summary          = 'On-device LLM inference SDK for Flutter (iOS).'
   s.description      = 'Runs Qwen 2.5 models locally on iOS with Metal acceleration.'
   s.homepage         = 'https://ondeinference.com'
