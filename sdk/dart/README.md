@@ -28,8 +28,8 @@ You get multi-turn chat, streaming, one-shot generation, configurable sampling, 
 
 | Platform | Backend | Default model | Notes |
 |----------|---------|---------------|-------|
-| iOS 13+ | Metal | Qwen 2.5 Coder 1.5B (~941 MB) | Simulator uses `aarch64-apple-ios-sim` |
-| macOS 10.15+ | Metal | Qwen 2.5 Coder 3B (~1.93 GB) | Apple silicon and Intel |
+| iOS 13+ | Metal | Qwen 2.5 Coder 1.5B (~941 MB) | CocoaPods and Swift Package Manager plugin manifests are included |
+| macOS 10.15+ | Metal | Qwen 2.5 Coder 3B (~1.93 GB) | CocoaPods and Swift Package Manager plugin manifests are included |
 | Android API 21+ | CPU | Qwen 2.5 Coder 1.5B (~941 MB) | arm64-v8a, armeabi-v7a, x86_64, x86 |
 | Linux x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
 | Windows x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
@@ -42,7 +42,7 @@ Web is not supported. On-device inference needs native system access that browse
 
 ```yaml
 dependencies:
-  onde_inference: ^1.0.1
+  onde_inference: ^1.0.2
 ```
 
 The inference engine is written in Rust and connected to Dart through [flutter_rust_bridge](https://pub.dev/packages/flutter_rust_bridge). You need a working [Rust toolchain](https://rustup.rs). The first build is usually slow because it compiles the full native dependency tree.

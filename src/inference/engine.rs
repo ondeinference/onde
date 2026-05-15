@@ -260,6 +260,7 @@ impl ChatEngine {
 
     /// Create a new engine with no model loaded.
     pub fn new() -> Self {
+        crate::install_panic_hook_once();
         Self {
             inner: Mutex::new(None),
             pulse: std::sync::OnceLock::new(),
@@ -284,6 +285,9 @@ impl ChatEngine {
                     Some(_) => log::info!(
                         "ChatEngine: pulse telemetry enabled (environment={environment})"
                     ),
+                    None if crate::pulse::PulseClient::disabled_by_env() => {
+                        log::info!("ChatEngine: pulse telemetry disabled by ONDE_DISABLE_PULSE")
+                    }
                     None => log::info!(
                         "ChatEngine: pulse telemetry disabled \
                          (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"

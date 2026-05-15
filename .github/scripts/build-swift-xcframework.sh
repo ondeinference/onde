@@ -13,6 +13,7 @@ CHECKSUM_PATH="$DIST_DIR/OndeFramework.checksum.txt"
 VERSION_PATH="$DIST_DIR/version.txt"
 BINDGEN="$ROOT_DIR/uniffi-bindgen/target/release/uniffi-bindgen"
 
+rm -rf "$FRAMEWORK_DIR" "$ZIP_PATH" "$CHECKSUM_PATH" "$VERSION_PATH"
 mkdir -p "$DIST_DIR" "$PACKAGE_DIR/Sources/Onde" "$HEADERS_DIR"
 
 cargo +1.92.0 build --manifest-path uniffi-bindgen/Cargo.toml --release
@@ -75,9 +76,12 @@ printf '%s
 
 VERSION=$(python3 - <<'VER'
 from pathlib import Path
-import tomllib
-cargo = Path('Cargo.toml').read_text().encode()
-print(tomllib.loads(cargo.decode())['package']['version'])
+import re
+cargo = Path('Cargo.toml').read_text()
+match = re.search(r'^version\s*=\s*"([^"]+)"', cargo, re.MULTILINE)
+if not match:
+    raise SystemExit('Could not parse package.version from Cargo.toml')
+print(match.group(1))
 VER
 )
 printf '%s

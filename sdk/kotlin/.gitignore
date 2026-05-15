@@ -19,9 +19,6 @@ captures/
 # macOS
 .DS_Store
 
-# Gradle wrapper binary — too large and platform-specific
-gradle/wrapper/gradle-wrapper.jar
-
 # Signing keys — never commit private keys
 *.jks
 *.keystore

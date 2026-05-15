@@ -101,7 +101,7 @@ jobs:
           token: ${{ secrets.ONDE_SWIFT_PAT }}
           path: onde-swift
 
-      - name: Rewrite Package.swift with release URL and checksum
+      - name: Rewrite Package.swift release constants
         if: startsWith(github.ref, 'refs/tags/')
         env:
           CHECKSUM: ${{ steps.meta.outputs.checksum }}
@@ -116,22 +116,22 @@ jobs:
           url      = os.environ["RELEASE_URL"]
           checksum = os.environ["CHECKSUM"].strip()
 
-          pattern = re.compile(
-              r'\.binaryTarget\(\s*name:\s*"OndeFramework".*?\)',
-              re.DOTALL,
+          url_pattern = re.compile(
+              r'(let releaseFrameworkURL =\s*\n\s*")([^"]+)(")',
+              re.MULTILINE,
+          )
+          checksum_pattern = re.compile(
+              r'(let releaseFrameworkChecksum =\s*\n\s*")([^"]+)(")',
+              re.MULTILINE,
           )
 
-          replacement = (
-              '.binaryTarget(\n'
-              '            name: "OndeFramework",\n'
-              f'            url: "{url}",\n'
-              f'            checksum: "{checksum}"\n'
-              '        )'
-          )
+          updated, url_count = url_pattern.subn(rf'\1{url}\3', src, count=1)
+          updated, checksum_count = checksum_pattern.subn(rf'\1{checksum}\3', updated, count=1)
 
-          updated = pattern.sub(replacement, src)
-          if updated == src:
-              raise RuntimeError("binaryTarget pattern did not match — check Package.swift format")
+          if url_count != 1:
+              raise RuntimeError("releaseFrameworkURL pattern did not match — check Package.swift format")
+          if checksum_count != 1:
+              raise RuntimeError("releaseFrameworkChecksum pattern did not match — check Package.swift format")
 
           pkg.write_text(updated)
           print("Package.swift updated:")

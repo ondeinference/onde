@@ -26,6 +26,19 @@ pub struct PulseClient {
 }
 
 impl PulseClient {
+    /// Returns true when pulse telemetry is disabled explicitly by the host app.
+    pub fn disabled_by_env() -> bool {
+        matches!(
+            std::env::var("ONDE_DISABLE_PULSE")
+                .ok()
+                .as_deref()
+                .map(str::trim)
+                .map(str::to_ascii_lowercase)
+                .as_deref(),
+            Some("1") | Some("true") | Some("yes") | Some("on")
+        )
+    }
+
     /// Build a pulse client using the GresIQ credentials embedded in the SDK.
     ///
     /// Returns `None` if the SDK was compiled without `GRESIQ_API_KEY` /
@@ -35,6 +48,10 @@ impl PulseClient {
     /// `edge_id` is a stable device identifier (installation UUID).
     /// Pass an empty string to default to `"onde-unknown"`.
     pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
+        if Self::disabled_by_env() {
+            return None;
+        }
+
         let (api_key, api_secret) = match environment {
             Environment::Dev => (EMBEDDED_API_KEY_DEV?, EMBEDDED_API_SECRET_DEV?),
             Environment::Production => (
@@ -49,12 +66,35 @@ impl PulseClient {
             edge_id
         };
 
+        // reqwest 0.12.x requires a live Tokio runtime (with I/O reactor)
+        // to construct a Client.  GresiqClient::from_credentials calls
+        // reqwest::Client::new() internally.  Guard against panics when
+        // called from a thread/context that lacks a Tokio reactor.
+        if tokio::runtime::Handle::try_current().is_err() {
+            log::warn!(
+                "pulse: no Tokio runtime available — \
+                 deferring PulseClient creation"
+            );
+            return None;
+        }
+
         let credentials = GresiqCredentials {
             api_key,
             api_secret,
         };
 
-        let inner = GresiqClient::from_credentials(environment, credentials);
+        let inner = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            GresiqClient::from_credentials(environment, credentials)
+        })) {
+            Ok(client) => client,
+            Err(_) => {
+                log::warn!(
+                    "pulse: GresiqClient::from_credentials panicked \
+                     (likely missing Tokio reactor) — telemetry disabled"
+                );
+                return None;
+            }
+        };
 
         Some(PulseClient { inner, edge_id })
     }
@@ -77,19 +117,55 @@ impl PulseClient {
         model_name: String,
         load_duration_ms: u64,
     ) {
-        let event = ModelLoadedEvent {
-            edge_id: self.edge_id.clone(),
-            model_id,
-            model_name,
-            load_duration_ms,
+        let client = self.clone();
+        let send_event = async move {
+            let event = ModelLoadedEvent {
+                edge_id: client.edge_id.clone(),
+                model_id,
+                model_name,
+                load_duration_ms,
+            };
+            if let Err(error) = client.inner.insert("pulse/model_loaded", &event).await {
+                log::warn!("pulse: model_loaded failed: {}", error);
+            }
         };
-        if let Err(error) = self.inner.insert("pulse/model_loaded", &event).await {
-            log::warn!("pulse: model_loaded failed: {}", error);
+
+        if tokio::runtime::Handle::try_current().is_ok() {
+            send_event.await;
+            return;
+        }
+
+        let join = std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+
+            match runtime {
+                Ok(runtime) => {
+                    runtime.block_on(send_event);
+                }
+                Err(error) => {
+                    log::warn!(
+                        "pulse: could not create fallback runtime for model_loaded: {}",
+                        error
+                    );
+                }
+            }
+        });
+
+        if join.join().is_err() {
+            log::warn!("pulse: fallback model_loaded thread panicked");
         }
     }
 
     /// Same fire-and-forget pattern as record_model_loaded but for inference
     /// completions.  Writes to pulse/inference_event.  Logs on failure, no retry.
+    ///
+    /// Swift / UniFFI consumers may call into the SDK from contexts where
+    /// `tokio::spawn` does not have a current runtime handle even though the
+    /// outer API is async.  To avoid panicking on Apple platforms, we prefer
+    /// the current Tokio runtime when available and otherwise fall back to a
+    /// short-lived current-thread runtime on a native background thread.
     pub fn record_inference(
         &self,
         model_id: String,
@@ -98,7 +174,7 @@ impl PulseClient {
         status: String,
     ) {
         let client = self.clone();
-        tokio::spawn(async move {
+        let send_event = async move {
             let event = InferenceEvent {
                 edge_id: client.edge_id.clone(),
                 model_id,
@@ -108,6 +184,29 @@ impl PulseClient {
             };
             if let Err(error) = client.inner.insert("pulse/inference_event", &event).await {
                 log::warn!("pulse: inference_event failed: {}", error);
+            }
+        };
+
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(send_event);
+            return;
+        }
+
+        std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+
+            match runtime {
+                Ok(runtime) => {
+                    runtime.block_on(send_event);
+                }
+                Err(error) => {
+                    log::warn!(
+                        "pulse: could not create fallback runtime for inference_event: {}",
+                        error
+                    );
+                }
             }
         });
     }

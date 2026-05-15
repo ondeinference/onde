@@ -5,6 +5,11 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish 1.1.0 artifacts to Maven Central from the selected ref"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -12,7 +17,7 @@ permissions:
 jobs:
   publish:
     name: Build and publish KMP library to Maven Central
-    runs-on: macos-15
+    runs-on: macos-26
 
     env:
       GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
@@ -133,8 +138,8 @@ jobs:
         working-directory: sdk/kotlin
         run: ./gradlew :lib:publishToMavenCentral --dry-run --no-configuration-cache
 
-      - name: Publish and release to Maven Central (tag push only)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish and release to Maven Central (tag push or manual publish)
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish)
         working-directory: sdk/kotlin
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALUSERNAME }}
