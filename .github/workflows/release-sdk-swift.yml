@@ -66,10 +66,11 @@ jobs:
           fi
           echo "Version check passed: $CARGO_VERSION"
 
-      # ── Upload CI artifacts (every run) ──────────────────────────────────
+      # ── Upload CI artifacts (manual runs only) ───────────────────────────
 
       - name: Upload XCFramework artifacts
-        uses: actions/upload-artifact@v7
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
         with:
           name: onde-swift-xcframework
           path: |
@@ -78,6 +79,7 @@ jobs:
             dist/swift/version.txt
             dist/swift/Package/Sources/Onde/onde.swift
           if-no-files-found: error
+          retention-days: 14
 
       # ── Create GitHub Release and attach assets (tag push only) ──────────
 
