@@ -1,3 +1,14 @@
+## 1.1.1
+
+### Apple SDK compatibility
+
+* Swift XCFramework and Kotlin macOS/JVM builds now honor explicit Apple deployment targets instead of inheriting the newest runner SDK defaults.
+* This fixes downstream macOS app integration warnings caused by the macOS static library slice being built with a newer minimum OS than consumer apps target.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.1.1`.
+
 ## 1.1.0
 
 ### Swift / UniFFI runtime stability

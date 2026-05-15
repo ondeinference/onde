@@ -1,3 +1,8 @@
+## 1.1.1
+
+* **Apple SDK compatibility:** Pulls in the Onde Rust core `1.1.1` Apple deployment-target build fixes so downstream macOS consumers do not inherit newer-than-expected minimum OS metadata from the packaged native binaries.
+* **Release alignment:** Aligns the Flutter/Dart package version with the Rust, Swift, Kotlin, and React Native SDKs.
+
 ## 1.1.0
 
 * **Swift / UniFFI stability:** Pulls in the Onde Rust core `1.1.0` runtime fixes for Swift/Kotlin/Apple-hosted SDKs, including Tokio runtime annotations and panic-safe pulse telemetry initialization.
