@@ -99,7 +99,7 @@ jobs:
 
       - name: Upload XCFramework artifacts
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: onde-swift-xcframework
           path: |
@@ -114,7 +114,7 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/') || inputs.publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release.outputs.release_tag }}
           name: ${{ steps.release.outputs.release_tag }}
@@ -157,13 +157,23 @@ jobs:
               re.MULTILINE,
           )
 
-          updated, url_count = url_pattern.subn(rf'\1{url}\3', src, count=1)
-          updated, checksum_count = checksum_pattern.subn(rf'\1{checksum}\3', updated, count=1)
+          def replace_constant(pattern, value, text, label):
+              updated_text, count = pattern.subn(
+                  lambda match: f"{match.group(1)}{value}{match.group(3)}",
+                  text,
+                  count=1,
+              )
+              if count != 1:
+                  raise RuntimeError(f"{label} pattern did not match - check Package.swift format")
+              return updated_text
 
-          if url_count != 1:
-              raise RuntimeError("releaseFrameworkURL pattern did not match — check Package.swift format")
-          if checksum_count != 1:
-              raise RuntimeError("releaseFrameworkChecksum pattern did not match — check Package.swift format")
+          updated = replace_constant(url_pattern, url, src, "releaseFrameworkURL")
+          updated = replace_constant(
+              checksum_pattern,
+              checksum,
+              updated,
+              "releaseFrameworkChecksum",
+          )
 
           pkg.write_text(updated)
           print("Package.swift updated:")
