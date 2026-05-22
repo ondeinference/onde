@@ -1,3 +1,9 @@
+## 1.1.2
+
+- tvOS support: 0.5B model default, memory-optimized model builder, snapshot cache repair
+- New `configure_cache_dir` FFI function for sandboxed platforms
+- New `qwen25_0_5b_config()` free function
+
 ## 1.1.1
 
 * **Apple SDK compatibility:** Pulls in the Onde Rust core `1.1.1` Apple deployment-target build fixes so downstream macOS consumers do not inherit newer-than-expected minimum OS metadata from the packaged native binaries.
