@@ -409,8 +409,8 @@ impl ChatEngine {
         // so the auto device mapper allocates far less memory.
         #[cfg(target_os = "tvos")]
         {
-            use mistralrs_core::AutoDeviceMapParams;
             use mistralrs::DeviceMapSetting;
+            use mistralrs_core::AutoDeviceMapParams;
 
             builder = builder
                 .with_max_num_seqs(1)

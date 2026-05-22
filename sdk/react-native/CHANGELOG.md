@@ -1,3 +1,9 @@
+## 1.1.2
+
+- tvOS support: 0.5B model default, memory-optimized model builder, snapshot cache repair
+- New `configure_cache_dir` FFI function for sandboxed platforms
+- New `qwen25_0_5b_config()` free function
+
 ## 1.0.0
 
 This is the first stable release. Onde has already been running in real App Store apps for a while, so it felt like time to leave `0.x` behind.
