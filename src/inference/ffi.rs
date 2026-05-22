@@ -308,6 +308,12 @@ pub fn default_model_config() -> GgufModelConfig {
     GgufModelConfig::platform_default()
 }
 
+/// Return the Qwen 2.5 0.5B GGUF model configuration (~380 MB).
+#[uniffi::export]
+pub fn qwen25_0_5b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen25_0_5b()
+}
+
 /// Return the Qwen 2.5 1.5B GGUF model configuration (~941 MB).
 #[uniffi::export]
 pub fn qwen25_1_5b_config() -> GgufModelConfig {
@@ -356,6 +362,41 @@ pub fn assistant_message(content: String) -> ChatMessage {
     ChatMessage::assistant(content)
 }
 
+/// Configure the HF cache directory for sandboxed platforms.
+///
+/// Call this before any model-loading method (`load_gguf_model`,
+/// `load_default_model`, etc.) on iOS, tvOS, and Android where the
+/// default `~/.cache/huggingface` path is inaccessible.
+///
+/// `path` should be a writable app data directory (e.g. the App Group
+/// container or Application Support directory on Apple platforms).
+///
+/// This sets the `HF_HOME` and `HF_HUB_CACHE` environment variables
+/// and creates the directory structure.
+#[uniffi::export]
+pub fn configure_cache_dir(path: String) {
+    let base = std::path::PathBuf::from(&path);
+    let hf_home = base.join("models");
+    let hf_hub_cache = hf_home.join("hub");
+
+    if let Err(e) = std::fs::create_dir_all(&hf_hub_cache) {
+        log::warn!(
+            "configure_cache_dir: could not create {}: {}",
+            hf_hub_cache.display(),
+            e
+        );
+    }
+
+    std::env::set_var("HF_HOME", &hf_home);
+    std::env::set_var("HF_HUB_CACHE", &hf_hub_cache);
+
+    log::info!(
+        "configure_cache_dir: HF_HOME={}, HF_HUB_CACHE={}",
+        hf_home.display(),
+        hf_hub_cache.display()
+    );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════
@@ -399,6 +440,21 @@ mod tests {
 
         let m = assistant_message("Hi!".into());
         assert_eq!(m.role, ChatRole::Assistant);
+    }
+
+    #[test]
+    fn configure_cache_dir_sets_env() {
+        let tmp = std::env::temp_dir().join("onde-test-cache-dir");
+        configure_cache_dir(tmp.to_string_lossy().to_string());
+
+        let hf_home = std::env::var("HF_HOME").unwrap();
+        assert!(hf_home.contains("models"));
+
+        let hf_hub = std::env::var("HF_HUB_CACHE").unwrap();
+        assert!(hf_hub.contains("hub"));
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[tokio::test]
