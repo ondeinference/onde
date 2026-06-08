@@ -89,7 +89,7 @@ tsync = "2"
 uniffi = { version = "=0.31.0", features = ["tokio"] }
 
 [dependencies.smbcloud-gresiq-sdk]
-version = "0.3"
+version = "0.4"
 # path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
 
 [build-dependencies]
