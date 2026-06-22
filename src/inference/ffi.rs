@@ -326,6 +326,66 @@ pub fn qwen25_3b_config() -> GgufModelConfig {
     GgufModelConfig::qwen25_3b()
 }
 
+// ── Qwen 3 family ────────────────────────────────────────────────────────────
+
+/// Return the Qwen 3 0.6B GGUF model configuration (~0.5 GB).
+#[uniffi::export]
+pub fn qwen3_0_6b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_0_6b()
+}
+
+/// Return the Qwen 3 1.7B GGUF model configuration (~1.3 GB).
+#[uniffi::export]
+pub fn qwen3_1_7b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_1_7b()
+}
+
+/// Return the Qwen 3 4B GGUF model configuration (~2.7 GB).
+#[uniffi::export]
+pub fn qwen3_4b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b()
+}
+
+/// Return the Qwen 3 8B GGUF model configuration (~5 GB).
+#[uniffi::export]
+pub fn qwen3_8b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_8b()
+}
+
+/// Return the Qwen 3 14B GGUF model configuration (~8.4 GB).
+#[uniffi::export]
+pub fn qwen3_14b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_14b()
+}
+
+/// Return the Qwen 3 32B GGUF model configuration (~19.8 GB).
+#[uniffi::export]
+pub fn qwen3_32b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_32b()
+}
+
+/// Return the Qwen 3 4B Instruct 2507 GGUF model configuration (~2.5 GB).
+///
+/// Latest non-thinking 4B checkpoint — recommended general-purpose Qwen 3 model.
+#[uniffi::export]
+pub fn qwen3_4b_instruct_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b_instruct_2507()
+}
+
+/// Return the Qwen 3 4B Thinking 2507 GGUF model configuration (~2.5 GB).
+///
+/// Latest reasoning-focused 4B checkpoint; load with `max_tokens ≥ 4096`.
+#[uniffi::export]
+pub fn qwen3_4b_thinking_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b_thinking_2507()
+}
+
+/// Return the Qwen 3 30B-A3B Instruct 2507 (MoE) GGUF model configuration (~18.6 GB).
+#[uniffi::export]
+pub fn qwen3_30b_a3b_instruct_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_30b_a3b_instruct_2507()
+}
+
 /// Return default sampling parameters for creative chat.
 #[uniffi::export]
 pub fn default_sampling_config() -> SamplingConfig {

@@ -2039,18 +2039,22 @@ impl GgufModelConfig {
         }
     }
 
-    /// Qwen 3 4B Instruct (GGUF Q4_K_M) — ~2.7 GB.
+    /// Qwen 3 0.6B (GGUF Q4_K_M) — smallest Qwen 3 variant, ~0.5 GB.
     ///
-    /// Full OpenAI-compatible tool calling with extended thinking mode.
-    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
-    /// consume 300–400 tokens before the real response begins.
-    pub fn qwen3_4b() -> Self {
+    /// Lightest tool-capable Qwen 3 model; fits tvOS and the most
+    /// memory-constrained mobile devices. Extended thinking mode — load with
+    /// `max_tokens ≥ 4096`.
+    pub fn qwen3_0_6b() -> Self {
         Self {
-            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
-            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
-            tok_model_id: None,
-            display_name: "Qwen 3 4B (Q4_K_M)".into(),
-            approx_memory: "~2.7 GB".into(),
+            model_id: super::models::BARTOWSKI_QWEN3_0_6B_GGUF.into(),
+            files: vec![super::models::QWEN3_0_6B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_0_6B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 0.6B (Q4_K_M)".into(),
+            approx_memory: "~0.5 GB".into(),
             chat_template: None,
         }
     }
@@ -2060,24 +2064,33 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_1_7B_GGUF.into(),
             files: vec![super::models::QWEN3_1_7B_GGUF_FILE.into()],
-            tok_model_id: None,
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_1_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
             display_name: "Qwen 3 1.7B (Q4_K_M)".into(),
             approx_memory: "~1.3 GB".into(),
             chat_template: None,
         }
     }
 
-    /// Qwen 3 14B Instruct (GGUF Q4_K_M) — ~8.4 GB.
+    /// Qwen 3 4B (GGUF Q4_K_M) — ~2.7 GB.
     ///
-    /// Strongest reasoning and tool-calling model with extended thinking.
-    /// Best all-around model for macOS with 16+ GB RAM.
-    pub fn qwen3_14b() -> Self {
+    /// Full OpenAI-compatible tool calling with extended thinking mode.
+    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
+    /// consume 300–400 tokens before the real response begins.
+    pub fn qwen3_4b() -> Self {
         Self {
-            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
-            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
-            tok_model_id: None,
-            display_name: "Qwen 3 14B (Q4_K_M)".into(),
-            approx_memory: "~8.4 GB".into(),
+            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B (Q4_K_M)".into(),
+            approx_memory: "~2.7 GB".into(),
             chat_template: None,
         }
     }
@@ -2088,9 +2101,110 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_8B_GGUF.into(),
             files: vec![super::models::QWEN3_8B_GGUF_FILE.into()],
-            tok_model_id: None,
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_8B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
             display_name: "Qwen 3 8B (Q4_K_M)".into(),
             approx_memory: "~5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 14B (GGUF Q4_K_M) — ~8.4 GB.
+    ///
+    /// Strong reasoning and tool-calling model with extended thinking.
+    /// Best all-around model for macOS with 16+ GB RAM.
+    pub fn qwen3_14b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
+            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_14B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 14B (Q4_K_M)".into(),
+            approx_memory: "~8.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 32B (GGUF Q4_K_M) — largest dense Qwen 3, ~19.8 GB.
+    ///
+    /// Highest-quality dense Qwen 3 variant. Requires a high-memory desktop
+    /// (32+ GB RAM / unified memory). Extended thinking and full tool calling.
+    pub fn qwen3_32b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_32B_GGUF.into(),
+            files: vec![super::models::QWEN3_32B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_32B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 32B (Q4_K_M)".into(),
+            approx_memory: "~19.8 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 4B Instruct 2507 (GGUF Q4_K_M) — latest non-thinking 4B, ~2.5 GB.
+    ///
+    /// Updated instruction-tuned checkpoint that does *not* emit a `<think>`
+    /// block, making it faster and more predictable for chat and tool use.
+    /// Recommended general-purpose Qwen 3 model.
+    pub fn qwen3_4b_instruct_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_INSTRUCT_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_INSTRUCT_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B Instruct 2507 (Q4_K_M)".into(),
+            approx_memory: "~2.5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 4B Thinking 2507 (GGUF Q4_K_M) — latest reasoning 4B, ~2.5 GB.
+    ///
+    /// Updated thinking-only checkpoint with stronger reasoning and tool-use
+    /// accuracy. Always emits a `<think>` block — load with `max_tokens ≥ 4096`.
+    pub fn qwen3_4b_thinking_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_THINKING_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_THINKING_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B Thinking 2507 (Q4_K_M)".into(),
+            approx_memory: "~2.5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 30B-A3B Instruct 2507 (GGUF Q4_K_M) — flagship MoE, ~18.6 GB.
+    ///
+    /// Mixture-of-experts model: 30B total parameters, ~3B active per token, so
+    /// inference is far cheaper than a 30B dense model while quality rivals it.
+    /// Loads via the `qwen3moe` GGUF architecture. Requires 32+ GB RAM.
+    pub fn qwen3_30b_a3b_instruct_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_30B_A3B_INSTRUCT_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_30B_A3B_INSTRUCT_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 30B-A3B Instruct 2507 (Q4_K_M)".into(),
+            approx_memory: "~18.6 GB".into(),
             chat_template: None,
         }
     }
@@ -2170,6 +2284,37 @@ mod tests {
         let cfg = GgufModelConfig::qwen25_3b();
         assert!(cfg.model_id.contains("3B"));
         assert_eq!(cfg.files.len(), 1);
+    }
+
+    #[test]
+    fn gguf_model_config_qwen3_variants() {
+        // Every Qwen 3 constructor must produce a valid, single-file config
+        // whose repo ID is registered in the supported-models list.
+        let configs = [
+            GgufModelConfig::qwen3_0_6b(),
+            GgufModelConfig::qwen3_1_7b(),
+            GgufModelConfig::qwen3_4b(),
+            GgufModelConfig::qwen3_8b(),
+            GgufModelConfig::qwen3_14b(),
+            GgufModelConfig::qwen3_32b(),
+            GgufModelConfig::qwen3_4b_instruct_2507(),
+            GgufModelConfig::qwen3_4b_thinking_2507(),
+            GgufModelConfig::qwen3_30b_a3b_instruct_2507(),
+        ];
+        for cfg in &configs {
+            assert!(
+                cfg.model_id.contains("Qwen3"),
+                "unexpected id: {}",
+                cfg.model_id
+            );
+            assert_eq!(cfg.files.len(), 1);
+            assert!(cfg.files[0].ends_with("-Q4_K_M.gguf"));
+            assert!(
+                super::super::models::SUPPORTED_MODELS.contains(&cfg.model_id.as_str()),
+                "{} missing from SUPPORTED_MODELS",
+                cfg.model_id
+            );
+        }
     }
 
     #[test]

@@ -470,6 +470,62 @@ pub extern "C" fn onde_qwen25_3b_config() -> *mut c_char {
     to_json_cstring(&GgufModelConfig::qwen25_3b())
 }
 
+// ── Qwen 3 family ────────────────────────────────────────────────────────────
+
+/// Return the Qwen 3 0.6B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_0_6b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_0_6b())
+}
+
+/// Return the Qwen 3 1.7B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_1_7b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_1_7b())
+}
+
+/// Return the Qwen 3 4B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b())
+}
+
+/// Return the Qwen 3 8B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_8b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_8b())
+}
+
+/// Return the Qwen 3 14B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_14b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_14b())
+}
+
+/// Return the Qwen 3 32B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_32b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_32b())
+}
+
+/// Return the Qwen 3 4B Instruct 2507 GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_instruct_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b_instruct_2507())
+}
+
+/// Return the Qwen 3 4B Thinking 2507 GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_thinking_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b_thinking_2507())
+}
+
+/// Return the Qwen 3 30B-A3B Instruct 2507 (MoE) GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_30b_a3b_instruct_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_30b_a3b_instruct_2507())
+}
+
 // ── Sampling presets ─────────────────────────────────────────────────────────
 
 /// Return the default sampling config as JSON.
