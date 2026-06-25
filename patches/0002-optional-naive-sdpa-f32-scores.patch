@@ -1,0 +1,58 @@
+Subject: [PATCH] (optional hardening) naive_sdpa: compute attention scores in F32
+
+OPTIONAL, defense-in-depth. Patch 0001 already fixes the reported Qwen3-14B NaN
+by never auto-selecting F16 on non-CUDA devices. This additionally makes the
+eager attention path safe even if F16 is forced explicitly.
+
+NOTE: This does NOT cover the Metal prefill path, which uses the fused kernel
+candle_nn::ops::sdpa (see attention/mod.rs::run_attention_noflash), not
+naive_sdpa. Only patch 0001 fixes Metal. Apply 0001 regardless.
+
+The current code upcasts to F32 for the softmax, but only AFTER the F16 Q*K^T
+matmul -- by then an overflowed score is already Inf. Upcasting Q/K before the
+matmul keeps scores finite. The score matrix is small relative to the weights.
+
+--- a/mistralrs-core/src/attention/backends/naive.rs
++++ b/mistralrs-core/src/attention/backends/naive.rs
+@@ -32,8 +32,16 @@
+ 
+     // Use chunked attention with a closure that captures the necessary parameters
+     chunked_attention(q, k, v, mask, |q_chunk, k, v, mask_chunk| {
++        // Compute attention scores in F32 to avoid F16 overflow: a large Q*K^T
++        // entry can exceed F16's 65504 maximum, become Inf, and then NaN after
++        // softmax (seen with large models such as Qwen3-14B). Upcasting Q/K
++        // before the matmul keeps the scores finite. The score matrix is small
++        // relative to the weights, so the cost is minor.
++        let in_dtype = q_chunk.dtype();
++        let q_chunk = q_chunk.to_dtype(candle_core::DType::F32)?;
++        let k = k.to_dtype(candle_core::DType::F32)?;
+         let mut att =
+-            MatMul.matmul_affine_mul(q_chunk, &k.t()?, sdpa_params.softmax_scale.into())?;
++            MatMul.matmul_affine_mul(&q_chunk, &k.t()?, sdpa_params.softmax_scale.into())?;
+ 
+         if let Some(softcap) = sdpa_params.softcap {
+             att = (att / softcap as f64)?;
+@@ -42,17 +50,15 @@
+         }
+ 
+         if let Some(mask) = mask_chunk {
+-            att = att.broadcast_add(mask)?;
++            att = att.broadcast_add(&mask.to_dtype(candle_core::DType::F32)?)?;
+         }
+ 
+-        // Compute softmax in F32 for precision (BF16 exp() loses information).
+-        let att_dtype = att.dtype();
+-        if att_dtype == candle_core::DType::BF16 || att_dtype == candle_core::DType::F16 {
+-            att = att.to_dtype(candle_core::DType::F32)?;
+-        }
++        // Scores are already F32 here; softmax stays in F32 for precision.
+         att = candle_nn::ops::softmax_last_dim(&att)?;
+-        if att.dtype() != att_dtype {
+-            att = att.to_dtype(att_dtype)?;
++        // Cast the (bounded, in [0,1]) probabilities back to the compute dtype
++        // for the att @ V matmul.
++        if att.dtype() != in_dtype {
++            att = att.to_dtype(in_dtype)?;
+         }
+         MatMul.matmul(&att, v)
+     })

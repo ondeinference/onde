@@ -1,0 +1,43 @@
+Subject: [PATCH] dtype: prefer F32 over the F16 fallback on non-CUDA devices
+
+Fixes NaN/Inf logits ("Invalid sampling probability at index 0: NaN") for large
+GGUF models (e.g. Qwen3-14B) on GPUs without bfloat16 support, such as Intel
+Macs running Metal.
+
+Root cause: `determine_auto_dtype_all` probes BF16 -> F16 -> F32 and returns the
+first that supports a trivial matmul. On a device without hardware bf16 the BF16
+probe fails and F16 is selected. GGUF attention materialises the Q*K^T score
+matrix in the compute dtype (eager `naive_sdpa`, and the Metal fused
+`candle_nn::ops::sdpa` used for prefill). F16's max is 65504; the 14B model's
+scaled scores exceed it -> Inf -> NaN after softmax, which the sampler rejects.
+
+Fix: on non-CUDA devices, drop F16 from the auto candidates (BF16 -> F32). BF16
+has F32's exponent range and F32 is safe; only F16 overflows. CUDA is unchanged
+(flash-attention accumulates softmax in F32).
+
+Apply in the onde-mistralrs fork, then publish onde-mistralrs 0.8.3 and bump the
+dependency in onde. The published crate ships this file as src/utils/normal.rs;
+the path below uses the fork's workspace directory.
+
+--- a/mistralrs-core/src/utils/normal.rs
++++ b/mistralrs-core/src/utils/normal.rs
+@@ -134,7 +134,18 @@
+     #[cfg(not(any(feature = "accelerate", target_os = "ios")))]
+     {
+         let dev_dtypes = get_dtypes();
+-        for dtype in get_dtypes_non_cuda()
++        // Prefer F32 over F16 on non-CUDA devices (Metal / CPU). The eager
++        // (`naive_sdpa`) and Metal fused-SDPA attention paths materialise the
++        // attention score matrix in the compute dtype, and large models
++        // (e.g. Qwen3-14B) overflow F16's 65504 maximum -> Inf -> NaN logits.
++        // BF16 (same exponent range as F32) and F32 are safe; F16 is not.
++        // CUDA keeps F16 because flash-attention accumulates softmax in F32.
++        let candidate_dtypes: Vec<DType> = if devices.iter().any(|d| d.is_cuda()) {
++            get_dtypes_non_cuda() // [BF16, F16]
++        } else {
++            vec![DType::BF16] // BF16, else fall through to F32 below
++        };
++        for dtype in candidate_dtypes
+             .iter()
+             .filter(|x| dev_dtypes.contains(x))
+         {

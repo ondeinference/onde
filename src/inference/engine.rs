@@ -879,7 +879,7 @@ impl ChatEngine {
                 .send_chat_request(request)
                 .await
                 .map_err(|e| InferenceError::Inference {
-                    reason: e.to_string(),
+                    reason: augment_inference_error(e.to_string()),
                 })?;
         let elapsed = start.elapsed();
 
@@ -970,7 +970,7 @@ impl ChatEngine {
                 .send_chat_request(request)
                 .await
                 .map_err(|e| InferenceError::Inference {
-                    reason: e.to_string(),
+                    reason: augment_inference_error(e.to_string()),
                 })?;
         let elapsed = start.elapsed();
 
@@ -1126,7 +1126,10 @@ impl ChatEngine {
                         .send(StreamChunk {
                             delta: String::new(),
                             done: true,
-                            finish_reason: Some(format!("error: {}", e)),
+                            finish_reason: Some(format!(
+                                "error: {}",
+                                augment_inference_error(e.to_string())
+                            )),
                         })
                         .await;
                 }
@@ -1170,7 +1173,7 @@ impl ChatEngine {
                 .send_chat_request(request)
                 .await
                 .map_err(|e| InferenceError::Inference {
-                    reason: e.to_string(),
+                    reason: augment_inference_error(e.to_string()),
                 })?;
         let elapsed = start.elapsed();
 
@@ -1249,7 +1252,7 @@ impl ChatEngine {
                 .send_chat_request(request)
                 .await
                 .map_err(|e| InferenceError::Inference {
-                    reason: e.to_string(),
+                    reason: augment_inference_error(e.to_string()),
                 })?;
         let elapsed = start.elapsed();
 
@@ -1403,7 +1406,10 @@ impl ChatEngine {
                         .send(StreamChunk {
                             delta: String::new(),
                             done: true,
-                            finish_reason: Some(format!("error: {}", e)),
+                            finish_reason: Some(format!(
+                                "error: {}",
+                                augment_inference_error(e.to_string())
+                            )),
                         })
                         .await;
                 }
@@ -1694,6 +1700,43 @@ fn parse_tool_calls(choice: &mistralrs::Choice) -> Vec<ToolCallRequest> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// Augment a raw inference-error message with an actionable hint when the model
+/// produced NaN/Inf logits.
+///
+/// A `NaN`/`Inf` logit is the symptom of a half-precision (F16) overflow: large
+/// GGUF models such as Qwen3-14B can exceed F16's 65504 maximum during attention
+/// on GPUs without bfloat16 support (notably Intel Macs), producing `Inf` scores
+/// that become `NaN` after softmax. mistral.rs then rejects the distribution
+/// with a cryptic "Invalid sampling probability ... NaN" error. We keep the
+/// original text and append guidance so users aren't left guessing.
+///
+/// The proper fix lives in the inference engine (run attention in F32 / prefer
+/// F32 over the F16 fallback); this only improves the message until that ships.
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+fn augment_inference_error(reason: String) -> String {
+    let looks_like_nan_overflow =
+        reason.contains("NaN") || reason.contains("Inf") || reason.contains("sampling probability");
+    if looks_like_nan_overflow {
+        format!(
+            "{reason}\n\nThe model produced invalid (NaN/Inf) output. This is a \
+             half-precision overflow that affects large models (e.g. Qwen3-14B) on \
+             GPUs without bfloat16 support, such as Intel Macs. Try a smaller model \
+             (e.g. Qwen3-8B or Qwen3-4B), or run on Apple Silicon."
+        )
+    } else {
+        reason
+    }
 }
 
 /// Apply a [`SamplingConfig`] to a [`RequestBuilder`].

@@ -1,3 +1,10 @@
+## Unreleased
+
+### Inference stability
+
+* Fixed Qwen3-14B (and other large GGUF models) failing with `Invalid sampling probability at index 0: NaN` / `NaN/Inf logits` on GPUs without bfloat16 support (notably Intel Macs). Root cause: the GGUF pipeline runs with `ModelDType::Auto`, which falls back to **F16** when bf16 is unavailable, and the attention score matrix overflows F16's 65504 maximum for large models → `Inf` → `NaN` after softmax. The fix prefers **F32 over the F16 fallback** on non-CUDA devices in the `onde-mistralrs` engine — see `patches/0001-prefer-f32-over-f16-gguf-attention.patch` (apply to the fork, publish `onde-mistralrs 0.8.3`, then bump the dependency here). Apple Silicon (bf16) and CPU were unaffected.
+* `ChatEngine` now augments NaN/Inf inference failures with an actionable hint (try a smaller model / run on Apple Silicon) instead of surfacing only the raw engine message.
+
 ## 1.1.1
 
 ### Apple SDK compatibility
