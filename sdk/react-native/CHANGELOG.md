@@ -1,3 +1,7 @@
+## 1.1.3
+
+- Bump smbCloud GresIQ SDK to 0.4.6 (telemetry transport now tracks the latest smbCloud platform SDK line)
+
 ## 1.1.2
 
 - tvOS support: 0.5B model default, memory-optimized model builder, snapshot cache repair
