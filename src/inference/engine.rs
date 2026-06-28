@@ -243,6 +243,10 @@ enum HistoryEntry {
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
     pulse: std::sync::OnceLock<Option<crate::pulse::PulseClient>>,
+    /// The Onde app UUID this engine reports telemetry for. Threaded into every
+    /// pulse event so the document store associates rows with the right app.
+    /// `None` for open-ended SDK consumers (UniFFI `OndeChatEngine`).
+    onde_app_id: Option<String>,
 }
 
 #[cfg(any(
@@ -258,12 +262,23 @@ pub struct ChatEngine {
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
-    /// Create a new engine with no model loaded.
+    /// Create a new engine with no model loaded and no Onde app association.
+    /// Pulse telemetry is still enabled, but events carry no `onde_app_id`.
     pub fn new() -> Self {
+        Self::with_app_id(None)
+    }
+
+    /// Create a new engine that reports telemetry for a specific Onde app.
+    /// The app UUID is threaded into every pulse event so the document store
+    /// associates rows with the right app. Consumer apps that know their ID
+    /// call `ChatEngine::with_app_id(Some(smbcloud::onde_app_id()))`; the
+    /// UniFFI `OndeChatEngine` keeps calling `new()` (→ `None`).
+    pub fn with_app_id(onde_app_id: Option<String>) -> Self {
         crate::install_panic_hook_once();
         Self {
             inner: Mutex::new(None),
             pulse: std::sync::OnceLock::new(),
+            onde_app_id,
         }
     }
 
@@ -279,7 +294,14 @@ impl ChatEngine {
                 let environment = Self::pulse_environment();
                 let edge_id =
                     std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
-                let client = crate::pulse::PulseClient::new(environment, edge_id);
+                // Prefer the constructor-supplied app id; fall back to the
+                // ONDE_APP_ID env var so UniFFI consumers can opt in without a
+                // new constructor signature.
+                let onde_app_id = self
+                    .onde_app_id
+                    .clone()
+                    .or_else(|| std::env::var("ONDE_APP_ID").ok().filter(|id| !id.is_empty()));
+                let client = crate::pulse::PulseClient::new(environment, edge_id, onde_app_id);
 
                 match &client {
                     Some(_) => log::info!(
@@ -1792,6 +1814,12 @@ pub struct ChatEngine;
 )))]
 impl ChatEngine {
     pub fn new() -> Self {
+        Self
+    }
+
+    /// Stub mirror of the real `with_app_id`. The unsupported-platform engine
+    /// ignores telemetry, so the app id is dropped.
+    pub fn with_app_id(_onde_app_id: Option<String>) -> Self {
         Self
     }
 
