@@ -1,3 +1,7 @@
+## 1.1.4
+
+- Bump smbCloud GresIQ SDK to 0.4.7 and dual-write pulse telemetry to the GresIQ document gateway (ADR-0003 M2); telemetry events now carry an optional `onde_app_id`
+
 ## 1.1.3
 
 - Bump smbCloud GresIQ SDK to 0.4.6 (telemetry transport now tracks the latest smbCloud platform SDK line)
