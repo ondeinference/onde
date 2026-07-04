@@ -1008,7 +1008,7 @@ where
     use crate::inference::token::hf_token_source;
     use mistralrs::{
         DiffusionLoaderType, DiffusionModelBuilder, GgufModelBuilder, IsqType, ModelDType,
-        TextModelBuilder, VisionModelBuilder,
+        MultimodalModelBuilder, TextModelBuilder,
     };
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -1123,14 +1123,14 @@ where
                 .await
         }
         GOOGLE_GEMMA_3N_E2B_IT => {
-            VisionModelBuilder::new(&model_id)
+            MultimodalModelBuilder::new(&model_id)
                 .with_token_source(hf_token_source())
                 .with_isq(IsqType::Q4K)
                 .build()
                 .await
         }
         GOOGLE_GEMMA_3N_E4B_IT => {
-            VisionModelBuilder::new(&model_id)
+            MultimodalModelBuilder::new(&model_id)
                 .with_token_source(hf_token_source())
                 .with_dtype(ModelDType::F16)
                 .build()

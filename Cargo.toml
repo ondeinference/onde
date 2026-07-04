@@ -8,7 +8,7 @@ repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
 readme = "README.md"
-keywords = ["inference", "on-device", "llm", "whisper", "chat"]
+keywords = ["inference", "on-device", "chat", "llm", "mistral"]
 categories = ["multimedia::audio", "artificial-intelligence", "api-bindings"]
 
 [lib]
@@ -23,9 +23,6 @@ crate-type = ["lib", "cdylib", "staticlib"]
 # -- Feature flags -----------------------------------------------------------
 [features]
 default = []
-# Enable Whisper-based speech-to-text transcription via transcribe-rs.
-# macOS uses Metal GPU acceleration; Android uses CPU-only inference.
-whisper = ["dep:transcribe-rs", "dep:hf-hub"]
 
 # Android: CPU-only GGUF inference via candle; also needs hf-hub and
 # mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
@@ -94,10 +91,6 @@ tsync = "2"
 # the uniffi-bindgen binary crate.
 uniffi = { version = "=0.31.0", features = ["tokio"] }
 
-# Optional: Whisper speech-to-text engine (transcribe-rs wraps whisper.cpp).
-# The `whisper` feature in transcribe-rs pulls in platform-specific whisper-rs
-# (Metal on macOS, Vulkan on Windows/Linux) via its own Cargo.toml cfg gates.
-transcribe-rs = { git = "https://github.com/setoelkahfi/transcribe-rs", branch = "feature/onde", features = ["whisper"], optional = true }
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false, optional = true }
 
 [dependencies.smbcloud-gresiq-sdk]
