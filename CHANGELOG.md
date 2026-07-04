@@ -1,3 +1,31 @@
+## 1.1.1
+
+### Apple SDK compatibility
+
+* Swift XCFramework and Kotlin macOS/JVM builds now honor explicit Apple deployment targets instead of inheriting the newest runner SDK defaults.
+* This fixes downstream macOS app integration warnings caused by the macOS static library slice being built with a newer minimum OS than consumer apps target.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.1.1`.
+
+## 1.1.0
+
+### Swift / UniFFI runtime stability
+
+* Added `#[uniffi::export(async_runtime = "tokio")]` to the Swift/Kotlin FFI export surface so async UniFFI calls consistently run on the Tokio runtime.
+* Made pulse telemetry initialization lazy and panic-safe on Apple platforms. The GresIQ client is no longer created from the synchronous UniFFI constructor path, and telemetry now gracefully disables itself instead of crashing if a Tokio reactor is unavailable.
+* Added a one-time Rust panic hook so panics are logged through the host logger instead of relying on stderr in iOS/tvOS simulator and device contexts.
+
+### Telemetry
+
+* Added `ONDE_DISABLE_PULSE=1` as an explicit runtime kill switch for pulse telemetry during local validation and host-app debugging.
+* Hardened `model_loaded` and `inference_event` telemetry writes so they never require a current Tokio handle on the calling thread.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.1.0`.
+
 ## 1.0.0
 
 Onde has already been running in real Splitfire AB apps on the App Store for months, so keeping it on `0.x` no longer felt accurate.

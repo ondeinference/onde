@@ -77,6 +77,7 @@ platform_ext() {
 PLATFORM="$(detect_platform)"
 TARGET_TRIPLE="${ONDE_TARGET_TRIPLE:-$(platform_to_triple "$PLATFORM")}"
 LIB_EXT="$(platform_ext "$PLATFORM")"
+MACOS_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET:-14.0}"
 
 echo "=== Building Onde for JVM (profile: $PROFILE) ==="
 echo "Platform:       $PLATFORM"
@@ -93,7 +94,11 @@ if [[ "$PROFILE" == "release" ]]; then
 fi
 
 echo "→ cargo ${CARGO_ARGS[*]}"
-cargo "${CARGO_ARGS[@]}"
+if [[ "$PLATFORM" == macos-* ]]; then
+    MACOSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" cargo "${CARGO_ARGS[@]}"
+else
+    cargo "${CARGO_ARGS[@]}"
+fi
 
 # ── Copy to resources ──────────────────────────────────────────────────────────
 

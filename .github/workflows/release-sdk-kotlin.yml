@@ -5,6 +5,11 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish 1.1.0 artifacts to Maven Central from the selected ref"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -12,7 +17,7 @@ permissions:
 jobs:
   publish:
     name: Build and publish KMP library to Maven Central
-    runs-on: macos-15
+    runs-on: macos-26
 
     env:
       GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
@@ -27,14 +32,14 @@ jobs:
 
       # ── Java ──────────────────────────────────────────────────────────────────
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "17"
           distribution: temurin
 
       # ── Gradle ───────────────────────────────────────────────────────────────
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
           build-root-directory: sdk/kotlin
@@ -133,8 +138,8 @@ jobs:
         working-directory: sdk/kotlin
         run: ./gradlew :lib:publishToMavenCentral --dry-run --no-configuration-cache
 
-      - name: Publish and release to Maven Central (tag push only)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish and release to Maven Central (tag push or manual publish)
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.publish)
         working-directory: sdk/kotlin
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALUSERNAME }}
@@ -152,7 +157,7 @@ jobs:
           find sdk/kotlin/lib/build/libs       -name "*.jar" -exec cp {} dist/kotlin/ \;
 
       - name: Upload build outputs as workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: onde-inference-kotlin-${{ github.ref_name }}
           path: dist/kotlin/
@@ -161,7 +166,7 @@ jobs:
       # ── GitHub Release ────────────────────────────────────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: Kotlin SDK ${{ github.ref_name }}

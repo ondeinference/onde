@@ -243,6 +243,10 @@ enum HistoryEntry {
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
     pulse: std::sync::OnceLock<Option<crate::pulse::PulseClient>>,
+    /// The Onde app UUID this engine reports telemetry for. Threaded into every
+    /// pulse event so the document store associates rows with the right app.
+    /// `None` for open-ended SDK consumers (UniFFI `OndeChatEngine`).
+    onde_app_id: Option<String>,
 }
 
 #[cfg(any(
@@ -258,11 +262,23 @@ pub struct ChatEngine {
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
-    /// Create a new engine with no model loaded.
+    /// Create a new engine with no model loaded and no Onde app association.
+    /// Pulse telemetry is still enabled, but events carry no `onde_app_id`.
     pub fn new() -> Self {
+        Self::with_app_id(None)
+    }
+
+    /// Create a new engine that reports telemetry for a specific Onde app.
+    /// The app UUID is threaded into every pulse event so the document store
+    /// associates rows with the right app. Consumer apps that know their ID
+    /// call `ChatEngine::with_app_id(Some(smbcloud::onde_app_id()))`; the
+    /// UniFFI `OndeChatEngine` keeps calling `new()` (→ `None`).
+    pub fn with_app_id(onde_app_id: Option<String>) -> Self {
+        crate::install_panic_hook_once();
         Self {
             inner: Mutex::new(None),
             pulse: std::sync::OnceLock::new(),
+            onde_app_id,
         }
     }
 
@@ -278,12 +294,22 @@ impl ChatEngine {
                 let environment = Self::pulse_environment();
                 let edge_id =
                     std::env::var("ONDE_EDGE_ID").unwrap_or_else(|_| "onde-unknown".to_string());
-                let client = crate::pulse::PulseClient::new(environment, edge_id);
+                // Prefer the constructor-supplied app id; fall back to the
+                // ONDE_APP_ID env var so UniFFI consumers can opt in without a
+                // new constructor signature.
+                let onde_app_id = self
+                    .onde_app_id
+                    .clone()
+                    .or_else(|| std::env::var("ONDE_APP_ID").ok().filter(|id| !id.is_empty()));
+                let client = crate::pulse::PulseClient::new(environment, edge_id, onde_app_id);
 
                 match &client {
                     Some(_) => log::info!(
                         "ChatEngine: pulse telemetry enabled (environment={environment})"
                     ),
+                    None if crate::pulse::PulseClient::disabled_by_env() => {
+                        log::info!("ChatEngine: pulse telemetry disabled by ONDE_DISABLE_PULSE")
+                    }
                     None => log::info!(
                         "ChatEngine: pulse telemetry disabled \
                          (GRESIQ_API_KEY / GRESIQ_API_SECRET not embedded at SDK build time)"
@@ -387,11 +413,36 @@ impl ChatEngine {
         crate::hf_cache::clean_stale_lock_files(&config.model_id);
         crate::hf_cache::repair_hf_cache_symlinks(&config.model_id);
 
+        // If the blob was downloaded but the process was killed before hf-hub
+        // created the snapshot entry, hf-hub will re-download. Create the
+        // missing snapshot hard links so the cache hit succeeds.
+        let file_refs: Vec<&str> = config.files.iter().map(|s| s.as_str()).collect();
+        crate::hf_cache::ensure_snapshot_entries(&config.model_id, &file_refs);
+
         let start = Instant::now();
 
         let mut builder = GgufModelBuilder::new(&config.model_id, config.files.clone())
             .with_token_source(super::token::hf_token_source())
             .with_logging();
+
+        // tvOS: Apple TV 4K has only 4 GB RAM. Reduce memory footprint by
+        // limiting concurrent sequences, disabling the prefix cache,
+        // disabling the KV cache, and capping context length at 512 tokens
+        // so the auto device mapper allocates far less memory.
+        #[cfg(target_os = "tvos")]
+        {
+            use mistralrs::DeviceMapSetting;
+            use mistralrs_core::AutoDeviceMapParams;
+
+            builder = builder
+                .with_max_num_seqs(1)
+                .with_prefix_cache_n(None)
+                .with_no_kv_cache()
+                .with_device_mapping(DeviceMapSetting::Auto(AutoDeviceMapParams::Text {
+                    max_seq_len: 512,
+                    max_batch_size: 1,
+                }));
+        }
 
         // On Android the GGUF embedded tokenizer is not supported by the
         // candle backend — an explicit tok_model_id is required.
@@ -1766,6 +1817,12 @@ impl ChatEngine {
         Self
     }
 
+    /// Stub mirror of the real `with_app_id`. The unsupported-platform engine
+    /// ignores telemetry, so the app id is dropped.
+    pub fn with_app_id(_onde_app_id: Option<String>) -> Self {
+        Self
+    }
+
     pub async fn load_gguf_model(
         &self,
         _config: GgufModelConfig,
@@ -1892,6 +1949,24 @@ const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_tem
 /// These mirror the constants in [`super::models`] but return a ready-to-use
 /// [`GgufModelConfig`].
 impl GgufModelConfig {
+    /// Qwen 2.5 0.5B Instruct (GGUF Q4_K_M), ~380 MB.
+    ///
+    /// Smallest option. Used on tvOS (Apple TV) where the memory limit is 2 GB.
+    pub fn qwen25_0_5b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF.into(),
+            files: vec![super::models::QWEN25_0_5B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN25_0_5B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 2.5 0.5B".into(),
+            approx_memory: "~380 MB (GGUF Q4_K_M)".into(),
+            chat_template: None,
+        }
+    }
+
     /// Qwen 2.5 1.5B Instruct (GGUF Q4_K_M) — ~941 MB.
     ///
     /// Lightest option, ideal for iOS and memory-constrained Android devices.
@@ -2075,9 +2150,10 @@ impl GgufModelConfig {
     /// Both are dedicated coding models (trained on 5.5T code + math tokens)
     /// and use the `qwen2` GGUF architecture supported by mistral.rs.
     pub fn platform_default() -> Self {
-        if cfg!(any(
+        if cfg!(target_os = "tvos") {
+            Self::qwen25_0_5b()
+        } else if cfg!(any(
             target_os = "ios",
-            target_os = "tvos",
             target_os = "visionos",
             target_os = "watchos",
             target_os = "android"

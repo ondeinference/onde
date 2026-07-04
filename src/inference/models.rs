@@ -17,6 +17,14 @@ pub const QWEN25_1_5B_GGUF_FILE: &str = "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf";
 /// embedded in the GGUF file is used instead to avoid an extra network download.
 pub const QWEN25_1_5B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-1.5B-Instruct";
 
+/// Pre-quantized Qwen 2.5 0.5B Instruct (GGUF Q4_K_M), smallest model (~380 MB).
+/// Used on tvOS (Apple TV 4K) where the hard memory limit is 2 GB.
+pub const BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF: &str = "bartowski/Qwen2.5-0.5B-Instruct-GGUF";
+/// The specific GGUF filename to download from the bartowski 0.5B repo.
+pub const QWEN25_0_5B_GGUF_FILE: &str = "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
+/// Base model repo used for the HF tokenizer on Android.
+pub const QWEN25_0_5B_TOK_MODEL_ID: &str = "Qwen/Qwen2.5-0.5B-Instruct";
+
 /// Pre-quantized Qwen 2.5 Coder 1.5B Instruct (GGUF Q4_K_M) — dedicated coding model (~941 MB).
 ///
 /// Uses the `qwen2` GGUF architecture, identical to Qwen2.5-1.5B-Instruct, so it loads through
@@ -134,6 +142,7 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     GOOGLE_GEMMA_3N_E2B_IT,
     GOOGLE_GEMMA_3N_E4B_IT,
     MICROSOFT_PHI_35_MINI_INSTRUCT,
+    BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF,
@@ -233,6 +242,13 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         expected_size_bytes: 1_929_903_264,
     },
     SupportedModelInfo {
+        id: BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF,
+        name: "Qwen 2.5 0.5B (GGUF)",
+        org: "Qwen / Alibaba",
+        description: "Smallest pre-quantized chat model, used on tvOS Apple TV (~380 MB).",
+        expected_size_bytes: 397_808_192,
+    },
+    SupportedModelInfo {
         id: BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
         name: "Qwen 2.5 1.5B (GGUF)",
         org: "Qwen / Alibaba",
@@ -314,6 +330,7 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
 /// embedded tokenizer is used automatically.
 pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
     match hf_repo_id {
+        BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF => Some(QWEN25_0_5B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(QWEN25_1_5B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(QWEN25_3B_TOK_MODEL_ID),
         BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF => Some(QWEN25_CODER_1_5B_TOK_MODEL_ID),

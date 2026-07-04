@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "1.0.0"
+version = "1.1.4"
 edition = "2021"
 description = "On-device inference engine for Apple silicon."
 license = "MIT OR Apache-2.0"
@@ -101,7 +101,9 @@ transcribe-rs = { git = "https://github.com/setoelkahfi/transcribe-rs", branch =
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false, optional = true }
 
 [dependencies.smbcloud-gresiq-sdk]
-version = "0.3"
+# 0.4.7 adds the document-gateway methods (upsert_document/get_collection) the
+# M2 dual-write path uses. See ADR-0003 M2.
+version = "0.4.7"
 # path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
 
 [build-dependencies]

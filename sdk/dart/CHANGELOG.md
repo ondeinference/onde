@@ -1,3 +1,28 @@
+## 1.1.4
+
+- Bump smbCloud GresIQ SDK to 0.4.7 and dual-write pulse telemetry to the GresIQ document gateway (ADR-0003 M2); telemetry events now carry an optional `onde_app_id`
+
+## 1.1.3
+
+- Bump smbCloud GresIQ SDK to 0.4.6 (telemetry transport now tracks the latest smbCloud platform SDK line)
+
+## 1.1.2
+
+- tvOS support: 0.5B model default, memory-optimized model builder, snapshot cache repair
+- New `configure_cache_dir` FFI function for sandboxed platforms
+- New `qwen25_0_5b_config()` free function
+
+## 1.1.1
+
+* **Apple SDK compatibility:** Pulls in the Onde Rust core `1.1.1` Apple deployment-target build fixes so downstream macOS consumers do not inherit newer-than-expected minimum OS metadata from the packaged native binaries.
+* **Release alignment:** Aligns the Flutter/Dart package version with the Rust, Swift, Kotlin, and React Native SDKs.
+
+## 1.1.0
+
+* **Swift / UniFFI stability:** Pulls in the Onde Rust core `1.1.0` runtime fixes for Swift/Kotlin/Apple-hosted SDKs, including Tokio runtime annotations and panic-safe pulse telemetry initialization.
+* **Telemetry:** Pulse telemetry now gracefully disables itself if a Tokio reactor is unavailable and can be explicitly disabled with `ONDE_DISABLE_PULSE=1` during local validation.
+* **Release alignment:** Aligns the Flutter/Dart package version with the Rust, Swift, Kotlin, and React Native SDKs.
+
 ## 1.0.2
 
 * **pub.dev:** Added Apple plugin Swift Package Manager manifests at `ios/onde_inference/Package.swift` and `macos/onde_inference/Package.swift` so pub.dev recognizes modern iOS and macOS plugin toolchain support.

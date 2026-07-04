@@ -3399,7 +3399,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "onde"
-version = "1.0.0"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "cc",
@@ -3412,7 +3412,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
- "smbcloud-gresiq-sdk",
+ "smbcloud-gresiq-sdk 0.4.7",
  "thiserror 2.0.18",
  "tokio",
  "tsync",
@@ -3684,12 +3684,12 @@ dependencies = [
 
 [[package]]
 name = "onde_inference_dart"
-version = "0.1.0"
+version = "1.1.1"
 dependencies = [
  "flutter_rust_bridge",
  "log",
  "onde",
- "smbcloud-gresiq-sdk",
+ "smbcloud-gresiq-sdk 0.3.34",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -5106,7 +5106,23 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
- "smbcloud-network",
+ "smbcloud-network 0.3.35",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "smbcloud-gresiq-sdk"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45cac3688bdeba866bfbc46b89ed8f4e39be7d6818cde24347776042db567e1d"
+dependencies = [
+ "anyhow",
+ "log",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "smbcloud-network 0.4.7",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -5116,6 +5132,24 @@ name = "smbcloud-model"
 version = "0.3.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eeba5e1371b12e9573e6eba49ea99ea990ec1b6befe7bfcafaf41b43e1cf331d"
+dependencies = [
+ "chrono",
+ "log",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "spinners",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
+ "thiserror 2.0.18",
+ "tsync",
+]
+
+[[package]]
+name = "smbcloud-model"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e77a4fba4ede67959cca5b3531f4e01f9b03be559117018dee132a5709a44ab7"
 dependencies = [
  "chrono",
  "log",
@@ -5140,7 +5174,22 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
- "smbcloud-model",
+ "smbcloud-model 0.3.35",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "smbcloud-network"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba309eda605816132dfa079eb3d47d41dbcea65ca9c36efb6a4032cb6f18c25b"
+dependencies = [
+ "clap 4.6.0",
+ "log",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "smbcloud-model 0.4.7",
  "wasm-bindgen",
 ]
 

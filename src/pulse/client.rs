@@ -23,9 +23,40 @@ const EMBEDDED_API_SECRET_SECRET_PRODUCTION: Option<&str> =
 pub struct PulseClient {
     inner: GresiqClient,
     edge_id: String,
+    onde_app_id: Option<String>,
 }
 
 impl PulseClient {
+    /// Returns true when pulse telemetry is disabled explicitly by the host app.
+    pub fn disabled_by_env() -> bool {
+        matches!(
+            std::env::var("ONDE_DISABLE_PULSE")
+                .ok()
+                .as_deref()
+                .map(str::trim)
+                .map(str::to_ascii_lowercase)
+                .as_deref(),
+            Some("1") | Some("true") | Some("yes") | Some("on")
+        )
+    }
+
+    /// ADR-0003 M2 dual-write toggle. When enabled (the default), every pulse
+    /// event is *also* written to the GresIQ document gateway
+    /// (`/gresiq/v1/collections/:collection`) in addition to the semantic
+    /// `pulse/*` routes, which still serve reads until the M5 cut-over. Set
+    /// `ONDE_PULSE_DUAL_WRITE=0` (or `false`/`no`/`off`) to suppress it.
+    fn dual_write_enabled() -> bool {
+        !matches!(
+            std::env::var("ONDE_PULSE_DUAL_WRITE")
+                .ok()
+                .as_deref()
+                .map(str::trim)
+                .map(str::to_ascii_lowercase)
+                .as_deref(),
+            Some("0") | Some("false") | Some("no") | Some("off")
+        )
+    }
+
     /// Build a pulse client using the GresIQ credentials embedded in the SDK.
     ///
     /// Returns `None` if the SDK was compiled without `GRESIQ_API_KEY` /
@@ -34,7 +65,19 @@ impl PulseClient {
     ///
     /// `edge_id` is a stable device identifier (installation UUID).
     /// Pass an empty string to default to `"onde-unknown"`.
-    pub fn new(environment: Environment, edge_id: String) -> Option<Self> {
+    ///
+    /// `onde_app_id` is the Onde app UUID (from the ondeinference.com
+    /// dashboard) that owns this telemetry. `None` is fine — events then carry
+    /// no app association (open-source/direct Rust consumers).
+    pub fn new(
+        environment: Environment,
+        edge_id: String,
+        onde_app_id: Option<String>,
+    ) -> Option<Self> {
+        if Self::disabled_by_env() {
+            return None;
+        }
+
         let (api_key, api_secret) = match environment {
             Environment::Dev => (EMBEDDED_API_KEY_DEV?, EMBEDDED_API_SECRET_DEV?),
             Environment::Production => (
@@ -49,14 +92,41 @@ impl PulseClient {
             edge_id
         };
 
+        // reqwest 0.12.x requires a live Tokio runtime (with I/O reactor)
+        // to construct a Client.  GresiqClient::from_credentials calls
+        // reqwest::Client::new() internally.  Guard against panics when
+        // called from a thread/context that lacks a Tokio reactor.
+        if tokio::runtime::Handle::try_current().is_err() {
+            log::warn!(
+                "pulse: no Tokio runtime available — \
+                 deferring PulseClient creation"
+            );
+            return None;
+        }
+
         let credentials = GresiqCredentials {
             api_key,
             api_secret,
         };
 
-        let inner = GresiqClient::from_credentials(environment, credentials);
+        let inner = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            GresiqClient::from_credentials(environment, credentials)
+        })) {
+            Ok(client) => client,
+            Err(_) => {
+                log::warn!(
+                    "pulse: GresiqClient::from_credentials panicked \
+                     (likely missing Tokio reactor) — telemetry disabled"
+                );
+                return None;
+            }
+        };
 
-        Some(PulseClient { inner, edge_id })
+        Some(PulseClient {
+            inner,
+            edge_id,
+            onde_app_id,
+        })
     }
 
     /// Writes the model-load event to the pulse/model_loaded table and
@@ -77,19 +147,57 @@ impl PulseClient {
         model_name: String,
         load_duration_ms: u64,
     ) {
-        let event = ModelLoadedEvent {
-            edge_id: self.edge_id.clone(),
-            model_id,
-            model_name,
-            load_duration_ms,
+        let client = self.clone();
+        let send_event = async move {
+            let event = ModelLoadedEvent {
+                edge_id: client.edge_id.clone(),
+                model_id,
+                model_name,
+                load_duration_ms,
+                onde_app_id: client.onde_app_id.clone(),
+            };
+            if let Err(error) = client.inner.insert("pulse/model_loaded", &event).await {
+                log::warn!("pulse: model_loaded failed: {}", error);
+            }
+            client.dual_write_model_loaded(&event).await;
         };
-        if let Err(error) = self.inner.insert("pulse/model_loaded", &event).await {
-            log::warn!("pulse: model_loaded failed: {}", error);
+
+        if tokio::runtime::Handle::try_current().is_ok() {
+            send_event.await;
+            return;
+        }
+
+        let join = std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+
+            match runtime {
+                Ok(runtime) => {
+                    runtime.block_on(send_event);
+                }
+                Err(error) => {
+                    log::warn!(
+                        "pulse: could not create fallback runtime for model_loaded: {}",
+                        error
+                    );
+                }
+            }
+        });
+
+        if join.join().is_err() {
+            log::warn!("pulse: fallback model_loaded thread panicked");
         }
     }
 
     /// Same fire-and-forget pattern as record_model_loaded but for inference
     /// completions.  Writes to pulse/inference_event.  Logs on failure, no retry.
+    ///
+    /// Swift / UniFFI consumers may call into the SDK from contexts where
+    /// `tokio::spawn` does not have a current runtime handle even though the
+    /// outer API is async.  To avoid panicking on Apple platforms, we prefer
+    /// the current Tokio runtime when available and otherwise fall back to a
+    /// short-lived current-thread runtime on a native background thread.
     pub fn record_inference(
         &self,
         model_id: String,
@@ -98,17 +206,127 @@ impl PulseClient {
         status: String,
     ) {
         let client = self.clone();
-        tokio::spawn(async move {
+        let send_event = async move {
             let event = InferenceEvent {
                 edge_id: client.edge_id.clone(),
                 model_id,
                 request_id,
                 duration_ms,
                 status,
+                onde_app_id: client.onde_app_id.clone(),
             };
             if let Err(error) = client.inner.insert("pulse/inference_event", &event).await {
                 log::warn!("pulse: inference_event failed: {}", error);
             }
+            client.dual_write_inference(&event).await;
+        };
+
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(send_event);
+            return;
+        }
+
+        std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+
+            match runtime {
+                Ok(runtime) => {
+                    runtime.block_on(send_event);
+                }
+                Err(error) => {
+                    log::warn!(
+                        "pulse: could not create fallback runtime for inference_event: {}",
+                        error
+                    );
+                }
+            }
         });
+    }
+
+    // ── ADR-0003 M2 dual-write to the document gateway ───────────────────────
+    //
+    // These mirror each semantic pulse event into JSONB collections under the
+    // Onde gresiq_app. The relational `pulse/*` routes still own reads until the
+    // M5 cut-over, so these writes are fire-and-forget: a failure is logged and
+    // never affects inference. `onde_app_id` rides as a plain doc field — there
+    // is no FK in the document store.
+
+    /// Mirror a model-load into `pulse_edges`, `pulse_models`, and
+    /// `pulse_deployments`. Each collection is a separate upsert (the
+    /// FK-ordered chain of the semantic route becomes client-orchestrated
+    /// multi-insert; the document store has no relationships to order).
+    async fn dual_write_model_loaded(&self, event: &ModelLoadedEvent) {
+        if !Self::dual_write_enabled() {
+            return;
+        }
+
+        self.write_doc(
+            "pulse_edges",
+            Some(&event.edge_id),
+            &serde_json::json!({ "edge_id": event.edge_id }),
+        )
+        .await;
+
+        // One model assignment per app (the relational table is unique on
+        // app_id); key by onde_app_id when present, else by the model itself.
+        let model_key = event
+            .onde_app_id
+            .clone()
+            .unwrap_or_else(|| event.model_id.clone());
+        self.write_doc(
+            "pulse_models",
+            Some(&model_key),
+            &serde_json::json!({
+                "slug": event.model_id,
+                "model_id": event.model_id,
+                "model_name": event.model_name,
+                "onde_app_id": event.onde_app_id,
+            }),
+        )
+        .await;
+
+        let deployment_key = format!("{}:{}", event.edge_id, event.model_id);
+        self.write_doc(
+            "pulse_deployments",
+            Some(&deployment_key),
+            &serde_json::json!({
+                "edge_id": event.edge_id,
+                "model_id": event.model_id,
+                "load_duration_ms": event.load_duration_ms,
+                "onde_app_id": event.onde_app_id,
+            }),
+        )
+        .await;
+    }
+
+    /// Mirror an inference event into the append-only `pulse_inference_events`
+    /// collection (no doc_key → server-generated UUID).
+    async fn dual_write_inference(&self, event: &InferenceEvent) {
+        if !Self::dual_write_enabled() {
+            return;
+        }
+
+        self.write_doc(
+            "pulse_inference_events",
+            None,
+            &serde_json::json!({
+                "edge_id": event.edge_id,
+                "model_id": event.model_id,
+                "request_id": event.request_id,
+                "duration_ms": event.duration_ms,
+                "status": event.status,
+                "onde_app_id": event.onde_app_id,
+            }),
+        )
+        .await;
+    }
+
+    /// Upsert (or append, when `key` is `None`) one document, logging failures.
+    async fn write_doc(&self, collection: &str, key: Option<&str>, doc: &serde_json::Value) {
+        if let Err(error) = self.inner.upsert_document(collection, key, doc).await {
+            log::warn!("pulse: dual-write to {} failed: {}", collection, error);
+        }
     }
 }

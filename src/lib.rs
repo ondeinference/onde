@@ -57,6 +57,29 @@ pub mod hf_cache;
 pub mod inference;
 pub mod pulse;
 
+static PANIC_HOOK_ONCE: std::sync::Once = std::sync::Once::new();
+
+pub(crate) fn install_panic_hook_once() {
+    PANIC_HOOK_ONCE.call_once(|| {
+        std::panic::set_hook(Box::new(|panic_info| {
+            let location = panic_info
+                .location()
+                .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+                .unwrap_or_else(|| "<unknown>".to_string());
+
+            let message = if let Some(msg) = panic_info.payload().downcast_ref::<&str>() {
+                (*msg).to_string()
+            } else if let Some(msg) = panic_info.payload().downcast_ref::<String>() {
+                msg.clone()
+            } else {
+                "<non-string panic payload>".to_string()
+            };
+
+            log::error!("Rust panic at {}: {}", location, message);
+        }));
+    });
+}
+
 uniffi::setup_scaffolding!();
 
 // Whisper speech-to-text via transcribe-rs (opt-in via `whisper` feature).

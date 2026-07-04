@@ -677,6 +677,106 @@ pub fn repair_hf_cache_symlinks(model_id: &str) {
     }
 }
 
+/// Ensure snapshot entries exist for known GGUF files.
+///
+/// When a download completes but the process is killed before hf-hub creates
+/// the snapshot symlink, the blob exists but hf-hub considers it a cache miss
+/// and re-downloads. This function creates hard links from the snapshot
+/// directory to the blob directory for any missing entries.
+pub fn ensure_snapshot_entries(model_id: &str, expected_files: &[&str]) {
+    let cache_path = match model_cache_path(model_id) {
+        Some(p) if p.is_dir() => p,
+        _ => return,
+    };
+
+    let blobs_dir = cache_path.join("blobs");
+    let snapshots_dir = cache_path.join("snapshots");
+    let refs_dir = cache_path.join("refs");
+
+    if !blobs_dir.is_dir() {
+        return;
+    }
+
+    // Collect non-lock, non-part blob files.
+    let blob_entries: Vec<(String, u64)> = match fs::read_dir(&blobs_dir) {
+        Ok(entries) => entries
+            .flatten()
+            .filter_map(|e| {
+                let name = e.file_name().to_string_lossy().to_string();
+                if name.ends_with(".lock") || name.ends_with(".part") {
+                    return None;
+                }
+                let meta = e.metadata().ok()?;
+                if meta.is_file() && meta.len() > 0 {
+                    Some((name, meta.len()))
+                } else {
+                    None
+                }
+            })
+            .collect(),
+        Err(_) => return,
+    };
+
+    if blob_entries.is_empty() {
+        return;
+    }
+
+    // Find the revision from refs/main, or from an existing snapshot dir.
+    let revision = fs::read_to_string(refs_dir.join("main"))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .or_else(|| {
+            fs::read_dir(&snapshots_dir)
+                .ok()?
+                .flatten()
+                .find(|e| e.path().is_dir())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+        });
+
+    let revision = match revision {
+        Some(r) if !r.is_empty() => r,
+        _ => return,
+    };
+
+    let snap_dir = snapshots_dir.join(&revision);
+    let _ = fs::create_dir_all(&snap_dir);
+
+    for expected_file in expected_files {
+        let snap_file = snap_dir.join(expected_file);
+        if snap_file.exists() {
+            continue;
+        }
+
+        // For single-blob repos, link the only blob. For multi-blob repos,
+        // we can't determine the mapping without metadata.
+        let blob_to_link = if blob_entries.len() == 1 {
+            Some(&blob_entries[0].0)
+        } else {
+            None
+        };
+
+        if let Some(blob_name) = blob_to_link {
+            let blob_path = blobs_dir.join(blob_name);
+            if fs::hard_link(&blob_path, &snap_file).is_ok() {
+                info!(
+                    "ensure_snapshot_entries: hard-linked {} → {}",
+                    expected_file, blob_name
+                );
+            } else if fs::copy(&blob_path, &snap_file).is_ok() {
+                info!(
+                    "ensure_snapshot_entries: copied {} → {}",
+                    expected_file, blob_name
+                );
+            } else {
+                warn!(
+                    "ensure_snapshot_entries: failed to link/copy blob for {}",
+                    expected_file
+                );
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Query / mutation functions
 // ---------------------------------------------------------------------------
@@ -955,6 +1055,18 @@ where
     clean_stale_lock_files(&model_id);
     repair_hf_cache_symlinks(&model_id);
     ensure_model_cache_dir(&model_id);
+
+    // Recover from interrupted downloads where the blob exists but the
+    // snapshot entry was never created (process killed after download,
+    // before hf-hub finalised the cache structure).
+    let expected_files: Vec<&str> = match model_id.as_str() {
+        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => vec![QWEN25_1_5B_GGUF_FILE],
+        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => vec![QWEN25_3B_GGUF_FILE],
+        _ => vec![],
+    };
+    if !expected_files.is_empty() {
+        ensure_snapshot_entries(&model_id, &expected_files);
+    }
 
     // Emit an initial progress event based on the actual cache size so that
     // resumed downloads don't visually restart from 0%.
