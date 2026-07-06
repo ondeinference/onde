@@ -297,10 +297,11 @@ impl ChatEngine {
                 // Prefer the constructor-supplied app id; fall back to the
                 // ONDE_APP_ID env var so UniFFI consumers can opt in without a
                 // new constructor signature.
-                let onde_app_id = self
-                    .onde_app_id
-                    .clone()
-                    .or_else(|| std::env::var("ONDE_APP_ID").ok().filter(|id| !id.is_empty()));
+                let onde_app_id = self.onde_app_id.clone().or_else(|| {
+                    std::env::var("ONDE_APP_ID")
+                        .ok()
+                        .filter(|id| !id.is_empty())
+                });
                 let client = crate::pulse::PulseClient::new(environment, edge_id, onde_app_id);
 
                 match &client {
