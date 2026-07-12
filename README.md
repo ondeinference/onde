@@ -26,11 +26,17 @@
 
 ## In production
 
-Onde is already shipping in real App Store apps. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
+Onde is already shipping in real apps on the App Store and Google Play. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
+
+**[Siti AI](https://github.com/ondeinference/siti)** is the flagship open reference app — a private, on-device assistant built on Onde, open source under Apache-2.0. Its source is a complete, readable example of wiring the engine into a shipping [Tauri](https://tauri.app) app across macOS, iOS, and Android.
 
 <p align="left">
-  <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993" target="_blank">
-    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="69">
+  <a href="https://apps.apple.com/se/app/siti-ai/id6780047972" target="_blank">
+    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download Siti AI on the App Store" height="52">
+  </a>
+  &nbsp;
+  <a href="https://play.google.com/store/apps/details?id=ai.siti.Siti" target="_blank">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get Siti AI on Google Play" height="52">
   </a>
 </p>
 
