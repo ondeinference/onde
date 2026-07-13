@@ -122,4 +122,4 @@ example/
 
 ## Copyright
 
-© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB). Licensed under the MIT License.
+© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)). Licensed under the MIT License.

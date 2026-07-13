@@ -275,10 +275,8 @@ Onde is dual-licensed under **MIT** and **Apache 2.0**. You can use either one.
 - [MIT License](https://github.com/ondeinference/onde/blob/main/LICENSE-MIT)
 - [Apache License 2.0](https://github.com/ondeinference/onde/blob/main/LICENSE-APACHE)
 
-© 2026 [Splitfire AB](https://splitfire.se)
-
 ---
 
 ## Copyright
 
-© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).
+© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).

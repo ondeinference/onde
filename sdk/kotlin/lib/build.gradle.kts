@@ -151,7 +151,7 @@ mavenPublishing {
                 email.set("hello@ondeinference.com")
                 url.set("https://ondeinference.com")
                 organization.set("Splitfire AB")
-                organizationUrl.set("https://splitfire.se")
+                organizationUrl.set("https://5mb.app")
             }
         }
 
