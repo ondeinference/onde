@@ -1,6 +1,6 @@
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Flutter Rust Bridge v2 API for the Onde Inference Dart SDK.
 //!
 //! This module declares mirror types (re-declared plain Rust structs/enums

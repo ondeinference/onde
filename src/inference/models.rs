@@ -1,6 +1,6 @@
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 /// Pre-quantized Qwen 2.5 1.5B Instruct (GGUF Q4_K_M) — lightest mobile option (~941 MB).
 /// Fits comfortably on both iOS (iPhone 16e, 8 GB RAM) and Android memory-constrained devices.
 /// Note: the 3B variant (~1.93 GB) caused OOM on iPhone 16e because iOS gives apps only ~2-3 GB;

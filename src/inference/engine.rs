@@ -1,6 +1,6 @@
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! On-device LLM chat inference engine powered by [mistral.rs](https://github.com/EricLBuehler/mistral.rs).
 //!
 //! `ChatEngine` provides a high-level, framework-agnostic API for:
