@@ -255,6 +255,36 @@ abstract final class OndeInference {
   /// Optimised for code-generation tasks on macOS and Linux desktop.
   static GgufModelConfig qwen25Coder3bConfig() => api.qwen25Coder3BConfig();
 
+  /// Qwen 3 0.6B (GGUF Q4_K_M, ~0.5 GB).
+  static GgufModelConfig qwen306bConfig() => api.qwen306BConfig();
+
+  /// Qwen 3 1.7B (GGUF Q4_K_M, ~1.3 GB).
+  static GgufModelConfig qwen317bConfig() => api.qwen317BConfig();
+
+  /// Qwen 3 4B (GGUF Q4_K_M, ~2.5 GB).
+  static GgufModelConfig qwen34bConfig() => api.qwen34BConfig();
+
+  /// Qwen 3 8B (GGUF Q4_K_M, ~5 GB).
+  static GgufModelConfig qwen38bConfig() => api.qwen38BConfig();
+
+  /// Qwen 3 14B (GGUF Q4_K_M, ~8.4 GB).
+  static GgufModelConfig qwen314bConfig() => api.qwen314BConfig();
+
+  /// Qwen 3 32B (GGUF Q4_K_M, ~19.8 GB).
+  static GgufModelConfig qwen332bConfig() => api.qwen332BConfig();
+
+  /// Qwen 3 4B Instruct 2507, the non-thinking checkpoint (~2.5 GB).
+  static GgufModelConfig qwen34bInstruct2507Config() =>
+      api.qwen34BInstruct2507Config();
+
+  /// Qwen 3 4B Thinking 2507 (~2.5 GB).
+  static GgufModelConfig qwen34bThinking2507Config() =>
+      api.qwen34BThinking2507Config();
+
+  /// Qwen 3 30B-A3B Instruct 2507 mixture-of-experts (~18.6 GB).
+  static GgufModelConfig qwen330bA3bInstruct2507Config() =>
+      api.qwen330BA3BInstruct2507Config();
+
   // -------------------------------------------------------------------------
   // Sampling config factories
   // -------------------------------------------------------------------------

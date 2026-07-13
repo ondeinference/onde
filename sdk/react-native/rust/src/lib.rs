@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 //! C FFI bridge for the Onde React Native npm SDK.
 //!
 //! This crate wraps [`onde::inference::engine::ChatEngine`] with `extern "C"`
@@ -615,7 +618,7 @@ mod android {
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineCreate(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineCreate(
         _env: JNIEnv,
         _class: JClass,
     ) -> jlong {
@@ -623,7 +626,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineDestroy(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineDestroy(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -632,7 +635,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineLoadDefaultModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadDefaultModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -657,7 +660,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineLoadModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -688,7 +691,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineUnloadModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineUnloadModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -698,7 +701,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineIsLoaded(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineIsLoaded(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -713,7 +716,7 @@ mod android {
     // ── Engine info ──────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineInfo(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineInfo(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -725,7 +728,7 @@ mod android {
     // ── System prompt ────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSetSystemPrompt(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSetSystemPrompt(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -740,7 +743,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineClearSystemPrompt(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineClearSystemPrompt(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -751,7 +754,7 @@ mod android {
     // ── Sampling ─────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSetSampling(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSetSampling(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -768,7 +771,7 @@ mod android {
     // ── History ──────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineHistory(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -778,7 +781,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineClearHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineClearHistory(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -787,7 +790,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEnginePushHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEnginePushHistory(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -804,7 +807,7 @@ mod android {
     // ── Inference ────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSendMessage(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSendMessage(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -820,7 +823,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineGenerate(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineGenerate(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -846,7 +849,7 @@ mod android {
     // ── Model config presets ─────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDefaultModelConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDefaultModelConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -855,7 +858,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeQwen251_5bConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen251_15bConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -864,7 +867,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeQwen253bConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen253bConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -872,10 +875,82 @@ mod android {
         cstring_ptr_to_jstring(&mut env, result)
     }
 
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_10_16bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_0_6b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_11_17bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_1_7b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_18bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_8b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_114bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_14b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_132bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_32b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bInstruct2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_instruct_2507_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bThinking2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_thinking_2507_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_130bA3bInstruct2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_30b_a3b_instruct_2507_config())
+    }
+
     // ── Sampling presets ─────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDefaultSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDefaultSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -884,7 +959,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDeterministicSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDeterministicSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -893,7 +968,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeMobileSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeMobileSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {

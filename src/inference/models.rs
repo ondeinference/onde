@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 /// Pre-quantized Qwen 2.5 1.5B Instruct (GGUF Q4_K_M) — lightest mobile option (~941 MB).
 /// Fits comfortably on both iOS (iPhone 16e, 8 GB RAM) and Android memory-constrained devices.
 /// Note: the 3B variant (~1.93 GB) caused OOM on iPhone 16e because iOS gives apps only ~2-3 GB;
@@ -287,8 +290,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Smallest Qwen 3 variant with tool calling (~0.5 GB). \
              Suitable for tvOS and the most memory-constrained mobile devices.",
-        // Approximate Q4_K_M size; HF API unreachable at authoring time.
-        expected_size_bytes: 483_000_000,
+        // Exact Q4_K_M file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 484_220_320,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_1_7B_GGUF,
@@ -305,7 +308,7 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         description: "Full tool-calling support with extended reasoning mode (~2.7 GB). \
                       Recommended for siGit Code on macOS, Linux, and Windows.",
         // Qwen_Qwen3-4B-Q4_K_M.gguf from bartowski repo.
-        expected_size_bytes: 2_596_306_912,
+        expected_size_bytes: 2_497_280_960,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_8B_GGUF,
@@ -313,7 +316,7 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Strong tool-calling model with extended thinking (~5 GB). \
                       Best balance of quality and memory for macOS with 24+ GB RAM.",
-        expected_size_bytes: 5_131_567_104,
+        expected_size_bytes: 5_027_784_224,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_14B_GGUF,
@@ -331,8 +334,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Largest dense Qwen 3 model with extended thinking (~19.8 GB). \
              Highest-quality dense variant; requires 32+ GB RAM.",
-        // Approximate Q4_K_M size; HF API unreachable at authoring time.
-        expected_size_bytes: 21_260_000_000,
+        // Exact Q4_K_M file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 19_762_149_696,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF,
@@ -340,8 +343,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Latest non-thinking 4B checkpoint — faster, predictable chat and \
              tool use (~2.5 GB). Recommended general-purpose Qwen 3 model.",
-        // Approximate Q4_K_M size; HF API unreachable at authoring time.
-        expected_size_bytes: 2_500_000_000,
+        // Exact Q4_K_M file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 2_497_280_736,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF,
@@ -349,8 +352,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Latest reasoning-focused 4B checkpoint with extended thinking (~2.5 GB). \
              Stronger reasoning and tool-use accuracy; load with max_tokens ≥ 4096.",
-        // Approximate Q4_K_M size; HF API unreachable at authoring time.
-        expected_size_bytes: 2_500_000_000,
+        // Exact Q4_K_M file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 2_497_280_736,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF,
@@ -358,8 +361,8 @@ pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
         org: "Qwen / Alibaba",
         description: "Flagship mixture-of-experts model: 30B total / ~3B active (~18.6 GB). \
              Near-dense quality at far lower inference cost; requires 32+ GB RAM.",
-        // Approximate Q4_K_M size; HF API unreachable at authoring time.
-        expected_size_bytes: 19_971_600_000,
+        // Exact Q4_K_M file size from HuggingFace API siblings[].size.
+        expected_size_bytes: 18_632_183_808,
     },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,

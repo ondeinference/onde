@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 import ExpoModulesCore
 import Foundation
 
@@ -85,6 +88,33 @@ func onde_qwen25_1_5b_config() -> UnsafeMutablePointer<CChar>?
 
 @_silgen_name("onde_qwen25_3b_config")
 func onde_qwen25_3b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_0_6b_config")
+func onde_qwen3_0_6b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_1_7b_config")
+func onde_qwen3_1_7b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_config")
+func onde_qwen3_4b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_8b_config")
+func onde_qwen3_8b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_14b_config")
+func onde_qwen3_14b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_32b_config")
+func onde_qwen3_32b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_instruct_2507_config")
+func onde_qwen3_4b_instruct_2507_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_thinking_2507_config")
+func onde_qwen3_4b_thinking_2507_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_30b_a3b_instruct_2507_config")
+func onde_qwen3_30b_a3b_instruct_2507_config() -> UnsafeMutablePointer<CChar>?
 
 // Sampling config free functions
 @_silgen_name("onde_default_sampling_config")
@@ -268,6 +298,45 @@ public class OndeInferenceModule: Module {
         Function("qwen253bConfig") { () -> String in
             let result = self.consumeRustString(onde_qwen25_3b_config())
             return try self.validateJsonResult(result)
+        }
+
+        Function("qwen3_0_6bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_0_6b_config()))
+        }
+
+        Function("qwen3_1_7bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_1_7b_config()))
+        }
+
+        Function("qwen3_4bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_4b_config()))
+        }
+
+        Function("qwen3_8bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_8b_config()))
+        }
+
+        Function("qwen3_14bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_14b_config()))
+        }
+
+        Function("qwen3_32bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_32b_config()))
+        }
+
+        Function("qwen3_4bInstruct2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_4b_instruct_2507_config()))
+        }
+
+        Function("qwen3_4bThinking2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_4b_thinking_2507_config()))
+        }
+
+        Function("qwen3_30bA3bInstruct2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_30b_a3b_instruct_2507_config()))
         }
 
         Function("defaultSamplingConfig") { () -> String in

@@ -14,6 +14,17 @@ class _FakeOndeChatEngine implements OndeChatEngine {
 }
 
 class _MockRustLibApi implements frb.RustLibApi {
+  static GgufModelConfig _qwen3(
+    String variant,
+    String filename,
+    String memory,
+  ) => GgufModelConfig(
+    modelId: 'bartowski/Qwen_Qwen3-$variant-GGUF',
+    files: [filename],
+    displayName: 'Qwen 3 $variant',
+    approxMemory: memory,
+  );
+
   static const _qwen2515b = GgufModelConfig(
     modelId: 'bartowski/Qwen2.5-1.5B-Instruct-GGUF',
     files: ['Qwen2.5-1.5B-Instruct-Q4_K_M.gguf'],
@@ -86,6 +97,51 @@ class _MockRustLibApi implements frb.RustLibApi {
 
   @override
   GgufModelConfig crateApiQwen25Coder3BConfig() => _qwen25Coder3b;
+
+  @override
+  GgufModelConfig crateApiQwen306BConfig() =>
+      _qwen3('0.6B', 'Qwen_Qwen3-0.6B-Q4_K_M.gguf', '~0.5 GB');
+
+  @override
+  GgufModelConfig crateApiQwen317BConfig() =>
+      _qwen3('1.7B', 'Qwen_Qwen3-1.7B-Q4_K_M.gguf', '~1.3 GB');
+
+  @override
+  GgufModelConfig crateApiQwen34BConfig() =>
+      _qwen3('4B', 'Qwen_Qwen3-4B-Q4_K_M.gguf', '~2.5 GB');
+
+  @override
+  GgufModelConfig crateApiQwen38BConfig() =>
+      _qwen3('8B', 'Qwen_Qwen3-8B-Q4_K_M.gguf', '~5 GB');
+
+  @override
+  GgufModelConfig crateApiQwen314BConfig() =>
+      _qwen3('14B', 'Qwen_Qwen3-14B-Q4_K_M.gguf', '~8.4 GB');
+
+  @override
+  GgufModelConfig crateApiQwen332BConfig() =>
+      _qwen3('32B', 'Qwen_Qwen3-32B-Q4_K_M.gguf', '~19.8 GB');
+
+  @override
+  GgufModelConfig crateApiQwen34BInstruct2507Config() => _qwen3(
+    '4B-Instruct-2507',
+    'Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+    '~2.5 GB',
+  );
+
+  @override
+  GgufModelConfig crateApiQwen34BThinking2507Config() => _qwen3(
+    '4B-Thinking-2507',
+    'Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf',
+    '~2.5 GB',
+  );
+
+  @override
+  GgufModelConfig crateApiQwen330BA3BInstruct2507Config() => _qwen3(
+    '30B-A3B-Instruct-2507',
+    'Qwen_Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf',
+    '~18.6 GB',
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -201,6 +257,27 @@ void main() {
 
       final defaultConfig = OndeInference.defaultModelConfig();
       expect(defaultConfig.modelId, isNotEmpty);
+
+      final qwen3Configs = [
+        OndeInference.qwen306bConfig(),
+        OndeInference.qwen317bConfig(),
+        OndeInference.qwen34bConfig(),
+        OndeInference.qwen38bConfig(),
+        OndeInference.qwen314bConfig(),
+        OndeInference.qwen332bConfig(),
+        OndeInference.qwen34bInstruct2507Config(),
+        OndeInference.qwen34bThinking2507Config(),
+        OndeInference.qwen330bA3bInstruct2507Config(),
+      ];
+      expect(qwen3Configs, everyElement(isA<GgufModelConfig>()));
+      expect(
+        qwen3Configs,
+        everyElement(
+          predicate<GgufModelConfig>(
+            (config) => config.modelId.contains('Qwen3'),
+          ),
+        ),
+      );
     });
 
     test('equality', () {

@@ -3,14 +3,14 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Return the platform-appropriate default `GgufModelConfig`.
 ///
@@ -34,6 +34,40 @@ GgufModelConfig qwen25Coder15BConfig() =>
 /// `GgufModelConfig` for Qwen 2.5 Coder 3B Instruct Q4_K_M (~1.93 GB).
 GgufModelConfig qwen25Coder3BConfig() =>
     RustLib.instance.api.crateApiQwen25Coder3BConfig();
+
+/// `GgufModelConfig` for Qwen 3 0.6B Q4_K_M (~0.5 GB).
+GgufModelConfig qwen306BConfig() =>
+    RustLib.instance.api.crateApiQwen306BConfig();
+
+/// `GgufModelConfig` for Qwen 3 1.7B Q4_K_M (~1.3 GB).
+GgufModelConfig qwen317BConfig() =>
+    RustLib.instance.api.crateApiQwen317BConfig();
+
+/// `GgufModelConfig` for Qwen 3 4B Q4_K_M (~2.7 GB).
+GgufModelConfig qwen34BConfig() => RustLib.instance.api.crateApiQwen34BConfig();
+
+/// `GgufModelConfig` for Qwen 3 8B Q4_K_M (~5 GB).
+GgufModelConfig qwen38BConfig() => RustLib.instance.api.crateApiQwen38BConfig();
+
+/// `GgufModelConfig` for Qwen 3 14B Q4_K_M (~8.4 GB).
+GgufModelConfig qwen314BConfig() =>
+    RustLib.instance.api.crateApiQwen314BConfig();
+
+/// `GgufModelConfig` for Qwen 3 32B Q4_K_M (~19.8 GB).
+GgufModelConfig qwen332BConfig() =>
+    RustLib.instance.api.crateApiQwen332BConfig();
+
+/// `GgufModelConfig` for Qwen 3 4B Instruct 2507 Q4_K_M (~2.5 GB).
+GgufModelConfig qwen34BInstruct2507Config() =>
+    RustLib.instance.api.crateApiQwen34BInstruct2507Config();
+
+/// `GgufModelConfig` for Qwen 3 4B Thinking 2507 Q4_K_M (~2.5 GB).
+GgufModelConfig qwen34BThinking2507Config() =>
+    RustLib.instance.api.crateApiQwen34BThinking2507Config();
+
+/// `GgufModelConfig` for Qwen 3 30B-A3B Instruct 2507 (MoE) Q4_K_M (~18.6 GB).
+GgufModelConfig qwen330BA3BInstruct2507Config() =>
+    RustLib.instance.api.crateApiQwen330BA3BInstruct2507Config();
 
 /// Default sampling config: `temperature=0.7`, `top_p=0.95`, `max_tokens=512`.
 SamplingConfig defaultSamplingConfig() =>

@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 import OndeInferenceModule from "./OndeInferenceModule";
 import type {
   ChatMessage,
@@ -316,6 +319,51 @@ export function qwen251_5bConfig(): GgufModelConfig {
 /** Return the Qwen 2.5 3B config (~1.93 GB). */
 export function qwen253bConfig(): GgufModelConfig {
   return parseModelConfig(OndeInferenceModule.qwen253bConfig());
+}
+
+/** Return the Qwen 3 0.6B config (~0.5 GB). */
+export function qwen3_0_6bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_0_6bConfig());
+}
+
+/** Return the Qwen 3 1.7B config (~1.3 GB). */
+export function qwen3_1_7bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_1_7bConfig());
+}
+
+/** Return the Qwen 3 4B config (~2.5 GB). */
+export function qwen3_4bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bConfig());
+}
+
+/** Return the Qwen 3 8B config (~5 GB). */
+export function qwen3_8bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_8bConfig());
+}
+
+/** Return the Qwen 3 14B config (~8.4 GB). */
+export function qwen3_14bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_14bConfig());
+}
+
+/** Return the Qwen 3 32B config (~19.8 GB). */
+export function qwen3_32bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_32bConfig());
+}
+
+/** Return the non-thinking Qwen 3 4B Instruct 2507 config (~2.5 GB). */
+export function qwen3_4bInstruct2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bInstruct2507Config());
+}
+
+/** Return the Qwen 3 4B Thinking 2507 config (~2.5 GB). */
+export function qwen3_4bThinking2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bThinking2507Config());
+}
+
+/** Return the Qwen 3 30B-A3B Instruct 2507 MoE config (~18.6 GB). */
+export function qwen3_30bA3bInstruct2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_30bA3bInstruct2507Config());
 }
 
 /** Return default sampling parameters (temp=0.7, top_p=0.95, max_tokens=512). */

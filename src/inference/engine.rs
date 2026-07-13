@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 //! On-device LLM chat inference engine powered by [mistral.rs](https://github.com/EricLBuehler/mistral.rs).
 //!
 //! `ChatEngine` provides a high-level, framework-agnostic API for:
@@ -429,25 +432,9 @@ impl ChatEngine {
         }
 
         // Some older GGUF files (e.g. TheBloke) do not embed a chat template.
-        // When the config provides one, write it to a temporary .jinja file
-        // and pass the path — mistral.rs only accepts file paths ending in
-        // .json or .jinja, not literal template strings.
-        let _chat_template_tempfile = if let Some(ref template) = config.chat_template {
-            let tmp_dir = std::env::temp_dir().join("onde-chat-templates");
-            std::fs::create_dir_all(&tmp_dir).ok();
-            let tmp_path = tmp_dir.join("chat_template.jinja");
-            std::fs::write(&tmp_path, template).map_err(|e| InferenceError::ModelBuild {
-                reason: format!(
-                    "Failed to write chat template to {}: {}",
-                    tmp_path.display(),
-                    e
-                ),
-            })?;
-            builder = builder.with_chat_template(tmp_path.to_string_lossy().to_string());
-            Some(tmp_path)
-        } else {
-            None
-        };
+        if let Some(ref template) = config.chat_template {
+            builder = builder.with_chat_template(template);
+        }
 
         let model = builder
             .build()
@@ -459,7 +446,9 @@ impl ChatEngine {
         let elapsed = start.elapsed();
 
         let sampling = sampling.unwrap_or_else(|| {
-            if cfg!(any(
+            if config.uses_extended_thinking() {
+                SamplingConfig::reasoning()
+            } else if cfg!(any(
                 target_os = "ios",
                 target_os = "tvos",
                 target_os = "visionos",
@@ -1921,6 +1910,52 @@ const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_tem
 /// These mirror the constants in [`super::models`] but return a ready-to-use
 /// [`GgufModelConfig`].
 impl GgufModelConfig {
+    /// Whether the model's default chat template emits an extended reasoning
+    /// block that needs a larger output budget than the general presets.
+    fn uses_extended_thinking(&self) -> bool {
+        matches!(
+            self.model_id.as_str(),
+            super::models::BARTOWSKI_QWEN3_0_6B_GGUF
+                | super::models::BARTOWSKI_QWEN3_1_7B_GGUF
+                | super::models::BARTOWSKI_QWEN3_4B_GGUF
+                | super::models::BARTOWSKI_QWEN3_8B_GGUF
+                | super::models::BARTOWSKI_QWEN3_14B_GGUF
+                | super::models::BARTOWSKI_QWEN3_32B_GGUF
+                | super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF
+        )
+    }
+
+    /// Resolve a model-management ID to the same configuration used by the
+    /// inference engine. Keeping this mapping in one place prevents download
+    /// and load support from drifting apart.
+    pub(crate) fn from_supported_model_id(model_id: &str) -> Option<Self> {
+        match model_id {
+            super::models::BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF => Some(Self::qwen25_0_5b()),
+            super::models::BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(Self::qwen25_1_5b()),
+            super::models::BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(Self::qwen25_3b()),
+            super::models::BARTOWSKI_QWEN3_0_6B_GGUF => Some(Self::qwen3_0_6b()),
+            super::models::BARTOWSKI_QWEN3_1_7B_GGUF => Some(Self::qwen3_1_7b()),
+            super::models::BARTOWSKI_QWEN3_4B_GGUF => Some(Self::qwen3_4b()),
+            super::models::BARTOWSKI_QWEN3_8B_GGUF => Some(Self::qwen3_8b()),
+            super::models::BARTOWSKI_QWEN3_14B_GGUF => Some(Self::qwen3_14b()),
+            super::models::BARTOWSKI_QWEN3_32B_GGUF => Some(Self::qwen3_32b()),
+            super::models::BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF => {
+                Some(Self::qwen3_4b_instruct_2507())
+            }
+            super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF => {
+                Some(Self::qwen3_4b_thinking_2507())
+            }
+            super::models::BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF => {
+                Some(Self::qwen3_30b_a3b_instruct_2507())
+            }
+            super::models::BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF => Some(Self::qwen25_coder_7b()),
+            super::models::THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF => {
+                Some(Self::deepseek_coder_6_7b())
+            }
+            _ => None,
+        }
+    }
+
     /// Qwen 2.5 0.5B Instruct (GGUF Q4_K_M), ~380 MB.
     ///
     /// Smallest option. Used on tvOS (Apple TV) where the memory limit is 2 GB.
@@ -2315,6 +2350,22 @@ mod tests {
                 cfg.model_id
             );
         }
+    }
+
+    #[test]
+    fn every_supported_model_resolves_to_download_config() {
+        for model_id in super::super::models::SUPPORTED_MODELS {
+            let config = GgufModelConfig::from_supported_model_id(model_id)
+                .unwrap_or_else(|| panic!("missing config for {model_id}"));
+            assert_eq!(config.model_id, *model_id);
+            assert_eq!(config.files.len(), 1);
+        }
+    }
+
+    #[test]
+    fn qwen3_thinking_models_request_extended_sampling() {
+        assert!(GgufModelConfig::qwen3_4b_thinking_2507().uses_extended_thinking());
+        assert!(!GgufModelConfig::qwen3_4b_instruct_2507().uses_extended_thinking());
     }
 
     #[test]

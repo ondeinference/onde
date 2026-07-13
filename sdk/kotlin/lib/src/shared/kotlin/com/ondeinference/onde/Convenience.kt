@@ -1,5 +1,6 @@
-// Copyright 2025 Onde Inference (Splitfire AB). All rights reserved.
-// SPDX-License-Identifier: MIT OR Apache-2.0
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 
 package com.ondeinference.onde
 
@@ -41,7 +42,7 @@ object OndeModels {
     fun qwen3_32b(): GgufModelConfig  = uniffi.onde.qwen332bConfig()
     /** Qwen 3 4B Instruct 2507 GGUF Q4_K_M (~2.5 GB) — latest non-thinking 4B. */
     fun qwen3_4b_instruct_2507(): GgufModelConfig = uniffi.onde.qwen34bInstruct2507Config()
-    /** Qwen 3 4B Thinking 2507 GGUF Q4_K_M (~2.5 GB) — latest reasoning 4B. */
+    /** Qwen 3 4B Thinking 2507 (~2.5 GB); nil sampling automatically uses 4096 tokens. */
     fun qwen3_4b_thinking_2507(): GgufModelConfig = uniffi.onde.qwen34bThinking2507Config()
     /** Qwen 3 30B-A3B Instruct 2507 GGUF Q4_K_M (~18.6 GB) — flagship MoE. */
     fun qwen3_30b_a3b_instruct_2507(): GgufModelConfig = uniffi.onde.qwen330bA3bInstruct2507Config()

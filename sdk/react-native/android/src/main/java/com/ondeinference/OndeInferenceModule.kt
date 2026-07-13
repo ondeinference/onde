@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 package com.ondeinference
 
 import expo.modules.kotlin.modules.Module
@@ -48,6 +51,15 @@ class OndeInferenceModule : Module() {
     private external fun nativeDefaultModelConfig(): String
     private external fun nativeQwen251_5bConfig(): String
     private external fun nativeQwen253bConfig(): String
+    private external fun nativeQwen3_0_6bConfig(): String
+    private external fun nativeQwen3_1_7bConfig(): String
+    private external fun nativeQwen3_4bConfig(): String
+    private external fun nativeQwen3_8bConfig(): String
+    private external fun nativeQwen3_14bConfig(): String
+    private external fun nativeQwen3_32bConfig(): String
+    private external fun nativeQwen3_4bInstruct2507Config(): String
+    private external fun nativeQwen3_4bThinking2507Config(): String
+    private external fun nativeQwen3_30bA3bInstruct2507Config(): String
     private external fun nativeDefaultSamplingConfig(): String
     private external fun nativeDeterministicSamplingConfig(): String
     private external fun nativeMobileSamplingConfig(): String
@@ -101,6 +113,15 @@ class OndeInferenceModule : Module() {
         Function("defaultModelConfig") { nativeDefaultModelConfig() }
         Function("qwen251_5bConfig") { nativeQwen251_5bConfig() }
         Function("qwen253bConfig") { nativeQwen253bConfig() }
+        Function("qwen3_0_6bConfig") { nativeQwen3_0_6bConfig() }
+        Function("qwen3_1_7bConfig") { nativeQwen3_1_7bConfig() }
+        Function("qwen3_4bConfig") { nativeQwen3_4bConfig() }
+        Function("qwen3_8bConfig") { nativeQwen3_8bConfig() }
+        Function("qwen3_14bConfig") { nativeQwen3_14bConfig() }
+        Function("qwen3_32bConfig") { nativeQwen3_32bConfig() }
+        Function("qwen3_4bInstruct2507Config") { nativeQwen3_4bInstruct2507Config() }
+        Function("qwen3_4bThinking2507Config") { nativeQwen3_4bThinking2507Config() }
+        Function("qwen3_30bA3bInstruct2507Config") { nativeQwen3_30bA3bInstruct2507Config() }
         Function("defaultSamplingConfig") { nativeDefaultSamplingConfig() }
         Function("deterministicSamplingConfig") { nativeDeterministicSamplingConfig() }
         Function("mobileSamplingConfig") { nativeMobileSamplingConfig() }

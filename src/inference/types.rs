@@ -1,3 +1,6 @@
+// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
+// Use of this source code is governed by the MIT license.
+//
 //! Shared types for the on-device LLM inference engine.
 //!
 //! These types are intentionally framework-agnostic — they do **not** depend on
@@ -111,6 +114,15 @@ impl Default for SamplingConfig {
 }
 
 impl SamplingConfig {
+    /// Defaults for models that emit an extended reasoning block before the
+    /// user-visible answer.
+    pub fn reasoning() -> Self {
+        Self {
+            max_tokens: Some(4096),
+            ..Self::default()
+        }
+    }
+
     /// Deterministic sampling (temperature = 0, greedy decoding).
     pub fn deterministic() -> Self {
         Self {
@@ -503,6 +515,12 @@ mod tests {
     fn sampling_config_mobile() {
         let cfg = SamplingConfig::mobile();
         assert_eq!(cfg.max_tokens, Some(128));
+    }
+
+    #[test]
+    fn sampling_config_reasoning_has_extended_budget() {
+        let config = SamplingConfig::reasoning();
+        assert_eq!(config.max_tokens, Some(4096));
     }
 
     #[test]
