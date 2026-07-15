@@ -39,7 +39,7 @@ dev_dependencies:
   # freezed + build_runner are required by FRB 2.x codegen for union/sealed types.
   # After running `flutter_rust_bridge_codegen generate`, also run:
   #   dart run build_runner build --delete-conflicting-outputs
-  freezed: ^3.2.5
+  freezed: ^3.2.3
   build_runner: ^2.4.9
   # NOTE: The FFI code-generator is a Rust binary — NOT a Dart package.
   # Install it once with:
