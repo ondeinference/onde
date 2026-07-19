@@ -1,3 +1,10 @@
+## 1.2.0
+
+- Full Qwen 3 model family support: 0.6B, 1.7B, 4B, 8B, 14B, 32B, plus the 4B Instruct/Thinking 2507 refreshes and the 30B-A3B MoE variant, each with a matching config free function
+- Synced the mistral.rs fork with upstream 0.8.23, pulling in Metal compile fixes
+- Refreshed branding and legal wording across generated docs
+- Dependency updates
+
 ## 1.1.4
 
 - Bump smbCloud GresIQ SDK to 0.4.7 and dual-write pulse telemetry to the GresIQ document gateway (ADR-0003 M2); telemetry events now carry an optional `onde_app_id`

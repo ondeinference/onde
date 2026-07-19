@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! HuggingFace hub cache inspection, repair, and model download.
 //!
 //! This module owns all on-disk state management for locally cached
@@ -252,7 +255,9 @@ fn list_revisions(model_dir: &Path) -> Vec<String> {
     target_os = "tvos",
     target_os = "visionos",
     target_os = "watchos",
-    target_os = "android"
+    target_os = "android",
+    target_os = "windows",
+    target_os = "linux"
 ))]
 fn make_progress(model_id: &str, downloaded: u64, total: u64, done: bool) -> ModelDownloadProgress {
     let progress = if total > 0 {
@@ -990,7 +995,9 @@ pub fn list_supported_hf_models() -> SupportedHfModelsResponse {
     target_os = "ios",
     target_os = "tvos",
     target_os = "visionos",
-    target_os = "watchos"
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux"
 ))]
 pub async fn download_model<F>(
     model_id: String,
@@ -1000,11 +1007,8 @@ pub async fn download_model<F>(
 where
     F: Fn(ModelDownloadProgress) + Send + Sync + Clone + 'static,
 {
-    use crate::inference::models::{
-        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF, BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
-        QWEN25_1_5B_GGUF_FILE, QWEN25_3B_GGUF_FILE,
-    };
     use crate::inference::token::hf_token_source;
+    use crate::inference::GgufModelConfig;
     use mistralrs::GgufModelBuilder;
     use std::sync::{
         atomic::{AtomicBool, Ordering},
@@ -1036,6 +1040,9 @@ where
         return Err(format!("Model {} is not supported.", model_id));
     }
 
+    let config = GgufModelConfig::from_supported_model_id(&model_id)
+        .ok_or_else(|| format!("Model {model_id} has no download configuration."))?;
+
     let expected_size = SUPPORTED_MODEL_INFO
         .iter()
         .find(|m| m.id == model_id)
@@ -1055,14 +1062,8 @@ where
     // Recover from interrupted downloads where the blob exists but the
     // snapshot entry was never created (process killed after download,
     // before hf-hub finalised the cache structure).
-    let expected_files: Vec<&str> = match model_id.as_str() {
-        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => vec![QWEN25_1_5B_GGUF_FILE],
-        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => vec![QWEN25_3B_GGUF_FILE],
-        _ => vec![],
-    };
-    if !expected_files.is_empty() {
-        ensure_snapshot_entries(&model_id, &expected_files);
-    }
+    let expected_files: Vec<&str> = config.files.iter().map(String::as_str).collect();
+    ensure_snapshot_entries(&model_id, &expected_files);
 
     // Emit an initial progress event based on the actual cache size so that
     // resumed downloads don't visually restart from 0%.
@@ -1076,6 +1077,12 @@ where
         expected_size,
         false,
     ));
+
+    let mut builder =
+        GgufModelBuilder::new(&model_id, config.files.clone()).with_token_source(hf_token_source());
+    if let Some(chat_template) = config.chat_template {
+        builder = builder.with_chat_template(chat_template);
+    }
 
     // Shared flag so the monitor task knows when to stop.
     let finished = Arc::new(AtomicBool::new(false));
@@ -1109,29 +1116,14 @@ where
         ));
     });
 
-    // Build (and immediately drop) the model using the GGUF chat builder.
-    // Building triggers the HuggingFace hub download.
-    let result: Result<mistralrs::Model, anyhow::Error> = match model_id.as_str() {
-        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => {
-            GgufModelBuilder::new(&model_id, vec![QWEN25_1_5B_GGUF_FILE])
-                .with_token_source(hf_token_source())
-                .build()
-                .await
-        }
-        BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => {
-            GgufModelBuilder::new(&model_id, vec![QWEN25_3B_GGUF_FILE])
-                .with_token_source(hf_token_source())
-                .build()
-                .await
-        }
-        _ => Err(anyhow::anyhow!(
-            "Model '{}' is not part of the chat-only release.",
-            model_id
-        )),
-    };
+    // Building triggers the HuggingFace download and also validates that the
+    // downloaded GGUF can be opened by the same backend used for inference.
+    let result = builder.build().await;
 
     finished.store(true, Ordering::Relaxed);
-    let _ = monitor_handle.join();
+    if monitor_handle.join().is_err() {
+        warn!("Download progress monitor panicked for model {model_id}");
+    }
 
     match result {
         Ok(_model) => {
@@ -1171,12 +1163,8 @@ pub async fn download_model<F>(
 where
     F: Fn(ModelDownloadProgress) + Send + Sync + Clone + 'static,
 {
-    use crate::inference::models::{
-        BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF, BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
-        QWEN25_1_5B_GGUF_FILE, QWEN25_1_5B_TOK_MODEL_ID, QWEN25_3B_GGUF_FILE,
-        QWEN25_3B_TOK_MODEL_ID,
-    };
     use crate::inference::token::hf_token_source;
+    use crate::inference::GgufModelConfig;
     use hf_hub::Cache;
     use mistralrs::GgufModelBuilder;
     use mistralrs_core::GLOBAL_HF_CACHE;
@@ -1186,21 +1174,12 @@ where
     };
     use std::time::Duration;
 
-    let (gguf_file, tok_model_id) = match model_id.as_str() {
-        id if id == BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => {
-            (QWEN25_1_5B_GGUF_FILE, QWEN25_1_5B_TOK_MODEL_ID)
-        }
-        id if id == BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => {
-            (QWEN25_3B_GGUF_FILE, QWEN25_3B_TOK_MODEL_ID)
-        }
-        _ => {
-            return Err(format!(
-                "Model '{}' is not supported on Android. \
-                 Only Qwen 2.5 1.5B or 3B (GGUF) are available.",
-                model_id
-            ));
-        }
-    };
+    let config = GgufModelConfig::from_supported_model_id(&model_id)
+        .ok_or_else(|| format!("Model {model_id} has no Android download configuration."))?;
+    let tok_model_id = config
+        .tok_model_id
+        .clone()
+        .ok_or_else(|| format!("Model {model_id} has no Android tokenizer configuration."))?;
 
     // ── Resolve the HF cache path ─────────────────────────────────────────
     //
@@ -1240,6 +1219,8 @@ where
     );
 
     clean_stale_lock_files(&model_id);
+    let expected_files: Vec<&str> = config.files.iter().map(String::as_str).collect();
+    ensure_snapshot_entries(&model_id, &expected_files);
     ensure_model_cache_dir(&model_id);
 
     let initial_bytes = model_cache_path(&model_id)
@@ -1252,6 +1233,14 @@ where
         expected_size,
         false,
     ));
+
+    let mut builder = GgufModelBuilder::new(&model_id, config.files.clone())
+        .with_tok_model_id(&tok_model_id)
+        .with_token_source(hf_token_source())
+        .with_logging();
+    if let Some(chat_template) = config.chat_template {
+        builder = builder.with_chat_template(chat_template);
+    }
 
     // Native monitor thread — same reasoning as the Apple implementation.
     let finished = Arc::new(AtomicBool::new(false));
@@ -1276,15 +1265,12 @@ where
         ));
     });
 
-    let result = GgufModelBuilder::new(&model_id, vec![gguf_file])
-        .with_tok_model_id(tok_model_id)
-        .with_token_source(hf_token_source())
-        .with_logging()
-        .build()
-        .await;
+    let result = builder.build().await;
 
     finished.store(true, Ordering::Relaxed);
-    let _ = monitor_handle.join();
+    if monitor_handle.join().is_err() {
+        warn!("Download progress monitor panicked for model {model_id}");
+    }
 
     match result {
         Ok(_model) => {
@@ -1312,7 +1298,9 @@ where
     target_os = "tvos",
     target_os = "visionos",
     target_os = "watchos",
-    target_os = "android"
+    target_os = "android",
+    target_os = "windows",
+    target_os = "linux"
 )))]
 pub async fn download_model<F>(
     model_id: String,

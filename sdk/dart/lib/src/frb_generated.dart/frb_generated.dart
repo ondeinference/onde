@@ -3,7 +3,7 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: unused_element, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
+// ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
 import 'dart:async';
@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -467241906;
+  int get rustContentHash => -1719313298;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -163,6 +163,24 @@ abstract class RustLibApi extends BaseApi {
   GgufModelConfig crateApiQwen25Coder15BConfig();
 
   GgufModelConfig crateApiQwen25Coder3BConfig();
+
+  GgufModelConfig crateApiQwen306BConfig();
+
+  GgufModelConfig crateApiQwen314BConfig();
+
+  GgufModelConfig crateApiQwen317BConfig();
+
+  GgufModelConfig crateApiQwen330BA3BInstruct2507Config();
+
+  GgufModelConfig crateApiQwen332BConfig();
+
+  GgufModelConfig crateApiQwen34BConfig();
+
+  GgufModelConfig crateApiQwen34BInstruct2507Config();
+
+  GgufModelConfig crateApiQwen34BThinking2507Config();
+
+  GgufModelConfig crateApiQwen38BConfig();
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_OndeChatEngine;
@@ -940,6 +958,213 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiQwen25Coder3BConfigConstMeta =>
       const TaskConstMeta(debugName: "qwen25_coder_3b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen306BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen306BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen306BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_0_6b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen314BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 26)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen314BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen314BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_14b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen317BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen317BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen317BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_1_7b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen330BA3BInstruct2507Config() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen330Ba3BInstruct2507ConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen330Ba3BInstruct2507ConfigConstMeta =>
+      const TaskConstMeta(
+        debugName: "qwen3_30b_a3b_instruct_2507_config",
+        argNames: [],
+      );
+
+  @override
+  GgufModelConfig crateApiQwen332BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen332BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen332BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_32b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen34BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen34BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen34BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_4b_config", argNames: []);
+
+  @override
+  GgufModelConfig crateApiQwen34BInstruct2507Config() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen34BInstruct2507ConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen34BInstruct2507ConfigConstMeta =>
+      const TaskConstMeta(
+        debugName: "qwen3_4b_instruct_2507_config",
+        argNames: [],
+      );
+
+  @override
+  GgufModelConfig crateApiQwen34BThinking2507Config() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen34BThinking2507ConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen34BThinking2507ConfigConstMeta =>
+      const TaskConstMeta(
+        debugName: "qwen3_4b_thinking_2507_config",
+        argNames: [],
+      );
+
+  @override
+  GgufModelConfig crateApiQwen38BConfig() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_gguf_model_config,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiQwen38BConfigConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiQwen38BConfigConstMeta =>
+      const TaskConstMeta(debugName: "qwen3_8b_config", argNames: []);
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_OndeChatEngine => wire

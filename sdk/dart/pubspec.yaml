@@ -2,7 +2,7 @@ name: onde_inference
 description: >-
   On-device LLM inference for Flutter & Dart. Run Qwen 2.5 models locally
   with Metal on iOS and macOS, CPU on Android and desktop. No cloud, no API key.
-version: 1.1.4
+version: 1.2.0
 repository: https://github.com/ondeinference/onde
 homepage: https://ondeinference.com
 documentation: https://ondeinference.com/sdk/dart
@@ -39,7 +39,7 @@ dev_dependencies:
   # freezed + build_runner are required by FRB 2.x codegen for union/sealed types.
   # After running `flutter_rust_bridge_codegen generate`, also run:
   #   dart run build_runner build --delete-conflicting-outputs
-  freezed: ^3.2.5
+  freezed: ^3.2.3
   build_runner: ^2.4.9
   # NOTE: The FFI code-generator is a Rust binary — NOT a Dart package.
   # Install it once with:

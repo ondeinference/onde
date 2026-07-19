@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 import { requireNativeModule } from "expo-modules-core";
 
 /**
@@ -42,6 +45,15 @@ export interface OndeInferenceNativeModule {
   defaultModelConfig(): string;
   qwen251_5bConfig(): string;
   qwen253bConfig(): string;
+  qwen3_0_6bConfig(): string;
+  qwen3_1_7bConfig(): string;
+  qwen3_4bConfig(): string;
+  qwen3_8bConfig(): string;
+  qwen3_14bConfig(): string;
+  qwen3_32bConfig(): string;
+  qwen3_4bInstruct2507Config(): string;
+  qwen3_4bThinking2507Config(): string;
+  qwen3_30bA3bInstruct2507Config(): string;
   defaultSamplingConfig(): string;
   deterministicSamplingConfig(): string;
   mobileSamplingConfig(): string;
