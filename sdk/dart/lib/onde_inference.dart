@@ -1,6 +1,5 @@
-// Copyright 2024 Onde Inference. All rights reserved.
-// Use of this source code is governed by the MIT license that can be found in
-// the LICENSE file.
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 /// On-device LLM inference SDK for Flutter & Dart.
 ///

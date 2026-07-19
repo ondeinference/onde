@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Flutter Rust Bridge v2 API for the Onde Inference Dart SDK.
 //!
 //! This module declares mirror types (re-declared plain Rust structs/enums
@@ -540,6 +543,62 @@ pub fn qwen25_coder_1_5b_config() -> GgufModelConfig {
 #[frb(sync)]
 pub fn qwen25_coder_3b_config() -> GgufModelConfig {
     OndeGgufModelConfig::qwen25_coder_3b().into()
+}
+
+// ── Qwen 3 family ────────────────────────────────────────────────────────────
+
+/// `GgufModelConfig` for Qwen 3 0.6B Q4_K_M (~0.5 GB).
+#[frb(sync)]
+pub fn qwen3_0_6b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_0_6b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 1.7B Q4_K_M (~1.3 GB).
+#[frb(sync)]
+pub fn qwen3_1_7b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_1_7b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 4B Q4_K_M (~2.7 GB).
+#[frb(sync)]
+pub fn qwen3_4b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_4b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 8B Q4_K_M (~5 GB).
+#[frb(sync)]
+pub fn qwen3_8b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_8b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 14B Q4_K_M (~8.4 GB).
+#[frb(sync)]
+pub fn qwen3_14b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_14b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 32B Q4_K_M (~19.8 GB).
+#[frb(sync)]
+pub fn qwen3_32b_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_32b().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 4B Instruct 2507 Q4_K_M (~2.5 GB).
+#[frb(sync)]
+pub fn qwen3_4b_instruct_2507_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_4b_instruct_2507().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 4B Thinking 2507 Q4_K_M (~2.5 GB).
+#[frb(sync)]
+pub fn qwen3_4b_thinking_2507_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_4b_thinking_2507().into()
+}
+
+/// `GgufModelConfig` for Qwen 3 30B-A3B Instruct 2507 (MoE) Q4_K_M (~18.6 GB).
+#[frb(sync)]
+pub fn qwen3_30b_a3b_instruct_2507_config() -> GgufModelConfig {
+    OndeGgufModelConfig::qwen3_30b_a3b_instruct_2507().into()
 }
 
 /// Default sampling config: `temperature=0.7`, `top_p=0.95`, `max_tokens=512`.

@@ -80,21 +80,75 @@ cargo +nightly check -Z build-std --target aarch64-apple-tvos-sim
 
 ---
 
-## Tier 3 — Android, Windows, Linux (stable, may need cross-linker)
+## Tier 3 — Android, Windows, Linux (stable, needs cross toolchains)
 
-These check that CPU-only code paths compile. They may fail on linker resolution
-if cross-linkers aren't installed, but `cargo check` (no linking) should pass:
+These check that CPU-only code paths compile. For this crate, `cargo check`
+still runs C build scripts from dependencies such as `aws-lc-sys` and `ring`,
+so absent cross GCC toolchains are real blockers, not harmless link-only
+failures.
 
 ```bash
 # Android arm64 — CPU, requires hf-hub sandbox workaround
 cargo check --target aarch64-linux-android
 
-# Windows — CPU
+# Windows MSVC — CPU, exact CI target; run on Windows or a Windows CI runner
 cargo check --target x86_64-pc-windows-msvc
 
 # Linux — CPU
 cargo check --target x86_64-unknown-linux-gnu
 ```
+
+On macOS hosts without cross GCC installed, expect Linux checks to fail looking
+for `x86_64-linux-gnu-gcc`, and Windows GNU checks to fail looking for
+`x86_64-w64-mingw32-gcc`. Use the Colima/Docker flow below instead of treating
+those as code regressions.
+
+### macOS host fallback: Colima/Docker
+
+Use this when the goal is to run the Linux and Windows cross-checks on a macOS
+host and the host does not have cross GCC toolchains. On Apple Silicon, run a
+native `linux/arm64` container. Avoid `linux/amd64` emulation for this crate;
+the dependency build can crash under QEMU before reaching `onde` code.
+
+Give Colima enough memory before running these checks:
+
+```bash
+colima status
+colima stop
+colima start --memory 8
+```
+
+Run Linux and the local Windows GNU proxy check in the container:
+
+```bash
+docker run --rm --platform linux/arm64 \
+  -v "$PWD:/workspace" \
+  -v onde-cargo-registry:/usr/local/cargo/registry \
+  -v onde-cargo-git:/usr/local/cargo/git \
+  -w /workspace \
+  rust:1.92-bookworm \
+  bash -lc '
+    export PATH=/usr/local/cargo/bin:$PATH
+    apt-get update >/dev/null
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      gcc-x86-64-linux-gnu \
+      libc6-dev-amd64-cross \
+      linux-libc-dev-amd64-cross \
+      gcc-mingw-w64-x86-64 \
+      binutils-mingw-w64-x86-64 >/dev/null
+    rustup target add x86_64-unknown-linux-gnu x86_64-pc-windows-gnu >/dev/null
+    CARGO_BUILD_JOBS=1 cargo check --target x86_64-unknown-linux-gnu
+    CARGO_BUILD_JOBS=1 cargo check --target x86_64-pc-windows-gnu
+  '
+```
+
+`x86_64-pc-windows-gnu` exercises `#[cfg(target_os = "windows")]` and the
+CPU-only Windows path locally, but it is not a substitute for the CI
+`x86_64-pc-windows-msvc` check. The MSVC ABI check needs a Windows/MSVC
+toolchain, normally GitHub Actions `windows-latest`.
+
+If the container reaches `Checking onde ...` and then reports Rust errors, the
+cross toolchain is working. Fix the crate error and rerun the check.
 
 ---
 
@@ -136,6 +190,7 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 rustup target add aarch64-linux-android armv7-linux-androideabi
 rustup target add x86_64-linux-android i686-linux-android
 rustup target add x86_64-pc-windows-msvc
+rustup target add x86_64-pc-windows-gnu
 rustup target add x86_64-unknown-linux-gnu
 
 # Tier 2 — tvOS (nightly, no `rustup target add` — uses -Z build-std)
@@ -513,7 +568,6 @@ consumers either way — but leaving it active makes the dry-run confusing.
 
 ---
 
-*Last updated: July 2025 — added hf-hub/mistralrs-core iOS/tvOS deps,
-cache path consistency checks, App Group convention, onde-mistralrs publish
-strategy, GresIQ/HF_TOKEN secrets documentation.*
-
+*Last updated: July 2026 — added Colima/Docker Linux and Windows GNU
+cross-check guidance for macOS hosts without cross GCC, plus the MSVC CI
+caveat.*
