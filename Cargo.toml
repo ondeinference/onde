@@ -114,5 +114,11 @@ uniffi = { version = "=0.31.0", features = ["build"] }
 # Patch sysctl with watchOS support until upstream merges it.
 # PR: https://github.com/johalun/sysctl-rs/pull/74
 # NOTE: [patch.crates-io] is ignored by crates.io consumers — safe to keep.
+#
+# mio 0.8.11 (pulled by tqdm -> crossterm 0.25) lacks visionOS support and hits
+# `compile_error!("unsupported target")` when building the Apple XCFramework.
+# The fork adds target_os = "visionos" to the existing tvos/watchos cfg gates.
+# tokio's mio 1.x already supports visionOS, so only the 0.8.x line needs it.
 [patch.crates-io]
 sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos" }
+mio = { git = "https://github.com/setoelkahfi/mio.git", branch = "feature/visionos" }

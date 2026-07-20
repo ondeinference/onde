@@ -3049,8 +3049,7 @@ dependencies = [
 [[package]]
 name = "mio"
 version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c"
+source = "git+https://github.com/setoelkahfi/mio.git?branch=feature%2Fvisionos#925e3fde24eac3b95b3989fa6c531eb0d792bbaf"
 dependencies = [
  "libc",
  "log",
