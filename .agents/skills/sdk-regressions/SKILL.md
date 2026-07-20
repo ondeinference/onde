@@ -393,6 +393,11 @@ attribution obligations.
 
 ### The `onde-mistralrs` workaround
 
+> For the full inventory of every fork and `[patch.crates-io]` override in the
+> stack (mistral.rs, candle, sysctl, mio, tqdm, core2) and how the
+> git-vs-published tiers resolve differently, see the **forked-dependencies**
+> skill. This section covers only the mistral.rs publish mechanics.
+
 `cargo publish` strips every `git =` field before uploading to crates.io.
 That means a git-only dep is useless to anyone who installs `onde` from the
 registry — they can't resolve it.
