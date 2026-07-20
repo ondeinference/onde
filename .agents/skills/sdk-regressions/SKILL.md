@@ -414,6 +414,41 @@ target first.
 
 ---
 
+### Step 0 — check if the candle snapshot needs an `onde-candle-*` publish
+
+Since 0.9.x, upstream mistral.rs pins `candle` to a git rev past the latest
+released candle (e.g. rev `27f20fea`, 19 commits past `0.11.0`, adding
+`QTensor::indexed_gemv`, `gemv_fused_shared_lhs`, `BarrierPool::execute_chunked`).
+`cargo publish` strips git pins, so publish verification resolves candle from
+crates.io and fails with E0599 "method not found" if the pinned rev has APIs the
+released candle lacks.
+
+When that happens, publish the pinned rev under `onde-candle-*` names from the
+local candle checkout (`~/Repositories/candle`, branch pattern
+`onde/candle-<version>-<rev>`):
+
+```bash
+# Which candle crates actually diverged from the released version?
+git diff --stat <release-bump-commit> <pinned-rev> -- candle-core candle-nn candle-metal-kernels
+
+# Rename ONLY the diverged crates (0.11.0 era: candle-core + candle-nn; the
+# rest are byte-identical, official crates serve them). candle-nn must be
+# republished whenever candle-core is, even if unchanged, or the official
+# candle-nn drags the official candle-core into the graph -> two candle-core
+# crates -> type mismatch.
+cargo publish -p onde-candle-core
+cargo publish -p onde-candle-nn
+```
+
+Then in the mistral.rs fork workspace `Cargo.toml`:
+
+```toml
+candle-core = { version = "0.11.0", package = "onde-candle-core" }
+candle-nn = { version = "0.11.0", package = "onde-candle-nn" }
+candle-flash-attn-v3 = { version = "0.11.0" }   # unchanged at rev -> official
+candle-metal-kernels = { version = "0.11.0" }   # unchanged at rev -> official
+```
+
 ### Step 1 — check if `onde-mistralrs` needs a new publish
 
 First, see how far the fork has drifted from upstream:
@@ -425,21 +460,40 @@ curl -s "https://api.github.com/repos/setoelkahfi/mistral.rs/compare/EricLBuehle
 
 If there are new commits since the last `onde-mistralrs` publish, or if
 upstream cut a new release that the fork has rebased onto, bump the workspace
-version in the fork and publish. Sub-crates must go in dependency order:
+version in the fork and publish. As of 0.9.1 the set is **12 crates** (upstream
+split out flash-attn/metal-compile/code-exec/sandbox, and vision/audio/mcp must
+be onde-published too because crates.io only has upstream's old versions).
+The rename lives in the workspace dep table (`package = "onde-..."` on each
+entry, local dep keys unchanged so imports stay `mistralrs_*`).
 
 ```bash
 # 1. Edit the root Cargo.toml in setoelkahfi/mistral.rs
-#    bump version, e.g. 0.8.1 → 0.8.2
+#    bump version, e.g. 0.9.0 → 0.9.1
 
-# 2. Publish in order — each one depends on the previous:
+# 2. Publish in dependency order (leaves first):
 cargo publish -p onde-mistralrs-macros
+cargo publish -p onde-mistralrs-metal-compile
+cargo publish -p onde-mistralrs-sandbox
+cargo publish -p onde-mistralrs-flash-attn
+cargo publish -p onde-mistralrs-vision
+cargo publish -p onde-mistralrs-audio
+cargo publish -p onde-mistralrs-mcp
 cargo publish -p onde-mistralrs-paged-attn
 cargo publish -p onde-mistralrs-quant
+cargo publish -p onde-mistralrs-code-exec
 cargo publish -p onde-mistralrs-core
 cargo publish -p onde-mistralrs
 
-# 3. Give the index ~30 s to propagate before moving on.
+# 3. cargo waits for index propagation automatically after each publish.
 ```
+
+Known publish-verification snags (hit during 0.9.1):
+
+| Error | Fix |
+|-------|-----|
+| E0599 on candle APIs (`indexed_gemv`, ...) | Step 0 — publish `onde-candle-*` and repoint |
+| `dependency tqdm does not specify a version` | git dep needs a registry fallback: `version = "0.8.0"` alongside `git =` |
+| `core2 0.4.0 is yanked` | `cargo update -p bitstream-io` (4.10.0 dropped core2) |
 
 ---
 
