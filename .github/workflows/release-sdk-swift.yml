@@ -36,7 +36,7 @@ jobs:
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.92.0
+          toolchain: 1.94.0
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
 
       # tvOS targets are tier-3 — no prebuilt std libs available via rustup.
