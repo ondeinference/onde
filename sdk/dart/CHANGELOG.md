@@ -1,3 +1,8 @@
+## 1.2.1
+
+- Fixed the Android build: gated the 10 GiB UQFF chunk-size constant so it no longer overflows `usize` on 32-bit targets (armv7)
+- Moved onto the published onde-mistralrs 0.9.2 crates (fork synced with upstream 0.9.x)
+
 ## 1.2.0
 
 - Full Qwen 3 model family support: 0.6B, 1.7B, 4B, 8B, 14B, 32B, plus the 4B Instruct/Thinking 2507 refreshes and the 30B-A3B MoE variant, each with a matching config free function
