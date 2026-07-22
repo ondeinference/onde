@@ -1,3 +1,8 @@
+## 1.2.2
+
+- Moved onto the published onde-mistralrs 0.9.3 crates
+- Dropped the mio visionOS patch — the cfg gating it worked around now ships upstream, so the Apple XCFramework builds without it
+
 ## 1.2.1
 
 - Fixed the Android build: gated the 10 GiB UQFF chunk-size constant so it no longer overflows `usize` on 32-bit targets (armv7)
