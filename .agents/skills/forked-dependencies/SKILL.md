@@ -56,9 +56,10 @@ The fix that removed the whole problem: the crossterm-0.29 tqdm fork is now
 a `version =` registry dep (package rename), exactly like `onde-mistralrs-*` and
 `onde-candle-*`. A registry dep survives publish, so onde's registry-resolved
 tree gets `onde-tqdm` → `crossterm 0.29` → `mio 1.x`, and the `mio 0.8.11`
-line disappears entirely. Once the `onde-mistralrs-*` crates carrying the
-`onde-tqdm` dep are published (0.9.3+) and onde bumps to them, onde's
-`[patch.crates-io] mio` entry is deleted. See the onde-tqdm and mio entries.
+line disappears entirely. This is now **done**: `onde-mistralrs-*` 0.9.3
+(carrying the `onde-tqdm` dep) is published, onde consumes 0.9.3, and onde's
+`[patch.crates-io] mio` entry has been **deleted**. The `mio` fork is retired.
+See the onde-tqdm and mio entries.
 
 ---
 
@@ -70,7 +71,7 @@ line disappears entirely. Once the `onde-mistralrs-*` crates carrying the
 | candle-core, candle-nn | `setoelkahfi/candle` | branch `onde/candle-0.11.0-27f20fea` (rev `27f20fea`) | Post-0.11.0 candle APIs; **published** as `onde-candle-{core,nn}` | mistral.rs fork deps (registry) |
 | tqdm | `setoelkahfi/tqdm` | branch `release/onde-tqdm` (version `0.8.2`) | Bumps crossterm to 0.29 (→ mio 1.x); **published** as `onde-tqdm` | mistral.rs fork dep (registry) |
 | sysctl | `setoelkahfi/sysctl-rs` | branch `feature/watchos` | watchOS (`target_os = "watchos"`) support | `[patch.crates-io]` in onde **and** mistral.rs fork |
-| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | `[patch.crates-io]` in onde — **removable once onde consumes onde-mistralrs 0.9.3+** |
+| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | **RETIRED** — patch removed from onde once it consumed onde-mistralrs 0.9.3 (onde-tqdm → mio 1.x). Fork kept for history/upstream PR. |
 
 > **Retired:** `core2` (`bbqsrc/core2` rev `545e84bc`) — was a `[patch.crates-io]`
 > workaround for the yanked `core2 0.4.0`; removed from the mistral.rs fork after
@@ -118,8 +119,13 @@ line disappears entirely. Once the `onde-mistralrs-*` crates carrying the
 - **Applied in:** `[patch.crates-io]` in **both** onde and the mistral.rs fork
   (each workspace root that builds for watchOS needs its own patch entry).
 
-### mio → visionOS (being retired)
+### mio → visionOS (RETIRED)
 
+- **Status:** the onde `[patch.crates-io] mio` entry has been **removed**. onde
+  now consumes `onde-mistralrs 0.9.3`, whose `onde-tqdm` dep pulls `crossterm
+  0.29 → mio 1.x`, so `mio 0.8.11` is gone from onde's tree. The fork below is
+  kept only for history and a possible upstream PR; it is no longer wired into
+  any build.
 - **Fork:** `setoelkahfi/mio`, branch `feature/visionos` (commit `683fca8`).
   Based on `mio 0.8.11`. This is the **official GitHub fork** of tokio-rs/mio
   (in tokio's fork network, so it can open upstream PRs). An earlier standalone
@@ -134,16 +140,15 @@ line disappears entirely. Once the `onde-mistralrs-*` crates carrying the
   tokio's `mio 1.x` already supports visionOS, so **only the 0.8.x line** needs it.
 - **Where 0.8.11 came from:** `tqdm → crossterm 0.25 → mio 0.8.11`, and
   `signal-hook-mio → crossterm`. Not from tokio (that uses `mio 1.2.2`).
-- **Applied in:** `[patch.crates-io]` in onde. The fork's version (`0.8.11`)
-  stays semver-compatible with the `^0.8` requirement it replaces; it does not
-  touch tokio's `^1`.
-- **Retirement path (the real fix):** the `onde-tqdm` publish (below) removes the
-  `mio 0.8.11` line from onde's registry-resolved tree entirely. Verified: with
-  onde consuming the onde-tqdm-carrying `onde-mistralrs-*` crates, onde's
-  lockfile resolves `mio 1.2.2` only — no 0.8.11 — even with the `mio` patch
-  deleted. **Delete the onde `[patch.crates-io] mio` entry once onde bumps to
-  `onde-mistralrs 0.9.3+`.** Until that publish lands, keep the patch (0.9.2, the
-  currently-published set, still drags in `tqdm 0.8.0 → mio 0.8.11`).
+- **Applied in:** *(historical)* was `[patch.crates-io]` in onde. The fork's
+  version (`0.8.11`) stayed semver-compatible with the `^0.8` requirement it
+  replaced; it did not touch tokio's `^1`.
+- **How it was retired (the real fix):** the `onde-tqdm` publish (below) removed
+  the `mio 0.8.11` line from onde's registry-resolved tree entirely. Verified:
+  with onde consuming the onde-tqdm-carrying `onde-mistralrs 0.9.3` crates, onde's
+  lockfile resolves `mio 1.2.2` only — no 0.8.11 — and both visionOS targets
+  (`aarch64-apple-visionos{,-sim}`) `cargo +nightly check -Z build-std` pass with
+  the `mio` patch deleted.
 
 ### tqdm → crossterm 0.29 → `onde-tqdm`
 
