@@ -43,12 +43,22 @@ mixing them up.
    the `cargo check` matrix) but are themselves stripped when onde publishes to
    crates.io.
 
-**Consequence that bites:** the `tqdm` fork bumps crossterm to 0.29 (which pulls
-mio 1.x, which supports visionOS). But that fork is a *git* dep of mistral.rs,
-so it is stripped on publish. onde therefore resolves crates.io `tqdm 0.8.0` →
-`crossterm 0.25` → `mio 0.8.11`, which does *not* support visionOS. That is why
-onde needs its own `mio` patch even though the tqdm fork "already fixed"
-crossterm upstream of it. See the mio and tqdm entries below.
+**Consequence that used to bite (now fixed — kept as the canonical example):**
+originally the `tqdm` fork bumped crossterm to 0.29 (which pulls mio 1.x, which
+supports visionOS) but was a *git* dep of mistral.rs, so it was stripped on
+publish. onde therefore resolved crates.io `tqdm 0.8.0` → `crossterm 0.25` →
+`mio 0.8.11`, which does *not* support visionOS — so onde needed its own `mio`
+visionOS patch even though the tqdm fork "already fixed" crossterm upstream of
+it.
+
+The fix that removed the whole problem: the crossterm-0.29 tqdm fork is now
+**published to crates.io as `onde-tqdm`** and consumed by the mistral.rs fork as
+a `version =` registry dep (package rename), exactly like `onde-mistralrs-*` and
+`onde-candle-*`. A registry dep survives publish, so onde's registry-resolved
+tree gets `onde-tqdm` → `crossterm 0.29` → `mio 1.x`, and the `mio 0.8.11`
+line disappears entirely. Once the `onde-mistralrs-*` crates carrying the
+`onde-tqdm` dep are published (0.9.3+) and onde bumps to them, onde's
+`[patch.crates-io] mio` entry is deleted. See the onde-tqdm and mio entries.
 
 ---
 
@@ -58,10 +68,13 @@ crossterm upstream of it. See the mio and tqdm entries below.
 |-------|---------------|-----|---------|----------------|
 | mistral.rs (12 crates) | `setoelkahfi/mistral.rs` | branch `fix/all-platform-fixes` | All-platform fixes; **published** as `onde-mistralrs-*` | onde deps (registry) |
 | candle-core, candle-nn | `setoelkahfi/candle` | branch `onde/candle-0.11.0-27f20fea` (rev `27f20fea`) | Post-0.11.0 candle APIs; **published** as `onde-candle-{core,nn}` | mistral.rs fork deps (registry) |
+| tqdm | `setoelkahfi/tqdm` | branch `release/onde-tqdm` (version `0.8.2`) | Bumps crossterm to 0.29 (→ mio 1.x); **published** as `onde-tqdm` | mistral.rs fork dep (registry) |
 | sysctl | `setoelkahfi/sysctl-rs` | branch `feature/watchos` | watchOS (`target_os = "watchos"`) support | `[patch.crates-io]` in onde **and** mistral.rs fork |
-| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | `[patch.crates-io]` in onde |
-| tqdm | `setoelkahfi/tqdm` | branch `deps/bump-crossterm` (version `0.8.0`) | Bumps crossterm to 0.29 | git dep in mistral.rs fork |
-| core2 | `bbqsrc/core2` (not ours) | rev `545e84bc` | Yanked-`core2 0.4.0` workaround | `[patch.crates-io]` in mistral.rs fork — **now unused, removable** |
+| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | `[patch.crates-io]` in onde — **removable once onde consumes onde-mistralrs 0.9.3+** |
+
+> **Retired:** `core2` (`bbqsrc/core2` rev `545e84bc`) — was a `[patch.crates-io]`
+> workaround for the yanked `core2 0.4.0`; removed from the mistral.rs fork after
+> `bitstream-io` 4.x dropped `core2`. No longer present.
 
 ---
 
@@ -105,40 +118,60 @@ crossterm upstream of it. See the mio and tqdm entries below.
 - **Applied in:** `[patch.crates-io]` in **both** onde and the mistral.rs fork
   (each workspace root that builds for watchOS needs its own patch entry).
 
-### mio → visionOS
+### mio → visionOS (being retired)
 
-- **Fork:** `setoelkahfi/mio`, branch `feature/visionos`. Based on `mio 0.8.11`.
+- **Fork:** `setoelkahfi/mio`, branch `feature/visionos` (commit `683fca8`).
+  Based on `mio 0.8.11`. This is the **official GitHub fork** of tokio-rs/mio
+  (in tokio's fork network, so it can open upstream PRs). An earlier standalone
+  clone that carried this branch was renamed to `setoelkahfi/mio-patch` and
+  deleted; the branch now lives on the real fork.
 - **Why:** `mio 0.8.11` hits `compile_error!("unsupported target for
-  mio::unix::pipe")` on visionOS, breaking the Swift XCFramework build and the
-  visionOS CI checks. The fork adds `target_os = "visionos"` to the cfg gates
-  that already list `tvos`/`watchos` (kqueue/pipe/waker/uds). tokio's `mio 1.x`
-  already supports visionOS, so **only the 0.8.x line** needs the patch.
-- **Where 0.8.11 comes from:** `tqdm → crossterm 0.25 → mio 0.8.11`, and
+  mio::unix::pipe")` on visionOS, and its Apple cfg gates (kqueue `Filter`/
+  `Flags` type aliases, `net.rs` `sin_len`/`sin6_len`, `tcp.rs` accept path,
+  `uds/listener.rs` `accept4`/`SOCK_NONBLOCK`) omit visionos, breaking the Swift
+  XCFramework build and the visionOS CI checks. The fork adds
+  `target_os = "visionos"` to every cfg gate that already lists `tvos`/`watchos`.
+  tokio's `mio 1.x` already supports visionOS, so **only the 0.8.x line** needs it.
+- **Where 0.8.11 came from:** `tqdm → crossterm 0.25 → mio 0.8.11`, and
   `signal-hook-mio → crossterm`. Not from tokio (that uses `mio 1.2.2`).
 - **Applied in:** `[patch.crates-io]` in onde. The fork's version (`0.8.11`)
-  must stay semver-compatible with the `^0.8` requirement it replaces; it does
-  not touch tokio's `^1`.
-- **Alternative fix (not used):** patching `tqdm`/`crossterm` up to crossterm
-  0.29 in onde would drop `mio 0.8.11` entirely. The `mio` patch is the smaller,
-  targeted change.
+  stays semver-compatible with the `^0.8` requirement it replaces; it does not
+  touch tokio's `^1`.
+- **Retirement path (the real fix):** the `onde-tqdm` publish (below) removes the
+  `mio 0.8.11` line from onde's registry-resolved tree entirely. Verified: with
+  onde consuming the onde-tqdm-carrying `onde-mistralrs-*` crates, onde's
+  lockfile resolves `mio 1.2.2` only — no 0.8.11 — even with the `mio` patch
+  deleted. **Delete the onde `[patch.crates-io] mio` entry once onde bumps to
+  `onde-mistralrs 0.9.3+`.** Until that publish lands, keep the patch (0.9.2, the
+  currently-published set, still drags in `tqdm 0.8.0 → mio 0.8.11`).
 
-### tqdm → crossterm 0.29
+### tqdm → crossterm 0.29 → `onde-tqdm`
 
-- **Fork:** `setoelkahfi/tqdm`, branch `deps/bump-crossterm`, pinned `version = "0.8.0"`.
-- **Why:** bumps crossterm to 0.29.
-- **Applied in:** git dep in the **mistral.rs fork** only. **Stripped on
-  publish**, so it does not reach onde — onde gets crates.io `tqdm 0.8.0`
-  (crossterm 0.25 → mio 0.8.11). This is exactly why the onde `mio` patch is
-  required; do not assume the tqdm fork covers onde.
+- **Fork:** `setoelkahfi/tqdm`. Two branches:
+  - `deps/bump-crossterm` — keeps the crate named `tqdm`, feeds the **upstream
+    PR** mrlazy1708/tqdm#28 (do not rename the package here).
+  - `release/onde-tqdm` — sets `package = "onde-tqdm"` (crate lib name stays
+    `tqdm` so downstream `use tqdm::…` and doctests are unchanged) and is
+    **published to crates.io as `onde-tqdm`** (0.8.1, 0.8.2).
+- **Why:** bumps crossterm to 0.29 (→ mio 1.x), eliminating the whole `mio
+  0.8.11` visionOS problem at its source.
+- **Consumed in:** the mistral.rs fork's `[workspace.dependencies]` as
+  `tqdm = { version = "0.8.2", package = "onde-tqdm" }` — a **registry** rename
+  dep, so it survives `cargo publish` and reaches onde (unlike the old git dep,
+  which was stripped). This is the same rename trick as `onde-mistralrs-*` and
+  `onde-candle-*`.
+- **Publish order:** publish `onde-tqdm` **before** republishing the
+  `onde-mistralrs-*` crates that depend on it. Note the published
+  `onde-mistralrs-core 0.9.2` still uses plain `tqdm ^0.8.0` (pre-rename); the
+  `onde-tqdm` dep first ships in `0.9.3`.
 
-### core2 → (dead)
+### core2 → removed
 
-- **Source:** `bbqsrc/core2` rev `545e84bc`, patched in the mistral.rs fork.
-- **Status:** **unused.** It was a workaround for the yanked `core2 0.4.0`
-  (pulled via `bitstream-io → rav1e → ravif → image`). Bumping `bitstream-io` to
-  `4.10.0` dropped `core2` (it moved to `no_std_io2`), so the patch is now
-  `[patch.unused]` in the fork lockfile. Safe to delete from the fork's
-  `[patch.crates-io]` on the next fork touch.
+- **Was:** `bbqsrc/core2` rev `545e84bc`, a `[patch.crates-io]` workaround for
+  the yanked `core2 0.4.0` (pulled via `bitstream-io → rav1e → ravif → image`).
+- **Status:** **deleted** from the mistral.rs fork. `bitstream-io` 4.x moved off
+  `core2` (to `no_std_io2`), so nothing pulls it. Removed in the same commit that
+  wired `onde-tqdm` and bumped to 0.9.3.
 
 ---
 
