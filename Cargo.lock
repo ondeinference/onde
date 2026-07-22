@@ -3049,7 +3049,7 @@ dependencies = [
 [[package]]
 name = "mio"
 version = "0.8.11"
-source = "git+https://github.com/setoelkahfi/mio.git?branch=feature%2Fvisionos#925e3fde24eac3b95b3989fa6c531eb0d792bbaf"
+source = "git+https://github.com/setoelkahfi/mio.git?branch=feature%2Fvisionos#683fca87d9da2c8f947952ecec4e005babbaddbd"
 dependencies = [
  "libc",
  "log",
