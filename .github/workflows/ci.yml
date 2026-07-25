@@ -18,6 +18,13 @@ permissions:
   contents: read
 
 jobs:
+  # ── Release metadata ─────────────────────────────────────────────────────
+  # Same gate the release workflows use, minus the tag check. Running it on
+  # ordinary pushes means version drift surfaces while you are still on a
+  # branch, instead of on release day.
+  preflight:
+    uses: ./.github/workflows/release-preflight.yml
+
   # ── Dart / Flutter SDK validation ────────────────────────────────────────
   dart-sdk:
     name: Dart SDK (Flutter)

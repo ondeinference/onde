@@ -15,7 +15,15 @@ permissions:
   contents: write
 
 jobs:
+  # Cheap ubuntu gate: version agreement, crates.io publishability, tag match.
+  # Blocks the expensive job below so a metadata fault never costs runner time.
+  preflight:
+    uses: ./.github/workflows/release-preflight.yml
+    with:
+      tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+
   publish:
+    needs: preflight
     name: Build and publish KMP library to Maven Central
     runs-on: macos-26
 

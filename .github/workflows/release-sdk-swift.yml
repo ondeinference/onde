@@ -19,7 +19,15 @@ permissions:
   contents: write
 
 jobs:
+  # Cheap ubuntu gate: version agreement, crates.io publishability, tag match.
+  # Blocks the expensive job below so a metadata fault never costs runner time.
+  preflight:
+    uses: ./.github/workflows/release-preflight.yml
+    with:
+      tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+
   build-and-release:
+    needs: preflight
     runs-on: macos-26
 
     env:
@@ -33,10 +41,22 @@ jobs:
       - name: Checkout onde
         uses: actions/checkout@v6
 
+      # Read the channel from rust-toolchain.toml so it is pinned in exactly one
+      # place. Hardcoding it here is what let CI drift onto stable 1.92 while the
+      # dependency tree required 1.94, failing the 1.2.0 release.
+      - name: Read Rust toolchain
+        run: |
+          rust_toolchain="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml | head -n 1)"
+          if [ -z "$rust_toolchain" ]; then
+            echo "::error::Failed to read channel from rust-toolchain.toml"
+            exit 1
+          fi
+          echo "RUST_TOOLCHAIN=${rust_toolchain}" >> "$GITHUB_ENV"
+
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.94.0
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
 
       # tvOS targets are tier-3 — no prebuilt std libs available via rustup.
