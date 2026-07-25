@@ -119,6 +119,27 @@ impl OndeChatEngine {
         Ok(elapsed.as_secs_f64())
     }
 
+    /// Load a UQFF model into the engine.
+    ///
+    /// UQFF files are pre-quantised and load directly without runtime
+    /// conversion. `config.model_id` is required for tokenizer/base model
+    /// resolution, and `config.files` should contain the first UQFF shard or
+    /// explicit shard filenames.
+    ///
+    /// Returns the wall-clock loading time in seconds.
+    pub async fn load_uqff_model(
+        &self,
+        config: UqffModelConfig,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<f64, InferenceError> {
+        let elapsed = self
+            .inner
+            .load_uqff_model(config, system_prompt, sampling)
+            .await?;
+        Ok(elapsed.as_secs_f64())
+    }
+
     /// Load the platform-appropriate default model.
     ///
     /// - tvOS / iOS / Android → Qwen 2.5 1.5B (~941 MB)
@@ -306,6 +327,28 @@ pub async fn stream_chat_message(
 #[uniffi::export]
 pub fn default_model_config() -> GgufModelConfig {
     GgufModelConfig::platform_default()
+}
+
+/// Create a generic UQFF model configuration.
+///
+/// `model_id` is the base HuggingFace repo or local model directory used for
+/// tokenizer/config resolution. `files` accepts a first shard (`q4k-0.uqff`),
+/// explicit shards, or mistral.rs shorthands such as `q4k` and `4`.
+#[uniffi::export]
+pub fn uqff_model_config(
+    model_id: String,
+    files: Vec<String>,
+    display_name: String,
+    approx_memory: String,
+    chat_template: Option<String>,
+) -> UqffModelConfig {
+    UqffModelConfig {
+        model_id,
+        files,
+        display_name,
+        approx_memory,
+        chat_template,
+    }
 }
 
 /// Return the Qwen 2.5 0.5B GGUF model configuration (~380 MB).

@@ -31,6 +31,14 @@ func onde_engine_load_model(
     _ samplingJson: UnsafePointer<CChar>?
 ) -> UnsafeMutablePointer<CChar>?
 
+@_silgen_name("onde_engine_load_uqff_model")
+func onde_engine_load_uqff_model(
+    _ engine: UnsafeMutableRawPointer,
+    _ configJson: UnsafePointer<CChar>,
+    _ systemPrompt: UnsafePointer<CChar>?,
+    _ samplingJson: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>?
+
 @_silgen_name("onde_engine_unload_model")
 func onde_engine_unload_model(_ engine: UnsafeMutableRawPointer) -> UnsafeMutablePointer<CChar>?
 
@@ -82,6 +90,15 @@ func onde_engine_generate(
 // Model config free functions
 @_silgen_name("onde_default_model_config")
 func onde_default_model_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_uqff_model_config")
+func onde_uqff_model_config(
+    _ modelId: UnsafePointer<CChar>,
+    _ filesJson: UnsafePointer<CChar>,
+    _ displayName: UnsafePointer<CChar>,
+    _ approxMemory: UnsafePointer<CChar>,
+    _ chatTemplate: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>?
 
 @_silgen_name("onde_qwen25_1_5b_config")
 func onde_qwen25_1_5b_config() -> UnsafeMutablePointer<CChar>?
@@ -290,6 +307,46 @@ public class OndeInferenceModule: Module {
             return try self.validateJsonResult(result)
         }
 
+        Function("uqffModelConfig") {
+            (
+                modelId: String,
+                filesJson: String,
+                displayName: String,
+                approxMemory: String,
+                chatTemplate: String?
+            ) -> String in
+            let result = modelId.withCString { cModelId in
+                filesJson.withCString { cFilesJson in
+                    displayName.withCString { cDisplayName in
+                        approxMemory.withCString { cApproxMemory in
+                            if let chatTemplate = chatTemplate {
+                                return chatTemplate.withCString { cChatTemplate in
+                                    self.consumeRustString(
+                                        onde_uqff_model_config(
+                                            cModelId,
+                                            cFilesJson,
+                                            cDisplayName,
+                                            cApproxMemory,
+                                            cChatTemplate
+                                        ))
+                                }
+                            } else {
+                                return self.consumeRustString(
+                                    onde_uqff_model_config(
+                                        cModelId,
+                                        cFilesJson,
+                                        cDisplayName,
+                                        cApproxMemory,
+                                        nil
+                                    ))
+                            }
+                        }
+                    }
+                }
+            }
+            return try self.validateJsonResult(result)
+        }
+
         Function("qwen251_5bConfig") { () -> String in
             let result = self.consumeRustString(onde_qwen25_1_5b_config())
             return try self.validateJsonResult(result)
@@ -406,6 +463,36 @@ public class OndeInferenceModule: Module {
                     }
                 } else {
                     return self.consumeRustString(onde_engine_load_model(ptr, cConfig, nil, nil))
+                }
+            }
+            return try self.validateJsonResult(result)
+        }
+
+        AsyncFunction("loadUqffModel") {
+            (configJson: String, systemPrompt: String?, samplingJson: String?) -> String in
+            try self.configureApplicationFilesystem()
+            guard let ptr = self.enginePtr else {
+                throw OndeError.engineNotInitialized
+            }
+            let result: String? = configJson.withCString { cConfig in
+                if let sp = systemPrompt, let sj = samplingJson {
+                    return sp.withCString { cSp in
+                        sj.withCString { cSj in
+                            self.consumeRustString(
+                                onde_engine_load_uqff_model(ptr, cConfig, cSp, cSj))
+                        }
+                    }
+                } else if let sp = systemPrompt {
+                    return sp.withCString { cSp in
+                        self.consumeRustString(onde_engine_load_uqff_model(ptr, cConfig, cSp, nil))
+                    }
+                } else if let sj = samplingJson {
+                    return sj.withCString { cSj in
+                        self.consumeRustString(onde_engine_load_uqff_model(ptr, cConfig, nil, cSj))
+                    }
+                } else {
+                    return self.consumeRustString(
+                        onde_engine_load_uqff_model(ptr, cConfig, nil, nil))
                 }
             }
             return try self.validateJsonResult(result)

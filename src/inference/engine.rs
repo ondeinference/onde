@@ -101,6 +101,7 @@ use super::types::*;
 use mistralrs::{
     CalledFunction, Function, GgufModelBuilder, Model, RequestBuilder, TextMessageRole,
     Tool as MistralTool, ToolCallResponse, ToolCallType, ToolChoice, ToolType,
+    UqffTextModelBuilder,
 };
 
 #[cfg(any(
@@ -114,6 +115,17 @@ use mistralrs::{
     target_os = "android"
 ))]
 use std::collections::HashMap;
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+use std::path::PathBuf;
 
 // ISQ types are only used by load_isq_model, which is macOS-only.
 #[cfg(target_os = "macos")]
@@ -134,6 +146,7 @@ use mistralrs::{IsqBits, TextModelBuilder};
 ))]
 enum LoadedModelConfig {
     Gguf(GgufModelConfig),
+    Uqff(UqffModelConfig),
     #[cfg(target_os = "macos")]
     Isq(IsqModelConfig),
 }
@@ -152,6 +165,7 @@ impl LoadedModelConfig {
     fn display_name(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.display_name,
+            LoadedModelConfig::Uqff(c) => &c.display_name,
             #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.display_name,
         }
@@ -160,6 +174,7 @@ impl LoadedModelConfig {
     fn approx_memory(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.approx_memory,
+            LoadedModelConfig::Uqff(c) => &c.approx_memory,
             #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.approx_memory,
         }
@@ -511,6 +526,158 @@ impl ChatEngine {
             })
         };
         drop(old_model); // free old weights outside the lock
+
+        if let Some(pulse) = self.pulse() {
+            pulse
+                .record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64)
+                .await;
+        }
+
+        Ok(elapsed)
+    }
+
+    /// Load a UQFF model into the engine.
+    ///
+    /// UQFF stores pre-quantised weights and loads directly
+    /// without runtime conversion.  `config.model_id` is still required for
+    /// tokenizer and base model config resolution; `config.files` contains the
+    /// first shard or explicit UQFF shard filenames.
+    ///
+    /// If a model is already loaded it will be unloaded first.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InferenceError::ModelBuild`] if the model fails to download
+    /// or load.
+    pub async fn load_uqff_model(
+        &self,
+        config: UqffModelConfig,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        use log::info;
+        use std::time::Instant;
+
+        if config.files.is_empty() {
+            return Err(InferenceError::ModelBuild {
+                reason: "UQFF model config must include at least one UQFF file or shorthand."
+                    .to_string(),
+            });
+        }
+
+        info!(
+            "ChatEngine: loading UQFF model {} (files: {:?})",
+            config.model_id, config.files
+        );
+
+        #[cfg(any(
+            target_os = "android",
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos"
+        ))]
+        {
+            let hf_home = std::env::var("HF_HOME")
+                .map(std::path::PathBuf::from)
+                .map_err(|_| InferenceError::ModelBuild {
+                    reason: "HF_HOME is not set — cannot initialise HF cache. \
+                             On iOS/tvOS/Android, call configure_cache_dir() or \
+                             download_model(app_data_dir:) before load_uqff_model()."
+                        .to_string(),
+                })?;
+            let hf_hub_cache = hf_home.join("hub");
+            if let Err(e) = std::fs::create_dir_all(&hf_hub_cache) {
+                log::warn!(
+                    "ChatEngine: could not create HF hub cache dir {}: {}",
+                    hf_hub_cache.display(),
+                    e
+                );
+            }
+            mistralrs_core::GLOBAL_HF_CACHE
+                .get_or_init(|| hf_hub::Cache::new(hf_hub_cache.clone()));
+            std::env::set_var("HF_HUB_CACHE", &hf_hub_cache);
+            log::debug!(
+                "ChatEngine: GLOBAL_HF_CACHE seeded at {}",
+                hf_hub_cache.display()
+            );
+        }
+
+        crate::hf_cache::clean_stale_lock_files(&config.model_id);
+        crate::hf_cache::repair_hf_cache_symlinks(&config.model_id);
+
+        let start = Instant::now();
+        let uqff_files: Vec<PathBuf> = config.files.iter().map(PathBuf::from).collect();
+
+        let mut builder = UqffTextModelBuilder::new(&config.model_id, uqff_files)
+            .into_inner()
+            .with_token_source(super::token::hf_token_source())
+            .with_logging();
+
+        #[cfg(target_os = "tvos")]
+        {
+            use mistralrs::DeviceMapSetting;
+            use mistralrs_core::AutoDeviceMapParams;
+
+            builder = builder
+                .with_max_num_seqs(1)
+                .with_prefix_cache_n(None)
+                .with_no_kv_cache()
+                .with_device_mapping(DeviceMapSetting::Auto(AutoDeviceMapParams::Text {
+                    max_seq_len: 512,
+                    max_batch_size: 1,
+                }));
+        }
+
+        if let Some(ref template) = config.chat_template {
+            builder = builder.with_chat_template(template);
+        }
+
+        let model = builder
+            .build()
+            .await
+            .map_err(|e| InferenceError::ModelBuild {
+                reason: format!("Failed to build UQFF model {}: {}", config.display_name, e),
+            })?;
+
+        let elapsed = start.elapsed();
+
+        let sampling = sampling.unwrap_or_else(|| {
+            if cfg!(any(
+                target_os = "ios",
+                target_os = "tvos",
+                target_os = "visionos",
+                target_os = "watchos",
+                target_os = "android"
+            )) {
+                SamplingConfig::mobile()
+            } else {
+                SamplingConfig::default()
+            }
+        });
+
+        info!(
+            "ChatEngine: UQFF model {} loaded in {} (sampling: temp={:?}, max_tokens={:?})",
+            config.display_name,
+            format_duration(elapsed),
+            sampling.temperature,
+            sampling.max_tokens,
+        );
+
+        let pulse_model_id = config.model_id.clone();
+        let pulse_model_name = config.display_name.clone();
+
+        let old_model = {
+            let mut guard = self.inner.lock().await;
+            guard.replace(LoadedModel {
+                model: Arc::new(model),
+                config: LoadedModelConfig::Uqff(config),
+                history: Vec::new(),
+                system_prompt,
+                sampling,
+            })
+        };
+        drop(old_model);
 
         if let Some(pulse) = self.pulse() {
             pulse
@@ -873,6 +1040,7 @@ impl ChatEngine {
             let request = self::build_request(loaded, &user_message);
             let pulse_model_id = match &loaded.config {
                 LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                LoadedModelConfig::Uqff(c) => c.model_id.clone(),
                 #[cfg(target_os = "macos")]
                 LoadedModelConfig::Isq(c) => c.model_id.clone(),
             };
@@ -1824,6 +1992,17 @@ impl ChatEngine {
         })
     }
 
+    pub async fn load_uqff_model(
+        &self,
+        _config: UqffModelConfig,
+        _system_prompt: Option<String>,
+        _sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
+
     pub async fn unload_model(&self) -> Option<String> {
         None
     }
@@ -2423,6 +2602,31 @@ mod tests {
         match result.unwrap_err() {
             InferenceError::NoModelLoaded => {} // expected
             other => panic!("Expected NoModelLoaded, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn engine_load_uqff_without_files_errors() {
+        let engine = ChatEngine::new();
+        let result = engine
+            .load_uqff_model(
+                UqffModelConfig {
+                    model_id: "google/gemma-4-E4B-it".into(),
+                    files: Vec::new(),
+                    display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
+                    approx_memory: "~2.5 GB (UQFF Q4K)".into(),
+                    chat_template: None,
+                },
+                None,
+                None,
+            )
+            .await;
+
+        match result.unwrap_err() {
+            InferenceError::ModelBuild { reason } => {
+                assert!(reason.contains("at least one UQFF file"));
+            }
+            other => panic!("Expected ModelBuild, got: {:?}", other),
         }
     }
 

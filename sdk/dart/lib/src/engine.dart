@@ -235,6 +235,25 @@ abstract final class OndeInference {
   /// free function so the platform check runs natively.
   static GgufModelConfig defaultModelConfig() => api.defaultModelConfig();
 
+  /// Builds a configuration for a pre-quantised UQFF model.
+  ///
+  /// [modelId] identifies the base repository or local model directory used
+  /// for tokenizer and configuration resolution. For sharded models, pass the
+  /// first shard in [files]; mistral.rs discovers sibling shards.
+  static UqffModelConfig uqffModelConfig({
+    required String modelId,
+    required List<String> files,
+    required String displayName,
+    required String approxMemory,
+    String? chatTemplate,
+  }) => api.uqffModelConfig(
+    modelId: modelId,
+    files: files,
+    displayName: displayName,
+    approxMemory: approxMemory,
+    chatTemplate: chatTemplate,
+  );
+
   /// Qwen 2.5 1.5B Instruct (GGUF Q4_K_M, ~941 MB).
   ///
   /// Suitable for iOS, tvOS, and Android where available memory is limited.

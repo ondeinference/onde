@@ -3,14 +3,14 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Return the platform-appropriate default `GgufModelConfig`.
 ///
@@ -18,6 +18,21 @@ part 'api.freezed.dart';
 /// macOS / Windows / Linux.
 GgufModelConfig defaultModelConfig() =>
     RustLib.instance.api.crateApiDefaultModelConfig();
+
+/// Build a generic `UqffModelConfig`.
+UqffModelConfig uqffModelConfig({
+  required String modelId,
+  required List<String> files,
+  required String displayName,
+  required String approxMemory,
+  String? chatTemplate,
+}) => RustLib.instance.api.crateApiUqffModelConfig(
+  modelId: modelId,
+  files: files,
+  displayName: displayName,
+  approxMemory: approxMemory,
+  chatTemplate: chatTemplate,
+);
 
 /// `GgufModelConfig` for Qwen 2.5 1.5B Instruct Q4_K_M (~941 MB).
 GgufModelConfig qwen2515BConfig() =>
@@ -148,6 +163,15 @@ abstract class OndeChatEngine implements RustOpaqueInterface {
   /// Returns the load duration in seconds on success.
   Future<double> loadGgufModel({
     required GgufModelConfig config,
+    String? systemPrompt,
+    SamplingConfig? sampling,
+  });
+
+  /// Load a UQFF model into the engine.
+  ///
+  /// Returns the load duration in seconds on success.
+  Future<double> loadUqffModel({
+    required UqffModelConfig config,
     String? systemPrompt,
     SamplingConfig? sampling,
   });
@@ -455,4 +479,49 @@ class ToolCallInfo {
           id == other.id &&
           functionName == other.functionName &&
           arguments == other.arguments;
+}
+
+/// Configuration for loading a pre-quantised UQFF model.
+class UqffModelConfig {
+  /// Base HuggingFace repository ID or local model directory.
+  final String modelId;
+
+  /// UQFF shard filename(s), first shard, or shorthand such as `q4k` / `4`.
+  final List<String> files;
+
+  /// Human-friendly display name.
+  final String displayName;
+
+  /// Approximate memory footprint.
+  final String approxMemory;
+
+  /// Optional Jinja chat template override.
+  final String? chatTemplate;
+
+  const UqffModelConfig({
+    required this.modelId,
+    required this.files,
+    required this.displayName,
+    required this.approxMemory,
+    this.chatTemplate,
+  });
+
+  @override
+  int get hashCode =>
+      modelId.hashCode ^
+      files.hashCode ^
+      displayName.hashCode ^
+      approxMemory.hashCode ^
+      chatTemplate.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UqffModelConfig &&
+          runtimeType == other.runtimeType &&
+          modelId == other.modelId &&
+          files == other.files &&
+          displayName == other.displayName &&
+          approxMemory == other.approxMemory &&
+          chatTemplate == other.chatTemplate;
 }

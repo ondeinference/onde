@@ -78,7 +78,7 @@
 library;
 
 // Re-export the core data types (ChatMessage, SamplingConfig,
-// GgufModelConfig, and friends) from the FRB-generated api.dart via types.dart.
+// GgufModelConfig, UqffModelConfig, and friends) from the FRB-generated api.dart via types.dart.
 export 'src/types.dart';
 
 // Engine API: OndeChatEngineX helpers, OndeInference static helpers,
