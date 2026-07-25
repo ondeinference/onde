@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.dependency 'Flutter'
-  s.platform = :ios, '13.0'
+  s.platform = :ios, '15.0'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE'                         => 'YES',
@@ -22,6 +22,10 @@ Pod::Spec.new do |s|
       :name => 'Build Rust bridge (onde_inference_dart)',
       :script => <<~SHELL,
         set -e
+        # Keep SDKROOT for Apple headers; clear deployment/linker overrides
+        # so cargo doesn't inherit incompatible beta toolchain settings.
+        unset IPHONEOS_DEPLOYMENT_TARGET MACOSX_DEPLOYMENT_TARGET \
+              TVOS_DEPLOYMENT_TARGET LDFLAGS LD RUSTFLAGS
         RUST_DIR="${PODS_TARGET_SRCROOT}/../rust"
         cd "$RUST_DIR"
 
