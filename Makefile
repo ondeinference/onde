@@ -1,4 +1,4 @@
-.PHONY: help patch minor major custom release release-commit tag sync-version relock verify
+.PHONY: help patch minor major custom release release-commit tag sync-version relock verify lint-publish
 
 SYNC := python3 scripts/sync-release-version.py
 VERSION = $(shell $(SYNC) --print)
@@ -21,6 +21,7 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make verify                 # check every version source agrees"
+	@echo "  make lint-publish           # check Cargo.toml has no git deps"
 	@echo "  make sync-version           # re-propagate the current version"
 	@echo "  make relock                 # re-resolve lockfiles (only when deps change)"
 
@@ -87,6 +88,9 @@ sync-version:
 
 verify:
 	@$(SYNC) --check
+
+lint-publish:
+	@$(SYNC) --lint-publish
 
 # A version bump patches the lockfile version strings in-process, so it needs
 # no cargo and no network. Use this only when dependencies actually changed:

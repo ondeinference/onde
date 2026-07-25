@@ -294,6 +294,49 @@ def check(version):
     return problems
 
 
+def lint_publishable():
+    """Find git dependencies, which `cargo publish` rejects outright.
+
+    This is the 1.2.0 crates.io failure: the mistralrs deps were pointed at the
+    fork's git branch, and the release burned 13 minutes of macOS runner time to
+    surface an error the manifest alone proves in milliseconds. Cargo.toml
+    documents pointing them back at git for local fork work, so this is a
+    release gate rather than part of --check.
+
+    [patch.crates-io] is exempt: crates.io consumers ignore it entirely.
+    """
+    problems = []
+    section = None
+
+    for number, line in enumerate(read_text(CARGO_TOML).splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if stripped.startswith("[") and stripped.endswith("]"):
+            section = stripped[1:-1]
+            continue
+        if section is None or section.startswith("patch."):
+            continue
+
+        is_dependency_table = (
+            section in ("dependencies", "build-dependencies", "dev-dependencies")
+            or section.startswith(
+                ("dependencies.", "build-dependencies.", "dev-dependencies.")
+            )
+            or section.endswith(".dependencies")
+        )
+        if not is_dependency_table:
+            continue
+
+        if re.search(r"\bgit\s*=", stripped):
+            problems.append(
+                "Cargo.toml:{}: git dependency in [{}] — cargo publish "
+                "rejects it: {}".format(number, section, stripped)
+            )
+
+    return problems
+
+
 def bump(version, part):
     major, minor, patch = (int(piece) for piece in version.split("."))
     if part == "major":
@@ -310,6 +353,7 @@ def main():
     group.add_argument("--set", dest="explicit", metavar="X.Y.Z")
     group.add_argument("--check", action="store_true")
     group.add_argument("--print", dest="print_only", action="store_true")
+    group.add_argument("--lint-publish", dest="lint_publish", action="store_true")
     args = parser.parse_args()
 
     try:
@@ -317,6 +361,16 @@ def main():
 
         if args.print_only:
             print(current)
+            return 0
+
+        if args.lint_publish:
+            problems = lint_publishable()
+            if problems:
+                print("Cargo.toml is not publishable to crates.io:")
+                for problem in problems:
+                    print("  - {}".format(problem))
+                return 1
+            print("Cargo.toml is publishable: no git dependencies.")
             return 0
 
         if args.check:
