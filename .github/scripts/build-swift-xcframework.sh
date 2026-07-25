@@ -22,12 +22,12 @@ WATCHOS_DEPLOYMENT_TARGET="${WATCHOS_DEPLOYMENT_TARGET:-9.0}"
 rm -rf "$FRAMEWORK_DIR" "$ZIP_PATH" "$CHECKSUM_PATH" "$VERSION_PATH"
 mkdir -p "$DIST_DIR" "$PACKAGE_DIR/Sources/Onde" "$HEADERS_DIR"
 
-cargo +1.94.0 build --manifest-path uniffi-bindgen/Cargo.toml --release
+cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
 
 # Build staticlibs only. Avoid the cdylib link step; the XCFramework consumes .a slices.
-IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" cargo +1.94.0 rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
-IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" cargo +1.94.0 rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
-MACOSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" cargo +1.94.0 rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
+IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" cargo rustc --target aarch64-apple-ios --release --lib --crate-type staticlib
+IPHONEOS_DEPLOYMENT_TARGET="$IOS_DEPLOYMENT_TARGET" cargo rustc --target aarch64-apple-ios-sim --release --lib --crate-type staticlib
+MACOSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" cargo rustc --target aarch64-apple-darwin --release --lib --crate-type staticlib
 TVOS_DEPLOYMENT_TARGET="$TVOS_DEPLOYMENT_TARGET" cargo +nightly rustc -Z build-std --target aarch64-apple-tvos --release --lib --crate-type staticlib
 TVOS_DEPLOYMENT_TARGET="$TVOS_DEPLOYMENT_TARGET" cargo +nightly rustc -Z build-std --target aarch64-apple-tvos-sim --release --lib --crate-type staticlib
 XROS_DEPLOYMENT_TARGET="$VISIONOS_DEPLOYMENT_TARGET" cargo +nightly rustc -Z build-std --target aarch64-apple-visionos --release --lib --crate-type staticlib
