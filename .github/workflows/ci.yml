@@ -1,7 +1,12 @@
 name: CI
 
 on:
+  # Branches only — a tag push must NOT fire CI. Release tags point at a commit
+  # that main already validated, so re-running CI on the tag adds 13 macos jobs
+  # that compete with the release workflows for the shared macOS runner pool.
   push:
+    branches:
+      - "**"
   pull_request:
   workflow_dispatch:
 
@@ -13,6 +18,13 @@ permissions:
   contents: read
 
 jobs:
+  # ── Release metadata ─────────────────────────────────────────────────────
+  # Same gate the release workflows use, minus the tag check. Running it on
+  # ordinary pushes means version drift surfaces while you are still on a
+  # branch, instead of on release day.
+  preflight:
+    uses: ./.github/workflows/release-preflight.yml
+
   # ── Dart / Flutter SDK validation ────────────────────────────────────────
   dart-sdk:
     name: Dart SDK (Flutter)

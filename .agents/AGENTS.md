@@ -147,10 +147,15 @@ All model constants live in `src/inference/models.rs`. When adding a new model:
 | Qwen 2.5 Coder 1.5B Instruct (GGUF Q4_K_M) | `bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF` | `Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf` | ~941 MB | All platforms (mobile default) |
 | Qwen 2.5 Coder 3B Instruct (GGUF Q4_K_M) | `bartowski/Qwen2.5-Coder-3B-Instruct-GGUF` | `Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf` | ~1.93 GB | All platforms (desktop default) |
 | Qwen 2.5 Coder 7B Instruct (GGUF Q4_K_M) | `bartowski/Qwen2.5-Coder-7B-Instruct-GGUF` | `Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf` | ~4.4 GB | Higher-memory devices |
-| Qwen 3 1.7B (GGUF Q4_K_M) | `bartowski/Qwen3-1.7B-GGUF` | `Qwen3-1.7B-Q4_K_M.gguf` | ~1.3 GB | All platforms |
-| Qwen 3 4B (GGUF Q4_K_M) | `bartowski/Qwen3-4B-GGUF` | `Qwen3-4B-Q4_K_M.gguf` | ~2.7 GB | All platforms |
-| Qwen 3 8B (GGUF Q4_K_M) | `bartowski/Qwen3-8B-GGUF` | `Qwen3-8B-Q4_K_M.gguf` | ~5 GB | Higher-memory devices |
-| Qwen 3 14B (GGUF Q4_K_M) | `bartowski/Qwen3-14B-GGUF` | `Qwen3-14B-Q4_K_M.gguf` | ~8.4 GB | Higher-memory devices |
+| Qwen 3 0.6B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-0.6B-GGUF` | `Qwen_Qwen3-0.6B-Q4_K_M.gguf` | ~0.5 GB | All platforms |
+| Qwen 3 1.7B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-1.7B-GGUF` | `Qwen_Qwen3-1.7B-Q4_K_M.gguf` | ~1.3 GB | All platforms |
+| Qwen 3 4B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-4B-GGUF` | `Qwen_Qwen3-4B-Q4_K_M.gguf` | ~2.7 GB | All platforms |
+| Qwen 3 8B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-8B-GGUF` | `Qwen_Qwen3-8B-Q4_K_M.gguf` | ~5 GB | Higher-memory devices |
+| Qwen 3 14B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-14B-GGUF` | `Qwen_Qwen3-14B-Q4_K_M.gguf` | ~8.4 GB | Higher-memory devices |
+| Qwen 3 32B (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-32B-GGUF` | `Qwen_Qwen3-32B-Q4_K_M.gguf` | ~19.8 GB | High-memory desktop (32+ GB) |
+| Qwen 3 4B Instruct 2507 (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF` | `Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf` | ~2.5 GB | All platforms (latest non-thinking 4B) |
+| Qwen 3 4B Thinking 2507 (GGUF Q4_K_M) | `bartowski/Qwen_Qwen3-4B-Thinking-2507-GGUF` | `Qwen_Qwen3-4B-Thinking-2507-Q4_K_M.gguf` | ~2.5 GB | All platforms (latest reasoning 4B) |
+| Qwen 3 30B-A3B Instruct 2507 (GGUF Q4_K_M, MoE) | `bartowski/Qwen_Qwen3-30B-A3B-Instruct-2507-GGUF` | `Qwen_Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf` | ~18.6 GB | High-memory desktop (32+ GB), `qwen3moe` |
 | DeepSeek Coder 6.7B Instruct (GGUF Q4_K_M) | `bartowski/deepseek-coder-6.7b-instruct-GGUF` | `deepseek-coder-6.7b-instruct-Q4_K_M.gguf` | ~3.8 GB | Higher-memory devices, custom chat template |
 | Qwen 2.5 Coder 7B Instruct (ISQ) | `Qwen/Qwen2.5-Coder-7B-Instruct` | safetensors (ISQ in-situ) | ~8 GB | macOS (ISQ pipeline) |
 
@@ -374,6 +379,15 @@ await engine.unloadModel()
 | `defaultModelConfig()` | `GgufModelConfig` | Platform-aware Coder default (1.5B on iOS/tvOS/Android, 3B on desktop) |
 | `qwen251_5bConfig()` | `GgufModelConfig` | Forces Qwen 2.5 1.5B regardless of platform |
 | `qwen253bConfig()` | `GgufModelConfig` | Forces Qwen 2.5 3B regardless of platform |
+| `qwen306bConfig()` | `GgufModelConfig` | Qwen 3 0.6B (~0.5 GB) |
+| `qwen317bConfig()` | `GgufModelConfig` | Qwen 3 1.7B (~1.3 GB) |
+| `qwen34bConfig()` | `GgufModelConfig` | Qwen 3 4B (~2.7 GB) |
+| `qwen38bConfig()` | `GgufModelConfig` | Qwen 3 8B (~5 GB) |
+| `qwen314bConfig()` | `GgufModelConfig` | Qwen 3 14B (~8.4 GB) |
+| `qwen332bConfig()` | `GgufModelConfig` | Qwen 3 32B (~19.8 GB) |
+| `qwen34bInstruct2507Config()` | `GgufModelConfig` | Qwen 3 4B Instruct 2507 — latest non-thinking 4B (~2.5 GB) |
+| `qwen34bThinking2507Config()` | `GgufModelConfig` | Qwen 3 4B Thinking 2507 — latest reasoning 4B (~2.5 GB) |
+| `qwen330bA3bInstruct2507Config()` | `GgufModelConfig` | Qwen 3 30B-A3B Instruct 2507 MoE (~18.6 GB) |
 | `defaultSamplingConfig()` | `SamplingConfig` | temp=0.7, top_p=0.95, max_tokens=512 |
 | `deterministicSamplingConfig()` | `SamplingConfig` | temp=0.0, greedy |
 | `mobileSamplingConfig()` | `SamplingConfig` | temp=0.7, max_tokens=128 |

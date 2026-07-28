@@ -13,57 +13,66 @@ Branding rules for the Onde Inference SDK. These apply across all languages and 
 
 ## Copyright Header
 
-Every hand-written source file starts with this three-line block. No blank line before it. One blank line after it (before the first import or code).
+Every hand-written source file starts with this two-line block. No blank line before it. One blank line after it (before the first import, `package`, or code).
+
 
 ### Format
 
 ```
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 ```
 
-Use `//` comment syntax for all languages that support it: Dart, Swift, Kotlin, Rust, C, C++.
+Use `//` comment syntax for all languages that support it: Dart, Swift, Kotlin, Rust, TypeScript, JavaScript, C, and C++.
 
 ### Language reference
 
 **Dart**
 ```dart
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 import 'dart:async';
 ```
 
 **Swift**
 ```swift
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 import Foundation
 ```
 
 **Kotlin**
 ```kotlin
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 package com.ondeinference
 ```
 
 **Rust**
 ```rust
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use std::sync::Arc;
+```
+
+**TypeScript / JavaScript**
+```ts
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
+import OndeInferenceModule from "./OndeInferenceModule";
 ```
 
 **C / C++**
 ```cpp
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 #include <flutter/plugin_registrar.h>
 ```
 
@@ -72,14 +81,19 @@ use std::sync::Arc;
 If the file already has a descriptive comment block below the copyright position (e.g. `// OndeInferencePlugin.swift\n// Native iOS plugin...`), prepend the copyright header above it — do not replace it.
 
 ```swift
-// Copyright 2026 Onde Inference (Splitfire AB). All rights reserved.
-// Use of this source code is governed by the MIT license.
-//
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 // OndeInferencePlugin.swift
 //
 // Native iOS plugin for onde_inference.
 //
 ```
+
+When updating hand-written SDK bridge code, keep the header style consistent
+across the React Native bridge and the Kotlin/Rust bridge. If one side uses an
+older MIT-only prose header, normalize the touched bridge files to the two-line
+SPDX header above.
 
 ---
 
@@ -99,6 +113,7 @@ Apply the header only to hand-written files. Never add it to generated files.
 | `ios/Classes/OndeInferencePlugin.swift` | iOS plugin |
 | `macos/Classes/OndeInferencePlugin.swift` | macOS plugin |
 | `android/src/main/kotlin/**/*.kt` | Android plugin |
+| `src/**/*.ts` / `src/**/*.js` | React Native TypeScript / JavaScript source |
 | `windows/**/*.cpp` | Windows plugin |
 | `linux/**/*.cc` / `linux/**/*.h` | Linux plugin |
 | `src/**/*.rs` | Rust crate source |
@@ -110,6 +125,7 @@ These files are written by a tool on every codegen run. Adding a header would be
 | File / Pattern | Generator |
 |---|---|
 | `lib/src/frb_generated.dart/**` | `flutter_rust_bridge_codegen` |
+| `rust/src/frb_generated.rs` | `flutter_rust_bridge_codegen` |
 | `**/*.freezed.dart` | `build_runner` + `freezed` |
 | `**/*.g.dart` | `build_runner` |
 | `example/*/Flutter/GeneratedPluginRegistrant.*` | `flutter pub get` |
@@ -333,7 +349,7 @@ When asked to add copyright headers to a set of files:
 3. Skip if the first line already starts with `// Copyright`.
 4. Skip if the first line contains `Generated` or `Do not edit`.
 5. Skip if the file path matches any generated or scaffold pattern above.
-6. Prepend the three-line header followed by a blank line.
+6. Prepend the two-line header followed by a blank line.
 7. If the file begins with an existing file-description comment block, insert the header above that block.
 
 Do all qualifying files in one pass. Do not ask for confirmation per file.
