@@ -227,14 +227,19 @@ pub struct GgufModelConfig {
 /// `UqffTextModelBuilder`.
 ///
 /// UQFF files store pre-quantised weights and load directly
-/// without the runtime memory spike of in-situ quantisation.  `model_id` is the
-/// base HuggingFace repository or local model directory used for tokenizer and
-/// config resolution, while `files` identifies the first UQFF shard or explicit
-/// UQFF shard files.
+/// without the runtime memory spike of in-situ quantisation.  `model_id` points
+/// at the UQFF *export* — the directory or repository holding the shards
+/// alongside `residual.safetensors`, `config.json`, and the tokenizer — and
+/// `files` identifies the first UQFF shard or explicit UQFF shard files.
+///
+/// Note that `model_id` is **not** the original unquantised model repository:
+/// mistral.rs resolves the shards, the residual weights, and the JSON assets by
+/// sibling lookup next to `model_id`, so pointing it at the source repo fails
+/// with a missing-file error. A UQFF export is self-contained by design.
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct UqffModelConfig {
-    /// HuggingFace base model repository ID or local model directory, e.g.
-    /// `"google/gemma-4-E4B-it"`.
+    /// HuggingFace repository ID or local directory of the UQFF export, e.g.
+    /// `"mistralrs-community/gemma-4-E4B-it-UQFF"`.
     pub model_id: String,
     /// UQFF filename(s) within the repository. For sharded UQFFs, passing the
     /// first shard, e.g. `["q4k-0.uqff"]`, is enough for mistral.rs to discover
@@ -555,14 +560,14 @@ mod tests {
     #[test]
     fn uqff_model_config_accepts_first_shard() {
         let config = UqffModelConfig {
-            model_id: "google/gemma-4-E4B-it".into(),
+            model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
             files: vec!["q4k-0.uqff".into()],
             display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
             approx_memory: "~2.5 GB (UQFF Q4K)".into(),
             chat_template: None,
         };
 
-        assert_eq!(config.model_id, "google/gemma-4-E4B-it");
+        assert_eq!(config.model_id, "mistralrs-community/gemma-4-E4B-it-UQFF");
         assert_eq!(config.files, vec!["q4k-0.uqff"]);
     }
 

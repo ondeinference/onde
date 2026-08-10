@@ -122,9 +122,9 @@ impl OndeChatEngine {
     /// Load a UQFF model into the engine.
     ///
     /// UQFF files are pre-quantised and load directly without runtime
-    /// conversion. `config.model_id` is required for tokenizer/base model
-    /// resolution, and `config.files` should contain the first UQFF shard or
-    /// explicit shard filenames.
+    /// conversion. `config.model_id` names the UQFF export (not the original
+    /// unquantised repo), and `config.files` should contain the first UQFF
+    /// shard or explicit shard filenames.
     ///
     /// Returns the wall-clock loading time in seconds.
     pub async fn load_uqff_model(
@@ -331,9 +331,11 @@ pub fn default_model_config() -> GgufModelConfig {
 
 /// Create a generic UQFF model configuration.
 ///
-/// `model_id` is the base HuggingFace repo or local model directory used for
-/// tokenizer/config resolution. `files` accepts a first shard (`q4k-0.uqff`),
-/// explicit shards, or mistral.rs shorthands such as `q4k` and `4`.
+/// `model_id` is the HuggingFace repo or local directory of the UQFF export
+/// (the shards plus `residual.safetensors`, `config.json`, and the tokenizer),
+/// not the original unquantised repo. `files` accepts a first shard
+/// (`q4k-0.uqff`), explicit shards, or mistral.rs shorthands such as `q4k`
+/// and `4`.
 #[uniffi::export]
 pub fn uqff_model_config(
     model_id: String,

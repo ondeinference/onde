@@ -44,7 +44,7 @@ Onde is already shipping in real apps on the App Store and Google Play. Chat run
 
 ## Model formats
 
-Onde can load GGUF models and UQFF models through the same chat engine. UQFF is mistral.rs' native pre-quantized format: pass the base repository or local model directory for tokenizer/config resolution, plus the first UQFF shard or shorthand.
+Onde can load GGUF models and UQFF models through the same chat engine. UQFF is mistral.rs' native pre-quantized format. Point `model_id` at the UQFF export — the repository or local directory holding the shards, `residual.safetensors`, `config.json`, and the tokenizer — and name the first shard (or a shorthand such as `q4k`) in `files`. Use the UQFF repository, not the original unquantized one; the export is self-contained and everything is resolved relative to it.
 
 ```rust
 use onde::inference::{ChatEngine, UqffModelConfig};
@@ -53,7 +53,7 @@ let engine = ChatEngine::new();
 engine
     .load_uqff_model(
         UqffModelConfig {
-            model_id: "google/gemma-4-E4B-it".into(),
+            model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
             files: vec!["q4k-0.uqff".into()],
             display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
             approx_memory: "~2.5 GB (UQFF Q4K)".into(),

@@ -2611,7 +2611,7 @@ mod tests {
         let result = engine
             .load_uqff_model(
                 UqffModelConfig {
-                    model_id: "google/gemma-4-E4B-it".into(),
+                    model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
                     files: Vec::new(),
                     display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
                     approx_memory: "~2.5 GB (UQFF Q4K)".into(),
