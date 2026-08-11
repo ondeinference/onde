@@ -115,8 +115,14 @@ uniffi = { version = "=0.31.0", features = ["build"] }
 # PR: https://github.com/johalun/sysctl-rs/pull/74
 # NOTE: [patch.crates-io] is ignored by crates.io consumers — safe to keep.
 #
+# The branch is cut from sysctl v0.6.0, not the fork's master (0.7.1), because
+# our only consumer is gemm-common, which requires sysctl "0.6". A patch whose
+# version is semver-incompatible with the requirement in the graph is silently
+# dropped — cargo just logs "patch was not used in the crate graph" and builds
+# the unpatched registry crate, which is how the watchOS check kept failing.
+#
 # mio no longer needs patching: onde-mistralrs-core 0.9.3 depends on onde-tqdm
 # 0.8.2 (crossterm 0.29 -> mio 1.x), so the old tqdm -> crossterm 0.25 -> mio
 # 0.8.11 chain (which lacked visionOS support) is gone from the tree.
 [patch.crates-io]
-sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos" }
+sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos-0.6" }
