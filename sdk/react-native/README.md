@@ -69,6 +69,7 @@ await OndeChatEngine.unloadModel();
 |--------|---------|--------------|
 | `loadDefaultModel(systemPrompt?, sampling?)` | `Promise<number>` | Load the platform default. Returns load time in seconds. |
 | `loadModel(config, systemPrompt?, sampling?)` | `Promise<number>` | Load a specific GGUF model. |
+| `loadUqffModel(config, systemPrompt?, sampling?)` | `Promise<number>` | Load a specific UQFF model. |
 | `unloadModel()` | `Promise<string \| null>` | Drop the model, free memory. Returns the model name. |
 | `isLoaded()` | `boolean` | Is anything loaded right now? |
 | `info()` | `Promise<EngineInfo>` | Status, model name, memory, history length. |
@@ -86,6 +87,7 @@ await OndeChatEngine.unloadModel();
 ```typescript
 import {
   defaultModelConfig,     // platform-aware (1.5B on mobile, 3B on desktop)
+  uqffModelConfig,        // base repo/local dir + UQFF shard(s)
   qwen251_5bConfig,       // force 1.5B (~941 MB)
   qwen253bConfig,         // force 3B (~1.93 GB)
   defaultSamplingConfig,  // temp=0.7, top_p=0.95, max_tokens=512
@@ -95,6 +97,19 @@ import {
   userMessage,
   assistantMessage,
 } from "@ondeinference/react-native";
+```
+
+UQFF example:
+
+```typescript
+const config = uqffModelConfig(
+  "google/gemma-4-E4B-it",
+  ["q4k-0.uqff"],
+  "Gemma 4 E4B (UQFF Q4K)",
+  "~2.5 GB (UQFF Q4K)",
+);
+
+await OndeChatEngine.loadUqffModel(config);
 ```
 
 ## Example app

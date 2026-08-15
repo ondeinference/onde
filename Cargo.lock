@@ -5801,8 +5801,7 @@ dependencies = [
 [[package]]
 name = "sysctl"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01198a2debb237c62b6826ec7081082d951f46dbb64b0e8c7649a452230d1dfc"
+source = "git+https://github.com/setoelkahfi/sysctl-rs.git?branch=feature%2Fwatchos-0.6#e4036230bbde48ec1cc425803c8fda41012b73e2"
 dependencies = [
  "bitflags 2.13.1",
  "byteorder",
@@ -7613,8 +7612,3 @@ checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
-
-[[patch.unused]]
-name = "sysctl"
-version = "0.7.1"
-source = "git+https://github.com/setoelkahfi/sysctl-rs.git?branch=feature%2Fwatchos#f0be2fcf0c2dcda8f637f3aa0a057f10211a9133"

@@ -21,6 +21,20 @@ object OndeSampling {
 object OndeModels {
     /** Platform-appropriate default — Qwen 2.5 1.5B on Android, 3B on macOS. */
     fun default(): GgufModelConfig  = uniffi.onde.defaultModelConfig()
+    /** Generic UQFF model config using a base repo/local directory plus UQFF shard names. */
+    fun uqff(
+        modelId: String,
+        files: List<String>,
+        displayName: String,
+        approxMemory: String,
+        chatTemplate: String? = null,
+    ): UqffModelConfig = uniffi.onde.uqffModelConfig(
+        modelId      = modelId,
+        files        = files,
+        displayName  = displayName,
+        approxMemory = approxMemory,
+        chatTemplate = chatTemplate,
+    )
     /** Qwen 2.5 1.5B Instruct GGUF Q4_K_M (~941 MB). */
     fun qwen25_1_5b(): GgufModelConfig = uniffi.onde.qwen2515bConfig()
     /** Qwen 2.5 3B Instruct GGUF Q4_K_M (~1.93 GB). */

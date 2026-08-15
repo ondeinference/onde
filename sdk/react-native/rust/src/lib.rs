@@ -23,7 +23,7 @@ use serde::Serialize;
 use tokio::runtime::Runtime;
 
 use onde::inference::engine::ChatEngine;
-use onde::inference::types::{ChatMessage, GgufModelConfig, SamplingConfig};
+use onde::inference::types::{ChatMessage, GgufModelConfig, SamplingConfig, UqffModelConfig};
 
 // ── Global Tokio runtime ─────────────────────────────────────────────────────
 
@@ -184,6 +184,47 @@ pub extern "C" fn onde_engine_load_model(
 
     runtime().block_on(async {
         match engine_ref.load_gguf_model(config, prompt, sampling).await {
+            Ok(duration) => {
+                let result = serde_json::json!({ "elapsed_secs": duration.as_secs_f64() });
+                to_json_cstring(&result)
+            }
+            Err(err) => error_json(&err.to_string()),
+        }
+    })
+}
+
+/// Load a specific UQFF model from a JSON-encoded [`UqffModelConfig`].
+///
+/// # Parameters
+///
+/// - `config_json` — JSON-encoded `UqffModelConfig`.
+/// - `system_prompt` — optional C string (pass null to omit).
+/// - `sampling_json` — optional JSON-encoded `SamplingConfig` (pass null for defaults).
+///
+/// # Returns
+///
+/// Same JSON shape as [`onde_engine_load_default_model`].
+#[no_mangle]
+pub extern "C" fn onde_engine_load_uqff_model(
+    engine: *mut c_void,
+    config_json: *const c_char,
+    system_prompt: *const c_char,
+    sampling_json: *const c_char,
+) -> *mut c_char {
+    if engine.is_null() {
+        return error_json("engine pointer is null");
+    }
+    let engine_ref = unsafe { &*(engine as *const ChatEngine) };
+
+    let config: UqffModelConfig = match from_json_cstr(config_json) {
+        Some(c) => c,
+        None => return error_json("invalid or null config_json"),
+    };
+    let prompt = nullable_str(system_prompt);
+    let sampling: Option<SamplingConfig> = from_json_cstr(sampling_json);
+
+    runtime().block_on(async {
+        match engine_ref.load_uqff_model(config, prompt, sampling).await {
             Ok(duration) => {
                 let result = serde_json::json!({ "elapsed_secs": duration.as_secs_f64() });
                 to_json_cstring(&result)
@@ -461,6 +502,41 @@ pub extern "C" fn onde_default_model_config() -> *mut c_char {
     to_json_cstring(&GgufModelConfig::platform_default())
 }
 
+/// Build a generic UQFF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_uqff_model_config(
+    model_id: *const c_char,
+    files_json: *const c_char,
+    display_name: *const c_char,
+    approx_memory: *const c_char,
+    chat_template: *const c_char,
+) -> *mut c_char {
+    let model_id = match nullable_str(model_id) {
+        Some(value) => value,
+        None => return error_json("model_id is required"),
+    };
+    let files: Vec<String> = match from_json_cstr(files_json) {
+        Some(value) => value,
+        None => return error_json("invalid or null files_json"),
+    };
+    let display_name = match nullable_str(display_name) {
+        Some(value) => value,
+        None => return error_json("display_name is required"),
+    };
+    let approx_memory = match nullable_str(approx_memory) {
+        Some(value) => value,
+        None => return error_json("approx_memory is required"),
+    };
+
+    to_json_cstring(&UqffModelConfig {
+        model_id,
+        files,
+        display_name,
+        approx_memory,
+        chat_template: nullable_str(chat_template),
+    })
+}
+
 /// Return the Qwen 2.5 1.5B GGUF model config as JSON.
 #[no_mangle]
 pub extern "C" fn onde_qwen25_1_5b_config() -> *mut c_char {
@@ -691,6 +767,41 @@ mod android {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadUqffModel(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine: jlong,
+        config_json: JString,
+        system_prompt: JString,
+        sampling_json: JString,
+    ) -> jstring {
+        let config_cstr = jstring_to_cstring(&mut env, &config_json);
+        let prompt_cstr = jstring_to_cstring(&mut env, &system_prompt);
+        let sampling_cstr = jstring_to_cstring(&mut env, &sampling_json);
+
+        let config_ptr = config_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+        let prompt_ptr = prompt_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+        let sampling_ptr = sampling_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+
+        let result = onde_engine_load_uqff_model(
+            engine as *mut c_void,
+            config_ptr,
+            prompt_ptr,
+            sampling_ptr,
+        );
+        cstring_ptr_to_jstring(&mut env, result)
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineUnloadModel(
         mut env: JNIEnv,
         _class: JClass,
@@ -854,6 +965,47 @@ mod android {
         _class: JClass,
     ) -> jstring {
         let result = onde_default_model_config();
+        cstring_ptr_to_jstring(&mut env, result)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeUqffModelConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+        model_id: JString,
+        files_json: JString,
+        display_name: JString,
+        approx_memory: JString,
+        chat_template: JString,
+    ) -> jstring {
+        let model_id_cstr = jstring_to_cstring(&mut env, &model_id);
+        let files_cstr = jstring_to_cstring(&mut env, &files_json);
+        let display_name_cstr = jstring_to_cstring(&mut env, &display_name);
+        let approx_memory_cstr = jstring_to_cstring(&mut env, &approx_memory);
+        let chat_template_cstr = jstring_to_cstring(&mut env, &chat_template);
+
+        let result = onde_uqff_model_config(
+            model_id_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            files_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            display_name_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            approx_memory_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            chat_template_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+        );
         cstring_ptr_to_jstring(&mut env, result)
     }
 

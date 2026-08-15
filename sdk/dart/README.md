@@ -167,6 +167,26 @@ await engine.loadGgufModel(
 );
 ```
 
+Pre-quantized UQFF models use the base repository (or local model directory)
+for tokenizer/configuration resolution and the first UQFF shard as the file:
+
+```dart
+final uqff = OndeInference.uqffModelConfig(
+  modelId: 'google/gemma-4-E4B-it',
+  files: ['q4k-0.uqff'],
+  displayName: 'Gemma 4 E4B (UQFF Q4K)',
+  approxMemory: '~2.5 GB (UQFF Q4K)',
+);
+
+await engine.loadUqffModel(
+  config: uqff,
+  systemPrompt: 'You are an expert software engineer.',
+);
+```
+
+For sharded UQFF models, pass the first shard; mistral.rs discovers sibling
+shards with the same prefix.
+
 | Model | Size | Good for |
 |-------|------|----------|
 | Qwen 2.5 1.5B Instruct Q4_K_M | ~941 MB | iOS, tvOS, Android |
