@@ -30,7 +30,7 @@ You get multi-turn chat, streaming, one-shot generation, configurable sampling, 
 |----------|---------|---------------|-------|
 | iOS 13+ | Metal | Qwen 2.5 Coder 1.5B (~941 MB) | CocoaPods and Swift Package Manager plugin manifests are included |
 | macOS 10.15+ | Metal | Qwen 2.5 Coder 3B (~1.93 GB) | CocoaPods and Swift Package Manager plugin manifests are included |
-| Android API 21+ | CPU | Qwen 2.5 Coder 1.5B (~941 MB) | arm64-v8a, armeabi-v7a, x86_64, x86 |
+| Android API 21+ | CPU | Qwen 2.5 Coder 1.5B (~941 MB) | arm64-v8a, armeabi-v7a, x86_64 by default; see [Android ABIs](#android-abis) |
 | Linux x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
 | Windows x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
 
@@ -264,6 +264,27 @@ Future<void> main() async {
 ```
 
 ---
+
+## Android ABIs
+
+The Rust engine is cross-compiled during `flutter build apk` by the plugin's
+Gradle module, which shells out to [`cargo-ndk`](https://github.com/bbqsrc/cargo-ndk).
+You need it once per machine, along with the Rust targets:
+
+```bash
+cargo install cargo-ndk
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+```
+
+The NDK comes from whichever version Gradle already resolved, so no
+`ANDROID_NDK_HOME` export is needed for Gradle-driven builds.
+
+By default all three ABIs are built, which is slow — the engine is a large
+release-profile crate. While iterating, build only the one your device needs:
+
+```bash
+flutter run -d <device> --android-project-arg=onde.androidAbis=arm64-v8a
+```
 
 ## Example app
 

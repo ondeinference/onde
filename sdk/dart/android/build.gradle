@@ -7,7 +7,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0'
+        classpath 'com.android.tools.build:gradle:8.7.3'
     }
 }
 
@@ -20,26 +20,105 @@ rootProject.allprojects {
 
 apply plugin: 'com.android.library'
 
+// ── ABIs to cross-compile ────────────────────────────────────────────────────
+// Override from the consuming app to shorten local iteration, e.g.
+//   flutter run -d <device> --android-project-arg=onde.androidAbis=arm64-v8a
+def ondeAndroidAbis = (project.findProperty('onde.androidAbis') ?: 'arm64-v8a,armeabi-v7a,x86_64')
+        .split(',')
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+
+// Lowest API level the Rust code is linked against. Must stay <= the consuming
+// app's minSdk, and matches defaultConfig.minSdkVersion below.
+def ondeAndroidApiLevel = 21
+
 android {
-    compileSdkVersion 33
+    compileSdkVersion 35
+    namespace 'com.ondeinference.onde_inference'
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion ondeAndroidApiLevel
+    }
 
-        externalNativeBuild {
-            cmake {
-                cppFlags '-std=c++17'
-                arguments '-DANDROID_STL=c++_shared'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // cargo-ndk drops libonde_inference_dart.so into <abi>/ subdirectories here.
+    // AGP packages anything under a jniLibs source dir, which an IMPORTED CMake
+    // library would *not* have been.
+    sourceSets {
+        main {
+            jniLibs.srcDirs += ["${layout.buildDirectory.get().asFile}/rustJniLibs"]
+        }
+    }
+}
+
+// ── NDK location ─────────────────────────────────────────────────────────────
+// `android.ndkDirectory` is deliberately not used: this is a library module
+// with no ndkVersion of its own, so AGP resolves its own default version and
+// throws "NDK is not installed" even when the app module has just installed a
+// perfectly good NDK. Resolve it ourselves instead.
+def resolveNdkDir = {
+    def fromEnv = System.getenv('ANDROID_NDK_HOME') ?: System.getenv('ANDROID_NDK_ROOT')
+    if (fromEnv && new File(fromEnv).isDirectory()) {
+        return new File(fromEnv)
+    }
+
+    def sdkRoot = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+    if (sdkRoot) {
+        def ndkRoot = new File(sdkRoot, 'ndk')
+        def installed = ndkRoot.isDirectory() ? ndkRoot.listFiles({ it.isDirectory() } as FileFilter) : null
+        if (installed) {
+            // Newest installed version wins. The Rust output is a standalone
+            // .so, so it need not match the NDK the Flutter engine was built
+            // with — any recent one links fine.
+            def newest = installed.toList().max { dir ->
+                dir.name.split('\\.').collect { it.isInteger() ? it.toInteger() : 0 }
+            }
+            if (newest) {
+                return newest
             }
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path 'CMakeLists.txt'
-            version '3.18.1'
-        }
+    throw new GradleException(
+            'Could not locate an Android NDK. Install one via Android Studio\'s SDK ' +
+            'Manager, or set ANDROID_NDK_HOME to an NDK directory.')
+}
+
+// ── Rust cross-compilation ───────────────────────────────────────────────────
+// Always built with --release: a debug-profile inference engine is too slow to
+// be worth running, so there is no point wiring this per build type.
+tasks.register('cargoBuildAndroid', Exec) {
+    description = "Cross-compiles the onde_inference_dart crate for ${ondeAndroidAbis.join(', ')}"
+    workingDir file('../rust')
+
+    def outDir = file("${layout.buildDirectory.get().asFile}/rustJniLibs")
+
+    // Gradle launched from Android Studio does not necessarily inherit the
+    // shell PATH, so fall back to the standard rustup install location.
+    def cargoBin = 'cargo'
+    def rustupCargo = new File("${System.getProperty('user.home')}/.cargo/bin/cargo")
+    if (rustupCargo.exists()) {
+        cargoBin = rustupCargo.absolutePath
     }
 
-    namespace 'com.ondeinference.onde_inference'
+    def cargoArgs = [cargoBin, 'ndk']
+    ondeAndroidAbis.each { cargoArgs += ['-t', it] }
+    cargoArgs += ['-P', ondeAndroidApiLevel.toString(), '-o', outDir.absolutePath, 'build', '--release']
+    commandLine cargoArgs
+
+    doFirst {
+        outDir.mkdirs()
+        // cargo-ndk locates the toolchain via ANDROID_NDK_HOME.
+        environment 'ANDROID_NDK_HOME', resolveNdkDir().absolutePath
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == 'preBuild') {
+        task.dependsOn 'cargoBuildAndroid'
+    }
 }

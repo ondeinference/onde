@@ -407,6 +407,10 @@ jobs:
           cache-bin: false
           key: android-arm64
       - run: cargo check --target aarch64-linux-android
+      # The Dart SDK's FFI crate is what actually ships in the Android AAR, so
+      # check it too — a core change can compile while breaking the bridge.
+      - name: Check Dart FFI crate
+        run: cargo check --target aarch64-linux-android --manifest-path sdk/dart/rust/Cargo.toml
 
   # ── Cross-compile checks for Windows (lowest priority) ────────────────────
   check-windows:
