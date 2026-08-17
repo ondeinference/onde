@@ -73,9 +73,25 @@ def resolveNdkDir = {
         if (installed) {
             // Newest installed version wins. The Rust output is a standalone
             // .so, so it need not match the NDK the Flutter engine was built
-            // with — any recent one links fine.
-            def newest = installed.toList().max { dir ->
+            // with: any recent one links fine.
+            //
+            // Directory names are dotted versions like "26.1.10909125".
+            // Compare them segment by segment as integers rather than leaning
+            // on Groovy's implicit list ordering, so "9.x" cannot outrank
+            // "26.x" and a missing trailing segment counts as zero.
+            def versionOf = { File dir ->
                 dir.name.split('\\.').collect { it.isInteger() ? it.toInteger() : 0 }
+            }
+            def newest = installed.toList().max { a, b ->
+                def va = versionOf(a)
+                def vb = versionOf(b)
+                for (int i = 0; i < Math.max(va.size(), vb.size()); i++) {
+                    def cmp = (va[i] ?: 0) <=> (vb[i] ?: 0)
+                    if (cmp != 0) {
+                        return cmp
+                    }
+                }
+                return 0
             }
             if (newest) {
                 return newest
@@ -117,8 +133,15 @@ tasks.register('cargoBuildAndroid', Exec) {
     }
 }
 
-tasks.configureEach { task ->
-    if (task.name == 'preBuild') {
-        task.dependsOn 'cargoBuildAndroid'
+// preBuild on its own only orders the cargo run early in the build. What
+// actually matters is that the .so files exist before AGP merges native libs,
+// and those merge tasks are created late by the variant API, so match them
+// after evaluation rather than assuming preBuild covers it.
+afterEvaluate {
+    tasks.matching { it.name == 'preBuild' }.configureEach {
+        dependsOn 'cargoBuildAndroid'
+    }
+    tasks.matching { it.name ==~ /merge.*(NativeLibs|JniLibFolders)/ }.configureEach {
+        dependsOn 'cargoBuildAndroid'
     }
 }

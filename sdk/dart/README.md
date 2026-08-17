@@ -279,8 +279,9 @@ rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-and
 The NDK comes from whichever version Gradle already resolved, so no
 `ANDROID_NDK_HOME` export is needed for Gradle-driven builds.
 
-By default all three ABIs are built, which is slow — the engine is a large
-release-profile crate. While iterating, build only the one your device needs:
+Unless you say otherwise, all three default ABIs are built: arm64-v8a,
+armeabi-v7a, and x86_64. Each is a full release build of a large crate, so this
+is slow. While iterating, build only the one your device needs:
 
 ```bash
 flutter run -d <device> --android-project-arg=onde.androidAbis=arm64-v8a
