@@ -35,6 +35,11 @@ export interface OndeInferenceNativeModule {
     systemPrompt: string | null,
     samplingJson: string | null,
   ): Promise<string>;
+  loadUqffModel(
+    configJson: string,
+    systemPrompt: string | null,
+    samplingJson: string | null,
+  ): Promise<string>;
   unloadModel(): Promise<string>;
   info(): Promise<string>;
   history(): Promise<string>;
@@ -43,6 +48,13 @@ export interface OndeInferenceNativeModule {
 
   // Config functions (sync, return JSON strings)
   defaultModelConfig(): string;
+  uqffModelConfig(
+    modelId: string,
+    filesJson: string,
+    displayName: string,
+    approxMemory: string,
+    chatTemplate: string | null,
+  ): string;
   qwen251_5bConfig(): string;
   qwen253bConfig(): string;
   qwen3_0_6bConfig(): string;

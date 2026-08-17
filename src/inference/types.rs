@@ -221,6 +221,40 @@ pub struct GgufModelConfig {
     pub chat_template: Option<String>,
 }
 
+// ── UQFF model configuration ─────────────────────────────────────────────────
+
+/// Configuration for loading a UQFF model via mistral.rs
+/// `UqffTextModelBuilder`.
+///
+/// UQFF files store pre-quantised weights and load directly
+/// without the runtime memory spike of in-situ quantisation.  `model_id` points
+/// at the UQFF *export* — the directory or repository holding the shards
+/// alongside `residual.safetensors`, `config.json`, and the tokenizer — and
+/// `files` identifies the first UQFF shard or explicit UQFF shard files.
+///
+/// Note that `model_id` is **not** the original unquantised model repository:
+/// mistral.rs resolves the shards, the residual weights, and the JSON assets by
+/// sibling lookup next to `model_id`, so pointing it at the source repo fails
+/// with a missing-file error. A UQFF export is self-contained by design.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct UqffModelConfig {
+    /// HuggingFace repository ID or local directory of the UQFF export, e.g.
+    /// `"mistralrs-community/gemma-4-E4B-it-UQFF"`.
+    pub model_id: String,
+    /// UQFF filename(s) within the repository. For sharded UQFFs, passing the
+    /// first shard, e.g. `["q4k-0.uqff"]`, is enough for mistral.rs to discover
+    /// siblings. Numeric and ISQ-name shorthands such as `"4"` and `"q4k"` are
+    /// also accepted by the underlying loader.
+    pub files: Vec<String>,
+    /// Human-friendly display name, e.g. `"Gemma 4 E4B (UQFF Q4K)"`.
+    pub display_name: String,
+    /// Approximate memory footprint description, e.g. `"~2.5 GB (UQFF Q4K)"`.
+    pub approx_memory: String,
+    /// Optional Jinja chat template string. When set, this overrides the
+    /// template resolved from the base model.
+    pub chat_template: Option<String>,
+}
+
 // ── ISQ model configuration ──────────────────────────────────────────────────
 
 /// Configuration for loading an ISQ (in-situ quantised) model via mistral.rs
@@ -521,6 +555,20 @@ mod tests {
     fn sampling_config_reasoning_has_extended_budget() {
         let config = SamplingConfig::reasoning();
         assert_eq!(config.max_tokens, Some(4096));
+    }
+
+    #[test]
+    fn uqff_model_config_accepts_first_shard() {
+        let config = UqffModelConfig {
+            model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
+            files: vec!["q4k-0.uqff".into()],
+            display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
+            approx_memory: "~2.5 GB (UQFF Q4K)".into(),
+            chat_template: None,
+        };
+
+        assert_eq!(config.model_id, "mistralrs-community/gemma-4-E4B-it-UQFF");
+        assert_eq!(config.files, vec!["q4k-0.uqff"]);
     }
 
     #[test]

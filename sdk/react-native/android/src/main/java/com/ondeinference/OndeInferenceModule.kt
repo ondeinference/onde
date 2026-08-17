@@ -32,6 +32,13 @@ class OndeInferenceModule : Module() {
         samplingJson: String?
     ): String
 
+    private external fun nativeEngineLoadUqffModel(
+        engine: Long,
+        configJson: String,
+        systemPrompt: String?,
+        samplingJson: String?
+    ): String
+
     private external fun nativeEngineUnloadModel(engine: Long): String
     private external fun nativeEngineIsLoaded(engine: Long): Boolean
     private external fun nativeEngineInfo(engine: Long): String
@@ -49,6 +56,14 @@ class OndeInferenceModule : Module() {
     ): String
 
     private external fun nativeDefaultModelConfig(): String
+    private external fun nativeUqffModelConfig(
+        modelId: String,
+        filesJson: String,
+        displayName: String,
+        approxMemory: String,
+        chatTemplate: String?
+    ): String
+
     private external fun nativeQwen251_5bConfig(): String
     private external fun nativeQwen253bConfig(): String
     private external fun nativeQwen3_0_6bConfig(): String
@@ -111,6 +126,14 @@ class OndeInferenceModule : Module() {
         // -- Config free functions (no engine needed) --
 
         Function("defaultModelConfig") { nativeDefaultModelConfig() }
+        Function("uqffModelConfig") {
+            modelId: String,
+            filesJson: String,
+            displayName: String,
+            approxMemory: String,
+            chatTemplate: String? ->
+            nativeUqffModelConfig(modelId, filesJson, displayName, approxMemory, chatTemplate)
+        }
         Function("qwen251_5bConfig") { nativeQwen251_5bConfig() }
         Function("qwen253bConfig") { nativeQwen253bConfig() }
         Function("qwen3_0_6bConfig") { nativeQwen3_0_6bConfig() }
@@ -136,6 +159,11 @@ class OndeInferenceModule : Module() {
         AsyncFunction("loadModel") { configJson: String, systemPrompt: String?, samplingJson: String? ->
             check(enginePtr != 0L) { "Engine not initialized" }
             nativeEngineLoadModel(enginePtr, configJson, systemPrompt, samplingJson)
+        }
+
+        AsyncFunction("loadUqffModel") { configJson: String, systemPrompt: String?, samplingJson: String? ->
+            check(enginePtr != 0L) { "Engine not initialized" }
+            nativeEngineLoadUqffModel(enginePtr, configJson, systemPrompt, samplingJson)
         }
 
         AsyncFunction("unloadModel") {
