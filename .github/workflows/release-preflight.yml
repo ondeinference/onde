@@ -1,0 +1,59 @@
+name: Release Preflight
+
+# Shared release gate, called by every release-sdk-*.yml before it allocates an
+# expensive runner, and by ci.yml on ordinary pushes.
+#
+# It replaces five partial copies of "does the tag match my version file?" —
+# each release workflow used to check only its own manifest, which is why
+# sdk/react-native/package-lock.json drifted four releases (stuck at 1.1.2 while
+# package.json read 1.2.1) without a single job failing.
+#
+# Runs on ubuntu in well under a minute. The 1.2.0 crates.io failure took 13m12s
+# of queued macOS runner to surface a manifest error that `make lint-publish`
+# proves instantly.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag to validate against the release version. Empty skips that check."
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Every version source (5 manifests, 2 npm JSON files, 3 Cargo.lock files)
+      # must agree with Cargo.toml, and both CHANGELOGs must have a real section.
+      - name: Version sources agree
+        run: make verify
+
+      # cargo publish rejects git dependencies outright. Cargo.toml documents
+      # pointing the mistralrs deps back at the fork for local work, so this is
+      # checked at release time rather than on every edit.
+      - name: Cargo.toml is publishable to crates.io
+        run: make lint-publish
+
+      - name: Tag matches the release version
+        if: inputs.tag != ''
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="$(python3 scripts/sync-release-version.py --print)"
+          echo "Tag:     $TAG"
+          echo "Version: $VERSION"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match the release version '$VERSION'."
+            echo "::error::Tags are bare semver — a 'v' prefix will not match the release trigger."
+            exit 1
+          fi

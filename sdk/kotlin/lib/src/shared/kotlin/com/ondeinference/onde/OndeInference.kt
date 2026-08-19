@@ -21,6 +21,7 @@ typealias ChatMessage     = uniffi.onde.ChatMessage
 typealias ChatRole        = uniffi.onde.ChatRole
 typealias SamplingConfig  = uniffi.onde.SamplingConfig
 typealias GgufModelConfig = uniffi.onde.GgufModelConfig
+typealias UqffModelConfig = uniffi.onde.UqffModelConfig
 typealias InferenceResult = uniffi.onde.InferenceResult
 typealias StreamChunk     = uniffi.onde.StreamChunk
 typealias EngineInfo      = uniffi.onde.EngineInfo
@@ -143,6 +144,27 @@ class OndeInference internal constructor(
     ): Double = withContext(Dispatchers.IO) {
         ensureConfigured()
         engine.loadGgufModel(
+            config       = config,
+            systemPrompt = systemPrompt,
+            sampling     = sampling,
+        )
+    }
+
+    /**
+     * Load a specific UQFF model.
+     *
+     * @param config Base model repository and UQFF shard configuration.
+     * @param systemPrompt Optional system prompt.
+     * @param sampling Optional sampling configuration.
+     * @return Wall-clock model loading time in seconds.
+     */
+    suspend fun loadUqffModel(
+        config: UqffModelConfig,
+        systemPrompt: String?    = null,
+        sampling: SamplingConfig? = null,
+    ): Double = withContext(Dispatchers.IO) {
+        ensureConfigured()
+        engine.loadUqffModel(
             config       = config,
             systemPrompt = systemPrompt,
             sampling     = sampling,

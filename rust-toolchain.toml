@@ -1,0 +1,14 @@
+# Single source of truth for the stable toolchain used by every build and
+# workflow. Bare `cargo` in this repo resolves to this channel, so the version
+# must NOT be duplicated in workflow files or build scripts — CI reads it from
+# here (see .github/workflows/release-preflight.yml and release-sdk-*.yml).
+#
+# Why pinned rather than "stable": onde-mistralrs raises its MSRV independently
+# of us. The 1.2.0 Swift release failed because CI installed stable (1.92.0)
+# while the dependency tree required 1.94. A pin turns that into a one-line,
+# reviewed change instead of a release-day surprise.
+#
+# tvOS/visionOS/watchOS are tier-3 and still need `cargo +nightly -Z build-std`
+# with rust-src; that override is explicit in build-swift-xcframework.sh.
+[toolchain]
+channel = "1.94.0"

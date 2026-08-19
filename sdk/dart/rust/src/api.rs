@@ -17,7 +17,7 @@ use onde::inference::{
     EngineInfo as OndeEngineInfo, EngineStatus as OndeEngineStatus,
     GgufModelConfig as OndeGgufModelConfig, InferenceError, InferenceResult as OndeInferenceResult,
     SamplingConfig as OndeSamplingConfig, StreamChunk as OndeStreamChunk,
-    ToolCallInfo as OndeToolCallInfo,
+    ToolCallInfo as OndeToolCallInfo, UqffModelConfig as OndeUqffModelConfig,
 };
 
 // ── Mirror: ChatRole ──────────────────────────────────────────────────────────
@@ -158,6 +158,47 @@ impl From<GgufModelConfig> for OndeGgufModelConfig {
             display_name: c.display_name,
             approx_memory: c.approx_memory,
             chat_template: None,
+        }
+    }
+}
+
+// ── Mirror: UqffModelConfig ──────────────────────────────────────────────────
+
+/// Configuration for loading a pre-quantised UQFF model.
+#[derive(Debug, Clone)]
+pub struct UqffModelConfig {
+    /// Base HuggingFace repository ID or local model directory.
+    pub model_id: String,
+    /// UQFF shard filename(s), first shard, or shorthand such as `q4k` / `4`.
+    pub files: Vec<String>,
+    /// Human-friendly display name.
+    pub display_name: String,
+    /// Approximate memory footprint.
+    pub approx_memory: String,
+    /// Optional Jinja chat template override.
+    pub chat_template: Option<String>,
+}
+
+impl From<OndeUqffModelConfig> for UqffModelConfig {
+    fn from(c: OndeUqffModelConfig) -> Self {
+        Self {
+            model_id: c.model_id,
+            files: c.files,
+            display_name: c.display_name,
+            approx_memory: c.approx_memory,
+            chat_template: c.chat_template,
+        }
+    }
+}
+
+impl From<UqffModelConfig> for OndeUqffModelConfig {
+    fn from(c: UqffModelConfig) -> Self {
+        Self {
+            model_id: c.model_id,
+            files: c.files,
+            display_name: c.display_name,
+            approx_memory: c.approx_memory,
+            chat_template: c.chat_template,
         }
     }
 }
@@ -360,6 +401,23 @@ impl OndeChatEngine {
         Ok(elapsed.as_secs_f64())
     }
 
+    /// Load a UQFF model into the engine.
+    ///
+    /// Returns the load duration in seconds on success.
+    pub async fn load_uqff_model(
+        &self,
+        config: UqffModelConfig,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<f64, OndeError> {
+        let elapsed = self
+            .inner
+            .load_uqff_model(config.into(), system_prompt, sampling.map(Into::into))
+            .await
+            .map_err(OndeError::from)?;
+        Ok(elapsed.as_secs_f64())
+    }
+
     /// Load the model assigned to this Onde app from the dashboard.
     ///
     /// Returns the wall-clock seconds taken to load the model.
@@ -519,6 +577,25 @@ impl OndeChatEngine {
 #[frb(sync)]
 pub fn default_model_config() -> GgufModelConfig {
     OndeGgufModelConfig::platform_default().into()
+}
+
+/// Build a generic `UqffModelConfig`.
+#[frb(sync)]
+pub fn uqff_model_config(
+    model_id: String,
+    files: Vec<String>,
+    display_name: String,
+    approx_memory: String,
+    chat_template: Option<String>,
+) -> UqffModelConfig {
+    OndeUqffModelConfig {
+        model_id,
+        files,
+        display_name,
+        approx_memory,
+        chat_template,
+    }
+    .into()
 }
 
 /// `GgufModelConfig` for Qwen 2.5 1.5B Instruct Q4_K_M (~941 MB).

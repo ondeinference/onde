@@ -83,4 +83,5 @@ pub use types::{
     ToolCallRequest,
     ToolDefinition,
     ToolResult,
+    UqffModelConfig,
 };

@@ -11,6 +11,7 @@ import type {
   SamplingConfig,
   StreamChunk,
   ToolCallInfo,
+  UqffModelConfig,
 } from "./types";
 import { OndeError } from "./types";
 
@@ -25,6 +26,7 @@ export type {
   SamplingConfig,
   StreamChunk,
   ToolCallInfo,
+  UqffModelConfig,
 } from "./types";
 export { OndeError } from "./types";
 
@@ -49,6 +51,17 @@ function serializeModelConfig(config: GgufModelConfig): string {
     model_id: config.modelId,
     files: config.files,
     tok_model_id: config.tokModelId,
+    display_name: config.displayName,
+    approx_memory: config.approxMemory,
+    chat_template: config.chatTemplate,
+  });
+}
+
+// Convert UqffModelConfig from camelCase TS to snake_case Rust
+function serializeUqffModelConfig(config: UqffModelConfig): string {
+  return JSON.stringify({
+    model_id: config.modelId,
+    files: config.files,
     display_name: config.displayName,
     approx_memory: config.approxMemory,
     chat_template: config.chatTemplate,
@@ -111,6 +124,23 @@ function parseModelConfig(json: string): GgufModelConfig {
     modelId: raw.model_id,
     files: raw.files,
     tokModelId: raw.tok_model_id,
+    displayName: raw.display_name,
+    approxMemory: raw.approx_memory,
+    chatTemplate: raw.chat_template,
+  };
+}
+
+function parseUqffModelConfig(json: string): UqffModelConfig {
+  const raw = parseResult<{
+    model_id: string;
+    files: string[];
+    display_name: string;
+    approx_memory: string;
+    chat_template?: string;
+  }>(json);
+  return {
+    modelId: raw.model_id,
+    files: raw.files,
     displayName: raw.display_name,
     approxMemory: raw.approx_memory,
     chatTemplate: raw.chat_template,
@@ -221,6 +251,29 @@ export const OndeChatEngine = {
     return result.elapsed_secs;
   },
 
+  /**
+   * Load a specific UQFF model.
+   *
+   * `config.modelId` is the base repo/local directory used for tokenizer and
+   * config resolution. `config.files` accepts the first shard, explicit
+   * shards, or mistral.rs shorthands such as `"q4k"` and `"4"`.
+   *
+   * @returns Wall-clock loading time in seconds.
+   */
+  async loadUqffModel(
+    config: UqffModelConfig,
+    systemPrompt?: string,
+    sampling?: SamplingConfig,
+  ): Promise<number> {
+    const json = await OndeInferenceModule.loadUqffModel(
+      serializeUqffModelConfig(config),
+      systemPrompt ?? null,
+      sampling ? serializeSampling(sampling) : null,
+    );
+    const result = parseResult<{ elapsed_secs: number }>(json);
+    return result.elapsed_secs;
+  },
+
   /** Unload the current model, freeing all memory. */
   async unloadModel(): Promise<string | null> {
     const json = await OndeInferenceModule.unloadModel();
@@ -309,6 +362,25 @@ export const OndeChatEngine = {
 /** Return the platform-appropriate default GGUF model config. */
 export function defaultModelConfig(): GgufModelConfig {
   return parseModelConfig(OndeInferenceModule.defaultModelConfig());
+}
+
+/** Create a generic UQFF model config. */
+export function uqffModelConfig(
+  modelId: string,
+  files: string[],
+  displayName: string,
+  approxMemory: string,
+  chatTemplate?: string,
+): UqffModelConfig {
+  return parseUqffModelConfig(
+    OndeInferenceModule.uqffModelConfig(
+      modelId,
+      JSON.stringify(files),
+      displayName,
+      approxMemory,
+      chatTemplate ?? null,
+    ),
+  );
 }
 
 /** Return the Qwen 2.5 1.5B config (~941 MB). */
