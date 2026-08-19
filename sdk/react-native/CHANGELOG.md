@@ -1,3 +1,8 @@
+## 1.2.3
+
+- UQFF model support: `uqffModelConfig(...)` builds a config for a pre-quantised UQFF export, and `OndeChatEngine.loadUqffModel(...)` loads it. UQFF weights are quantised ahead of time, so loading skips the memory spike of in-situ quantisation
+- Dependency updates
+
 ## 1.2.2
 
 - Moved onto the published onde-mistralrs 0.9.3 crates

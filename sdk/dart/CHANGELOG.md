@@ -1,3 +1,9 @@
+## 1.2.3
+
+- UQFF model support: `OndeInference.uqffModelConfig(...)` builds a config for a pre-quantised UQFF export, and `OndeChatEngine.loadUqffModel(...)` loads it. UQFF weights are quantised ahead of time, so loading skips the memory spike of in-situ quantisation
+- Android native libraries are now built with cargo-ndk instead of the hand-rolled CMake path, which fixes NDK version comparison and the ordering between the native-lib build and the Gradle tasks that consume it
+- Dependency updates
+
 ## 1.2.2
 
 - Moved onto the published onde-mistralrs 0.9.3 crates
