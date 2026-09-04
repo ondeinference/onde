@@ -939,6 +939,9 @@ impl ChatEngine {
                 pulse_model_id,
                 crate::pulse::next_request_id(),
                 elapsed.as_millis() as u64,
+                // A blocking request returns the whole completion at once,
+                // so there is no first-token moment to measure here.
+                None,
                 "success".to_string(),
             );
         }
@@ -1038,11 +1041,16 @@ impl ChatEngine {
     ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
         let user_message = user_message.into();
 
-        let (model, request) = {
+        let (model, request, pulse_model_id) = {
             let guard = self.inner.lock().await;
             let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
             let request = self::build_request(loaded, &user_message);
-            (loaded.model.clone(), request)
+            let pulse_model_id = match &loaded.config {
+                LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                #[cfg(target_os = "macos")]
+                LoadedModelConfig::Isq(c) => c.model_id.clone(),
+            };
+            (loaded.model.clone(), request, pulse_model_id)
         };
 
         let (tx, rx) = tokio::sync::mpsc::channel::<StreamChunk>(64);
@@ -1062,17 +1070,22 @@ impl ChatEngine {
         let inner_ref: &'static Mutex<Option<LoadedModel>> = unsafe { &*inner_ptr };
 
         let user_msg_clone = user_message.clone();
+        // Cloning the pulse client is a pointer bump (Arc-backed reqwest
+        // client), so the task owns one rather than borrowing the engine.
+        let pulse = self.pulse().cloned();
 
         tokio::task::spawn(async move {
             // `model` is an `Arc<Model>` moved into this task, so it's owned.
             // `stream_chat_request` borrows `&Model` — the borrow is scoped
             // to this async block and does NOT need to be `'static`.
+            let started = std::time::Instant::now();
             let stream_result = model.stream_chat_request(request).await;
 
             match stream_result {
                 Ok(mut stream) => {
                     let mut assembled = String::new();
                     let mut last_finish_reason = None;
+                    let mut ttft_ms = None;
 
                     // `Stream::next()` is an inherent async method on
                     // mistralrs::Stream that returns `Option<Response>`.
@@ -1082,6 +1095,9 @@ impl ChatEngine {
                             mistralrs::Response::Chunk(chunk) => {
                                 if let Some(choice) = chunk.choices.first() {
                                     if let Some(ref text) = choice.delta.content {
+                                        ttft_ms.get_or_insert_with(|| {
+                                            started.elapsed().as_millis() as u64
+                                        });
                                         assembled.push_str(text);
                                         let _ = tx
                                             .send(StreamChunk {
@@ -1132,6 +1148,19 @@ impl ChatEngine {
                                 .history
                                 .push(HistoryEntry::Text(ChatMessage::assistant(assembled.trim())));
                         }
+                    }
+
+                    // Streamed inferences were invisible to pulse until now;
+                    // only the blocking path reported. This is also the one
+                    // path that can supply a real TTFT.
+                    if let Some(pulse) = pulse {
+                        pulse.record_inference(
+                            pulse_model_id,
+                            crate::pulse::next_request_id(),
+                            started.elapsed().as_millis() as u64,
+                            ttft_ms,
+                            "success".to_string(),
+                        );
                     }
 
                     // Send the final "done" chunk.
