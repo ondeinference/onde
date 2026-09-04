@@ -196,6 +196,7 @@ impl PulseClient {
         model_id: String,
         request_id: String,
         duration_ms: u64,
+        ttft_ms: Option<u64>,
         status: String,
     ) {
         let client = self.clone();
@@ -205,6 +206,7 @@ impl PulseClient {
                 model_id,
                 request_id,
                 duration_ms,
+                ttft_ms,
                 status,
                 onde_app_id: client.onde_app_id.clone(),
             };
@@ -318,20 +320,10 @@ impl PulseClient {
             return;
         };
         let event_key = scoped_document_key(onde_app_id, &[&event.request_id]);
+        let document = inference_document(event);
 
-        self.write_doc(
-            "pulse_inference_events",
-            Some(&event_key),
-            &serde_json::json!({
-                "edge_id": event.edge_id,
-                "model_id": event.model_id,
-                "request_id": event.request_id,
-                "duration_ms": event.duration_ms,
-                "status": event.status,
-                "onde_app_id": event.onde_app_id,
-            }),
-        )
-        .await;
+        self.write_doc("pulse_inference_events", Some(&event_key), &document)
+            .await;
     }
 
     /// Upsert (or append, when `key` is `None`) one document, logging failures.
@@ -358,12 +350,49 @@ fn scoped_document_key(onde_app_id: &str, parts: &[&str]) -> String {
         .join(":")
 }
 
+/// Build the inference document. `ttft_ms` is omitted entirely when the path
+/// could not measure it, so a reader can tell "not measured" from a real zero
+/// — the relational route stores a hardcoded `0` and cannot make that
+/// distinction.
+fn inference_document(event: &InferenceEvent) -> serde_json::Value {
+    let mut document = serde_json::json!({
+        "edge_id": event.edge_id,
+        "model_id": event.model_id,
+        "request_id": event.request_id,
+        "duration_ms": event.duration_ms,
+        "status": event.status,
+        "onde_app_id": event.onde_app_id,
+    });
+
+    if let (Some(map), Some(ttft_ms)) = (document.as_object_mut(), event.ttft_ms) {
+        map.insert("ttft_ms".to_string(), serde_json::json!(ttft_ms));
+    }
+
+    document
+}
+
+/// `status` is always `"online"`: this document is only written when the edge
+/// just loaded a model, and nothing reports a shutdown. `last_seen_ms` is what
+/// makes that honest — a reader counts an edge as active by recency, the way
+/// the relational dashboard windows on `last_seen_at`, rather than trusting a
+/// status that is never revoked.
 fn edge_document(event: &ModelLoadedEvent, onde_app_id: &str) -> serde_json::Value {
     serde_json::json!({
         "edge_id": event.edge_id,
         "onde_app_id": onde_app_id,
         "status": "online",
+        "last_seen_ms": epoch_millis(),
     })
+}
+
+/// Milliseconds since the Unix epoch. The crate has no date dependency and
+/// this is only ever read as a recency window, so an integer beats pulling in
+/// a formatting library for an RFC 3339 string.
+fn epoch_millis() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 #[cfg(test)]
@@ -416,5 +445,25 @@ mod tests {
         assert_eq!(document["edge_id"], "edge-1");
         assert_eq!(document["onde_app_id"], "app-a");
         assert_eq!(document["status"], "online");
+        // Liveness has to be derivable from the document itself: nothing ever
+        // writes an offline status, so a reader windows on this instead.
+        assert!(document["last_seen_ms"].as_u64().unwrap_or(0) > 0);
+    }
+
+    #[test]
+    fn inference_document_omits_ttft_when_it_was_not_measured() {
+        let mut event = InferenceEvent {
+            edge_id: "edge-1".to_string(),
+            model_id: "model-1".to_string(),
+            request_id: "req-1".to_string(),
+            duration_ms: 400,
+            ttft_ms: None,
+            status: "success".to_string(),
+            onde_app_id: Some("app-a".to_string()),
+        };
+        assert!(inference_document(&event).get("ttft_ms").is_none());
+
+        event.ttft_ms = Some(90);
+        assert_eq!(inference_document(&event)["ttft_ms"], 90);
     }
 }
