@@ -1204,6 +1204,7 @@ impl ChatEngine {
             let request = self::build_request(loaded, &user_message);
             let pulse_model_id = match &loaded.config {
                 LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                LoadedModelConfig::Uqff(c) => c.model_id.clone(),
                 #[cfg(target_os = "macos")]
                 LoadedModelConfig::Isq(c) => c.model_id.clone(),
             };
