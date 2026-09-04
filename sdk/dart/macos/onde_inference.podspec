@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.dependency 'FlutterMacOS'
-  s.platform = :osx, '10.15'
+  s.platform = :osx, '12.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.swift_version = '5.0'
 
@@ -18,6 +18,12 @@ Pod::Spec.new do |s|
       :name => 'Build Rust bridge (onde_inference_dart)',
       :script => <<~SHELL,
         set -e
+        # Xcode 27 beta exports deployment vars for the newest SDK version,
+        # which can break Rust proc-macro loading during pod builds.
+        # Keep SDKROOT so clang can find system headers, but clear deployment
+        # and linker overrides so cargo uses stable defaults.
+        unset MACOSX_DEPLOYMENT_TARGET IPHONEOS_DEPLOYMENT_TARGET \
+              TVOS_DEPLOYMENT_TARGET LDFLAGS LD RUSTFLAGS
         RUST_DIR="${PODS_TARGET_SRCROOT}/../rust"
         cd "$RUST_DIR"
         ARCH=$(uname -m)

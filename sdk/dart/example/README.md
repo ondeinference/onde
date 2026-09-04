@@ -58,7 +58,14 @@ flutter pub get
 flutter run
 ```
 
-On **iOS / macOS**, the Rust engine is built through the CocoaPods podspec and linked automatically by Xcode. On **Android**, it is built through CMake and Gradle. On **Linux / Windows**, it is linked as a shared library.
+On **iOS / macOS**, the Rust engine is built through the CocoaPods podspec and linked automatically by Xcode. On **Android**, a Gradle task cross-compiles it with `cargo-ndk` into `jniLibs`, so you need `cargo install cargo-ndk` plus the Android Rust targets. On **Linux / Windows**, it is linked as a shared library.
+
+Building all three Android ABIs takes a long time. Pass the ABI you actually
+need while iterating:
+
+```bash
+flutter run -d <device> --android-project-arg=onde.androidAbis=arm64-v8a
+```
 
 ### Platform notes
 
@@ -103,7 +110,7 @@ await engine.unloadModel();
 example/
 ├── lib/
 │   └── main.dart        # Complete chat UI + SDK integration
-├── android/             # Android Gradle + CMake build
+├── android/             # Android Gradle build
 ├── ios/                 # iOS Xcode project + CocoaPods
 ├── macos/               # macOS Xcode project + CocoaPods
 ├── linux/               # Linux CMake build
@@ -122,4 +129,4 @@ example/
 
 ## Copyright
 
-© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB). Licensed under the MIT License.
+© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)). Licensed under the MIT License.

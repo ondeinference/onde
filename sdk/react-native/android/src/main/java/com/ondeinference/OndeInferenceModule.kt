@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 package com.ondeinference
 
 import expo.modules.kotlin.modules.Module
@@ -29,6 +32,13 @@ class OndeInferenceModule : Module() {
         samplingJson: String?
     ): String
 
+    private external fun nativeEngineLoadUqffModel(
+        engine: Long,
+        configJson: String,
+        systemPrompt: String?,
+        samplingJson: String?
+    ): String
+
     private external fun nativeEngineUnloadModel(engine: Long): String
     private external fun nativeEngineIsLoaded(engine: Long): Boolean
     private external fun nativeEngineInfo(engine: Long): String
@@ -46,8 +56,25 @@ class OndeInferenceModule : Module() {
     ): String
 
     private external fun nativeDefaultModelConfig(): String
+    private external fun nativeUqffModelConfig(
+        modelId: String,
+        filesJson: String,
+        displayName: String,
+        approxMemory: String,
+        chatTemplate: String?
+    ): String
+
     private external fun nativeQwen251_5bConfig(): String
     private external fun nativeQwen253bConfig(): String
+    private external fun nativeQwen3_0_6bConfig(): String
+    private external fun nativeQwen3_1_7bConfig(): String
+    private external fun nativeQwen3_4bConfig(): String
+    private external fun nativeQwen3_8bConfig(): String
+    private external fun nativeQwen3_14bConfig(): String
+    private external fun nativeQwen3_32bConfig(): String
+    private external fun nativeQwen3_4bInstruct2507Config(): String
+    private external fun nativeQwen3_4bThinking2507Config(): String
+    private external fun nativeQwen3_30bA3bInstruct2507Config(): String
     private external fun nativeDefaultSamplingConfig(): String
     private external fun nativeDeterministicSamplingConfig(): String
     private external fun nativeMobileSamplingConfig(): String
@@ -99,8 +126,25 @@ class OndeInferenceModule : Module() {
         // -- Config free functions (no engine needed) --
 
         Function("defaultModelConfig") { nativeDefaultModelConfig() }
+        Function("uqffModelConfig") {
+            modelId: String,
+            filesJson: String,
+            displayName: String,
+            approxMemory: String,
+            chatTemplate: String? ->
+            nativeUqffModelConfig(modelId, filesJson, displayName, approxMemory, chatTemplate)
+        }
         Function("qwen251_5bConfig") { nativeQwen251_5bConfig() }
         Function("qwen253bConfig") { nativeQwen253bConfig() }
+        Function("qwen3_0_6bConfig") { nativeQwen3_0_6bConfig() }
+        Function("qwen3_1_7bConfig") { nativeQwen3_1_7bConfig() }
+        Function("qwen3_4bConfig") { nativeQwen3_4bConfig() }
+        Function("qwen3_8bConfig") { nativeQwen3_8bConfig() }
+        Function("qwen3_14bConfig") { nativeQwen3_14bConfig() }
+        Function("qwen3_32bConfig") { nativeQwen3_32bConfig() }
+        Function("qwen3_4bInstruct2507Config") { nativeQwen3_4bInstruct2507Config() }
+        Function("qwen3_4bThinking2507Config") { nativeQwen3_4bThinking2507Config() }
+        Function("qwen3_30bA3bInstruct2507Config") { nativeQwen3_30bA3bInstruct2507Config() }
         Function("defaultSamplingConfig") { nativeDefaultSamplingConfig() }
         Function("deterministicSamplingConfig") { nativeDeterministicSamplingConfig() }
         Function("mobileSamplingConfig") { nativeMobileSamplingConfig() }
@@ -115,6 +159,11 @@ class OndeInferenceModule : Module() {
         AsyncFunction("loadModel") { configJson: String, systemPrompt: String?, samplingJson: String? ->
             check(enginePtr != 0L) { "Engine not initialized" }
             nativeEngineLoadModel(enginePtr, configJson, systemPrompt, samplingJson)
+        }
+
+        AsyncFunction("loadUqffModel") { configJson: String, systemPrompt: String?, samplingJson: String? ->
+            check(enginePtr != 0L) { "Engine not initialized" }
+            nativeEngineLoadUqffModel(enginePtr, configJson, systemPrompt, samplingJson)
         }
 
         AsyncFunction("unloadModel") {

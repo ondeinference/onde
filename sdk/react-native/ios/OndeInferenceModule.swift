@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 import ExpoModulesCore
 import Foundation
 
@@ -22,6 +25,14 @@ func onde_engine_load_default_model(
 
 @_silgen_name("onde_engine_load_model")
 func onde_engine_load_model(
+    _ engine: UnsafeMutableRawPointer,
+    _ configJson: UnsafePointer<CChar>,
+    _ systemPrompt: UnsafePointer<CChar>?,
+    _ samplingJson: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_engine_load_uqff_model")
+func onde_engine_load_uqff_model(
     _ engine: UnsafeMutableRawPointer,
     _ configJson: UnsafePointer<CChar>,
     _ systemPrompt: UnsafePointer<CChar>?,
@@ -80,11 +91,47 @@ func onde_engine_generate(
 @_silgen_name("onde_default_model_config")
 func onde_default_model_config() -> UnsafeMutablePointer<CChar>?
 
+@_silgen_name("onde_uqff_model_config")
+func onde_uqff_model_config(
+    _ modelId: UnsafePointer<CChar>,
+    _ filesJson: UnsafePointer<CChar>,
+    _ displayName: UnsafePointer<CChar>,
+    _ approxMemory: UnsafePointer<CChar>,
+    _ chatTemplate: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>?
+
 @_silgen_name("onde_qwen25_1_5b_config")
 func onde_qwen25_1_5b_config() -> UnsafeMutablePointer<CChar>?
 
 @_silgen_name("onde_qwen25_3b_config")
 func onde_qwen25_3b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_0_6b_config")
+func onde_qwen3_0_6b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_1_7b_config")
+func onde_qwen3_1_7b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_config")
+func onde_qwen3_4b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_8b_config")
+func onde_qwen3_8b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_14b_config")
+func onde_qwen3_14b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_32b_config")
+func onde_qwen3_32b_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_instruct_2507_config")
+func onde_qwen3_4b_instruct_2507_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_4b_thinking_2507_config")
+func onde_qwen3_4b_thinking_2507_config() -> UnsafeMutablePointer<CChar>?
+
+@_silgen_name("onde_qwen3_30b_a3b_instruct_2507_config")
+func onde_qwen3_30b_a3b_instruct_2507_config() -> UnsafeMutablePointer<CChar>?
 
 // Sampling config free functions
 @_silgen_name("onde_default_sampling_config")
@@ -260,6 +307,46 @@ public class OndeInferenceModule: Module {
             return try self.validateJsonResult(result)
         }
 
+        Function("uqffModelConfig") {
+            (
+                modelId: String,
+                filesJson: String,
+                displayName: String,
+                approxMemory: String,
+                chatTemplate: String?
+            ) -> String in
+            let result = modelId.withCString { cModelId in
+                filesJson.withCString { cFilesJson in
+                    displayName.withCString { cDisplayName in
+                        approxMemory.withCString { cApproxMemory in
+                            if let chatTemplate = chatTemplate {
+                                return chatTemplate.withCString { cChatTemplate in
+                                    self.consumeRustString(
+                                        onde_uqff_model_config(
+                                            cModelId,
+                                            cFilesJson,
+                                            cDisplayName,
+                                            cApproxMemory,
+                                            cChatTemplate
+                                        ))
+                                }
+                            } else {
+                                return self.consumeRustString(
+                                    onde_uqff_model_config(
+                                        cModelId,
+                                        cFilesJson,
+                                        cDisplayName,
+                                        cApproxMemory,
+                                        nil
+                                    ))
+                            }
+                        }
+                    }
+                }
+            }
+            return try self.validateJsonResult(result)
+        }
+
         Function("qwen251_5bConfig") { () -> String in
             let result = self.consumeRustString(onde_qwen25_1_5b_config())
             return try self.validateJsonResult(result)
@@ -268,6 +355,45 @@ public class OndeInferenceModule: Module {
         Function("qwen253bConfig") { () -> String in
             let result = self.consumeRustString(onde_qwen25_3b_config())
             return try self.validateJsonResult(result)
+        }
+
+        Function("qwen3_0_6bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_0_6b_config()))
+        }
+
+        Function("qwen3_1_7bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_1_7b_config()))
+        }
+
+        Function("qwen3_4bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_4b_config()))
+        }
+
+        Function("qwen3_8bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_8b_config()))
+        }
+
+        Function("qwen3_14bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_14b_config()))
+        }
+
+        Function("qwen3_32bConfig") { () -> String in
+            try self.validateJsonResult(self.consumeRustString(onde_qwen3_32b_config()))
+        }
+
+        Function("qwen3_4bInstruct2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_4b_instruct_2507_config()))
+        }
+
+        Function("qwen3_4bThinking2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_4b_thinking_2507_config()))
+        }
+
+        Function("qwen3_30bA3bInstruct2507Config") { () -> String in
+            try self.validateJsonResult(
+                self.consumeRustString(onde_qwen3_30b_a3b_instruct_2507_config()))
         }
 
         Function("defaultSamplingConfig") { () -> String in
@@ -337,6 +463,36 @@ public class OndeInferenceModule: Module {
                     }
                 } else {
                     return self.consumeRustString(onde_engine_load_model(ptr, cConfig, nil, nil))
+                }
+            }
+            return try self.validateJsonResult(result)
+        }
+
+        AsyncFunction("loadUqffModel") {
+            (configJson: String, systemPrompt: String?, samplingJson: String?) -> String in
+            try self.configureApplicationFilesystem()
+            guard let ptr = self.enginePtr else {
+                throw OndeError.engineNotInitialized
+            }
+            let result: String? = configJson.withCString { cConfig in
+                if let sp = systemPrompt, let sj = samplingJson {
+                    return sp.withCString { cSp in
+                        sj.withCString { cSj in
+                            self.consumeRustString(
+                                onde_engine_load_uqff_model(ptr, cConfig, cSp, cSj))
+                        }
+                    }
+                } else if let sp = systemPrompt {
+                    return sp.withCString { cSp in
+                        self.consumeRustString(onde_engine_load_uqff_model(ptr, cConfig, cSp, nil))
+                    }
+                } else if let sj = samplingJson {
+                    return sj.withCString { cSj in
+                        self.consumeRustString(onde_engine_load_uqff_model(ptr, cConfig, nil, cSj))
+                    }
+                } else {
+                    return self.consumeRustString(
+                        onde_engine_load_uqff_model(ptr, cConfig, nil, nil))
                 }
             }
             return try self.validateJsonResult(result)

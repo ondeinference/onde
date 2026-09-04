@@ -1,3 +1,33 @@
+## 1.2.3
+
+- UQFF model support: `uqffModelConfig(...)` builds a config for a pre-quantised UQFF export, and `OndeChatEngine.loadUqffModel(...)` loads it. UQFF weights are quantised ahead of time, so loading skips the memory spike of in-situ quantisation
+- Dependency updates
+
+## 1.2.2
+
+- Moved onto the published onde-mistralrs 0.9.3 crates
+- Dropped the mio visionOS patch — the cfg gating it worked around now ships upstream, so the Apple XCFramework builds without it
+
+## 1.2.1
+
+- Fixed the Android build: gated the 10 GiB UQFF chunk-size constant so it no longer overflows `usize` on 32-bit targets (armv7)
+- Moved onto the published onde-mistralrs 0.9.2 crates (fork synced with upstream 0.9.x)
+
+## 1.2.0
+
+- Full Qwen 3 model family support: 0.6B, 1.7B, 4B, 8B, 14B, 32B, plus the 4B Instruct/Thinking 2507 refreshes and the 30B-A3B MoE variant, each with a matching config free function
+- Synced the mistral.rs fork with upstream 0.8.23, pulling in Metal compile fixes
+- Refreshed branding and legal wording across generated docs
+- Dependency updates
+
+## 1.1.4
+
+- Bump smbCloud GresIQ SDK to 0.4.7 and dual-write pulse telemetry to the GresIQ document gateway (ADR-0003 M2); telemetry events now carry an optional `onde_app_id`
+
+## 1.1.3
+
+- Bump smbCloud GresIQ SDK to 0.4.6 (telemetry transport now tracks the latest smbCloud platform SDK line)
+
 ## 1.1.2
 
 - tvOS support: 0.5B model default, memory-optimized model builder, snapshot cache repair

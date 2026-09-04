@@ -30,7 +30,7 @@ You get multi-turn chat, streaming, one-shot generation, configurable sampling, 
 |----------|---------|---------------|-------|
 | iOS 13+ | Metal | Qwen 2.5 Coder 1.5B (~941 MB) | CocoaPods and Swift Package Manager plugin manifests are included |
 | macOS 10.15+ | Metal | Qwen 2.5 Coder 3B (~1.93 GB) | CocoaPods and Swift Package Manager plugin manifests are included |
-| Android API 21+ | CPU | Qwen 2.5 Coder 1.5B (~941 MB) | arm64-v8a, armeabi-v7a, x86_64, x86 |
+| Android API 21+ | CPU | Qwen 2.5 Coder 1.5B (~941 MB) | arm64-v8a, armeabi-v7a, x86_64 by default; see [Android ABIs](#android-abis) |
 | Linux x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
 | Windows x86_64 | CPU | Qwen 2.5 Coder 3B (~1.93 GB) | CUDA possible, see docs |
 
@@ -167,6 +167,26 @@ await engine.loadGgufModel(
 );
 ```
 
+Pre-quantized UQFF models use the base repository (or local model directory)
+for tokenizer/configuration resolution and the first UQFF shard as the file:
+
+```dart
+final uqff = OndeInference.uqffModelConfig(
+  modelId: 'google/gemma-4-E4B-it',
+  files: ['q4k-0.uqff'],
+  displayName: 'Gemma 4 E4B (UQFF Q4K)',
+  approxMemory: '~2.5 GB (UQFF Q4K)',
+);
+
+await engine.loadUqffModel(
+  config: uqff,
+  systemPrompt: 'You are an expert software engineer.',
+);
+```
+
+For sharded UQFF models, pass the first shard; mistral.rs discovers sibling
+shards with the same prefix.
+
 | Model | Size | Good for |
 |-------|------|----------|
 | Qwen 2.5 1.5B Instruct Q4_K_M | ~941 MB | iOS, tvOS, Android |
@@ -245,6 +265,28 @@ Future<void> main() async {
 
 ---
 
+## Android ABIs
+
+The Rust engine is cross-compiled during `flutter build apk` by the plugin's
+Gradle module, which shells out to [`cargo-ndk`](https://github.com/bbqsrc/cargo-ndk).
+You need it once per machine, along with the Rust targets:
+
+```bash
+cargo install cargo-ndk
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+```
+
+The NDK comes from whichever version Gradle already resolved, so no
+`ANDROID_NDK_HOME` export is needed for Gradle-driven builds.
+
+Unless you say otherwise, all three default ABIs are built: arm64-v8a,
+armeabi-v7a, and x86_64. Each is a full release build of a large crate, so this
+is slow. While iterating, build only the one your device needs:
+
+```bash
+flutter run -d <device> --android-project-arg=onde.androidAbis=arm64-v8a
+```
+
 ## Example app
 
 A full Flutter example lives in `example/`. It demonstrates:
@@ -275,10 +317,8 @@ Onde is dual-licensed under **MIT** and **Apache 2.0**. You can use either one.
 - [MIT License](https://github.com/ondeinference/onde/blob/main/LICENSE-MIT)
 - [Apache License 2.0](https://github.com/ondeinference/onde/blob/main/LICENSE-APACHE)
 
-© 2026 [Splitfire AB](https://splitfire.se)
-
 ---
 
 ## Copyright
 
-© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).
+© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).

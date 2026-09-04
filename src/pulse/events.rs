@@ -96,6 +96,9 @@ mod tests {
             .is_none());
 
         event.ttft_ms = Some(17);
-        assert_eq!(serde_json::to_value(&event).expect("serialize")["ttft_ms"], 17);
+        assert_eq!(
+            serde_json::to_value(&event).expect("serialize")["ttft_ms"],
+            17
+        );
     }
 }

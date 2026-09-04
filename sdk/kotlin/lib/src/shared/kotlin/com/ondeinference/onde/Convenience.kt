@@ -1,4 +1,4 @@
-// Copyright 2025 Onde Inference (Splitfire AB). All rights reserved.
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 package com.ondeinference.onde
@@ -21,10 +21,44 @@ object OndeSampling {
 object OndeModels {
     /** Platform-appropriate default — Qwen 2.5 1.5B on Android, 3B on macOS. */
     fun default(): GgufModelConfig  = uniffi.onde.defaultModelConfig()
+    /** Generic UQFF model config using a base repo/local directory plus UQFF shard names. */
+    fun uqff(
+        modelId: String,
+        files: List<String>,
+        displayName: String,
+        approxMemory: String,
+        chatTemplate: String? = null,
+    ): UqffModelConfig = uniffi.onde.uqffModelConfig(
+        modelId      = modelId,
+        files        = files,
+        displayName  = displayName,
+        approxMemory = approxMemory,
+        chatTemplate = chatTemplate,
+    )
     /** Qwen 2.5 1.5B Instruct GGUF Q4_K_M (~941 MB). */
     fun qwen25_1_5b(): GgufModelConfig = uniffi.onde.qwen2515bConfig()
     /** Qwen 2.5 3B Instruct GGUF Q4_K_M (~1.93 GB). */
     fun qwen25_3b(): GgufModelConfig   = uniffi.onde.qwen253bConfig()
+
+    // ── Qwen 3 family ────────────────────────────────────────────────────────
+    /** Qwen 3 0.6B GGUF Q4_K_M (~0.5 GB) — smallest Qwen 3 variant. */
+    fun qwen3_0_6b(): GgufModelConfig = uniffi.onde.qwen306bConfig()
+    /** Qwen 3 1.7B GGUF Q4_K_M (~1.3 GB). */
+    fun qwen3_1_7b(): GgufModelConfig = uniffi.onde.qwen317bConfig()
+    /** Qwen 3 4B GGUF Q4_K_M (~2.7 GB). */
+    fun qwen3_4b(): GgufModelConfig   = uniffi.onde.qwen34bConfig()
+    /** Qwen 3 8B GGUF Q4_K_M (~5 GB). */
+    fun qwen3_8b(): GgufModelConfig   = uniffi.onde.qwen38bConfig()
+    /** Qwen 3 14B GGUF Q4_K_M (~8.4 GB). */
+    fun qwen3_14b(): GgufModelConfig  = uniffi.onde.qwen314bConfig()
+    /** Qwen 3 32B GGUF Q4_K_M (~19.8 GB) — largest dense Qwen 3. */
+    fun qwen3_32b(): GgufModelConfig  = uniffi.onde.qwen332bConfig()
+    /** Qwen 3 4B Instruct 2507 GGUF Q4_K_M (~2.5 GB) — latest non-thinking 4B. */
+    fun qwen3_4b_instruct_2507(): GgufModelConfig = uniffi.onde.qwen34bInstruct2507Config()
+    /** Qwen 3 4B Thinking 2507 (~2.5 GB); nil sampling automatically uses 4096 tokens. */
+    fun qwen3_4b_thinking_2507(): GgufModelConfig = uniffi.onde.qwen34bThinking2507Config()
+    /** Qwen 3 30B-A3B Instruct 2507 GGUF Q4_K_M (~18.6 GB) — flagship MoE. */
+    fun qwen3_30b_a3b_instruct_2507(): GgufModelConfig = uniffi.onde.qwen330bA3bInstruct2507Config()
 }
 
 /**

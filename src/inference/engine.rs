@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! On-device LLM chat inference engine powered by [mistral.rs](https://github.com/EricLBuehler/mistral.rs).
 //!
 //! `ChatEngine` provides a high-level, framework-agnostic API for:
@@ -98,6 +101,7 @@ use super::types::*;
 use mistralrs::{
     CalledFunction, Function, GgufModelBuilder, Model, RequestBuilder, TextMessageRole,
     Tool as MistralTool, ToolCallResponse, ToolCallType, ToolChoice, ToolType,
+    UqffTextModelBuilder,
 };
 
 #[cfg(any(
@@ -111,6 +115,17 @@ use mistralrs::{
     target_os = "android"
 ))]
 use std::collections::HashMap;
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+use std::path::PathBuf;
 
 // ISQ types are only used by load_isq_model, which is macOS-only.
 #[cfg(target_os = "macos")]
@@ -131,6 +146,7 @@ use mistralrs::{IsqBits, TextModelBuilder};
 ))]
 enum LoadedModelConfig {
     Gguf(GgufModelConfig),
+    Uqff(UqffModelConfig),
     #[cfg(target_os = "macos")]
     Isq(IsqModelConfig),
 }
@@ -149,6 +165,7 @@ impl LoadedModelConfig {
     fn display_name(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.display_name,
+            LoadedModelConfig::Uqff(c) => &c.display_name,
             #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.display_name,
         }
@@ -157,6 +174,7 @@ impl LoadedModelConfig {
     fn approx_memory(&self) -> &str {
         match self {
             LoadedModelConfig::Gguf(c) => &c.approx_memory,
+            LoadedModelConfig::Uqff(c) => &c.approx_memory,
             #[cfg(target_os = "macos")]
             LoadedModelConfig::Isq(c) => &c.approx_memory,
         }
@@ -452,25 +470,9 @@ impl ChatEngine {
         }
 
         // Some older GGUF files (e.g. TheBloke) do not embed a chat template.
-        // When the config provides one, write it to a temporary .jinja file
-        // and pass the path — mistral.rs only accepts file paths ending in
-        // .json or .jinja, not literal template strings.
-        let _chat_template_tempfile = if let Some(ref template) = config.chat_template {
-            let tmp_dir = std::env::temp_dir().join("onde-chat-templates");
-            std::fs::create_dir_all(&tmp_dir).ok();
-            let tmp_path = tmp_dir.join("chat_template.jinja");
-            std::fs::write(&tmp_path, template).map_err(|e| InferenceError::ModelBuild {
-                reason: format!(
-                    "Failed to write chat template to {}: {}",
-                    tmp_path.display(),
-                    e
-                ),
-            })?;
-            builder = builder.with_chat_template(tmp_path.to_string_lossy().to_string());
-            Some(tmp_path)
-        } else {
-            None
-        };
+        if let Some(ref template) = config.chat_template {
+            builder = builder.with_chat_template(template);
+        }
 
         let model = builder
             .build()
@@ -482,7 +484,9 @@ impl ChatEngine {
         let elapsed = start.elapsed();
 
         let sampling = sampling.unwrap_or_else(|| {
-            if cfg!(any(
+            if config.uses_extended_thinking() {
+                SamplingConfig::reasoning()
+            } else if cfg!(any(
                 target_os = "ios",
                 target_os = "tvos",
                 target_os = "visionos",
@@ -522,6 +526,158 @@ impl ChatEngine {
             })
         };
         drop(old_model); // free old weights outside the lock
+
+        if let Some(pulse) = self.pulse() {
+            pulse
+                .record_model_loaded(pulse_model_id, pulse_model_name, elapsed.as_millis() as u64)
+                .await;
+        }
+
+        Ok(elapsed)
+    }
+
+    /// Load a UQFF model into the engine.
+    ///
+    /// UQFF stores pre-quantised weights and loads directly
+    /// without runtime conversion.  `config.model_id` is still required for
+    /// tokenizer and base model config resolution; `config.files` contains the
+    /// first shard or explicit UQFF shard filenames.
+    ///
+    /// If a model is already loaded it will be unloaded first.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InferenceError::ModelBuild`] if the model fails to download
+    /// or load.
+    pub async fn load_uqff_model(
+        &self,
+        config: UqffModelConfig,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        use log::info;
+        use std::time::Instant;
+
+        if config.files.is_empty() {
+            return Err(InferenceError::ModelBuild {
+                reason: "UQFF model config must include at least one UQFF file or shorthand."
+                    .to_string(),
+            });
+        }
+
+        info!(
+            "ChatEngine: loading UQFF model {} (files: {:?})",
+            config.model_id, config.files
+        );
+
+        #[cfg(any(
+            target_os = "android",
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos"
+        ))]
+        {
+            let hf_home = std::env::var("HF_HOME")
+                .map(std::path::PathBuf::from)
+                .map_err(|_| InferenceError::ModelBuild {
+                    reason: "HF_HOME is not set — cannot initialise HF cache. \
+                             On iOS/tvOS/Android, call configure_cache_dir() or \
+                             download_model(app_data_dir:) before load_uqff_model()."
+                        .to_string(),
+                })?;
+            let hf_hub_cache = hf_home.join("hub");
+            if let Err(e) = std::fs::create_dir_all(&hf_hub_cache) {
+                log::warn!(
+                    "ChatEngine: could not create HF hub cache dir {}: {}",
+                    hf_hub_cache.display(),
+                    e
+                );
+            }
+            mistralrs_core::GLOBAL_HF_CACHE
+                .get_or_init(|| hf_hub::Cache::new(hf_hub_cache.clone()));
+            std::env::set_var("HF_HUB_CACHE", &hf_hub_cache);
+            log::debug!(
+                "ChatEngine: GLOBAL_HF_CACHE seeded at {}",
+                hf_hub_cache.display()
+            );
+        }
+
+        crate::hf_cache::clean_stale_lock_files(&config.model_id);
+        crate::hf_cache::repair_hf_cache_symlinks(&config.model_id);
+
+        let start = Instant::now();
+        let uqff_files: Vec<PathBuf> = config.files.iter().map(PathBuf::from).collect();
+
+        let mut builder = UqffTextModelBuilder::new(&config.model_id, uqff_files)
+            .into_inner()
+            .with_token_source(super::token::hf_token_source())
+            .with_logging();
+
+        #[cfg(target_os = "tvos")]
+        {
+            use mistralrs::DeviceMapSetting;
+            use mistralrs_core::AutoDeviceMapParams;
+
+            builder = builder
+                .with_max_num_seqs(1)
+                .with_prefix_cache_n(None)
+                .with_no_kv_cache()
+                .with_device_mapping(DeviceMapSetting::Auto(AutoDeviceMapParams::Text {
+                    max_seq_len: 512,
+                    max_batch_size: 1,
+                }));
+        }
+
+        if let Some(ref template) = config.chat_template {
+            builder = builder.with_chat_template(template);
+        }
+
+        let model = builder
+            .build()
+            .await
+            .map_err(|e| InferenceError::ModelBuild {
+                reason: format!("Failed to build UQFF model {}: {}", config.display_name, e),
+            })?;
+
+        let elapsed = start.elapsed();
+
+        let sampling = sampling.unwrap_or_else(|| {
+            if cfg!(any(
+                target_os = "ios",
+                target_os = "tvos",
+                target_os = "visionos",
+                target_os = "watchos",
+                target_os = "android"
+            )) {
+                SamplingConfig::mobile()
+            } else {
+                SamplingConfig::default()
+            }
+        });
+
+        info!(
+            "ChatEngine: UQFF model {} loaded in {} (sampling: temp={:?}, max_tokens={:?})",
+            config.display_name,
+            format_duration(elapsed),
+            sampling.temperature,
+            sampling.max_tokens,
+        );
+
+        let pulse_model_id = config.model_id.clone();
+        let pulse_model_name = config.display_name.clone();
+
+        let old_model = {
+            let mut guard = self.inner.lock().await;
+            guard.replace(LoadedModel {
+                model: Arc::new(model),
+                config: LoadedModelConfig::Uqff(config),
+                history: Vec::new(),
+                system_prompt,
+                sampling,
+            })
+        };
+        drop(old_model);
 
         if let Some(pulse) = self.pulse() {
             pulse
@@ -884,6 +1040,7 @@ impl ChatEngine {
             let request = self::build_request(loaded, &user_message);
             let pulse_model_id = match &loaded.config {
                 LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                LoadedModelConfig::Uqff(c) => c.model_id.clone(),
                 #[cfg(target_os = "macos")]
                 LoadedModelConfig::Isq(c) => c.model_id.clone(),
             };
@@ -1864,6 +2021,17 @@ impl ChatEngine {
         })
     }
 
+    pub async fn load_uqff_model(
+        &self,
+        _config: UqffModelConfig,
+        _system_prompt: Option<String>,
+        _sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
+
     pub async fn unload_model(&self) -> Option<String> {
         None
     }
@@ -1979,6 +2147,52 @@ const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_tem
 /// These mirror the constants in [`super::models`] but return a ready-to-use
 /// [`GgufModelConfig`].
 impl GgufModelConfig {
+    /// Whether the model's default chat template emits an extended reasoning
+    /// block that needs a larger output budget than the general presets.
+    fn uses_extended_thinking(&self) -> bool {
+        matches!(
+            self.model_id.as_str(),
+            super::models::BARTOWSKI_QWEN3_0_6B_GGUF
+                | super::models::BARTOWSKI_QWEN3_1_7B_GGUF
+                | super::models::BARTOWSKI_QWEN3_4B_GGUF
+                | super::models::BARTOWSKI_QWEN3_8B_GGUF
+                | super::models::BARTOWSKI_QWEN3_14B_GGUF
+                | super::models::BARTOWSKI_QWEN3_32B_GGUF
+                | super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF
+        )
+    }
+
+    /// Resolve a model-management ID to the same configuration used by the
+    /// inference engine. Keeping this mapping in one place prevents download
+    /// and load support from drifting apart.
+    pub(crate) fn from_supported_model_id(model_id: &str) -> Option<Self> {
+        match model_id {
+            super::models::BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF => Some(Self::qwen25_0_5b()),
+            super::models::BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(Self::qwen25_1_5b()),
+            super::models::BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF => Some(Self::qwen25_3b()),
+            super::models::BARTOWSKI_QWEN3_0_6B_GGUF => Some(Self::qwen3_0_6b()),
+            super::models::BARTOWSKI_QWEN3_1_7B_GGUF => Some(Self::qwen3_1_7b()),
+            super::models::BARTOWSKI_QWEN3_4B_GGUF => Some(Self::qwen3_4b()),
+            super::models::BARTOWSKI_QWEN3_8B_GGUF => Some(Self::qwen3_8b()),
+            super::models::BARTOWSKI_QWEN3_14B_GGUF => Some(Self::qwen3_14b()),
+            super::models::BARTOWSKI_QWEN3_32B_GGUF => Some(Self::qwen3_32b()),
+            super::models::BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF => {
+                Some(Self::qwen3_4b_instruct_2507())
+            }
+            super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF => {
+                Some(Self::qwen3_4b_thinking_2507())
+            }
+            super::models::BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF => {
+                Some(Self::qwen3_30b_a3b_instruct_2507())
+            }
+            super::models::BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF => Some(Self::qwen25_coder_7b()),
+            super::models::THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF => {
+                Some(Self::deepseek_coder_6_7b())
+            }
+            _ => None,
+        }
+    }
+
     /// Qwen 2.5 0.5B Instruct (GGUF Q4_K_M), ~380 MB.
     ///
     /// Smallest option. Used on tvOS (Apple TV) where the memory limit is 2 GB.
@@ -2097,18 +2311,22 @@ impl GgufModelConfig {
         }
     }
 
-    /// Qwen 3 4B Instruct (GGUF Q4_K_M) — ~2.7 GB.
+    /// Qwen 3 0.6B (GGUF Q4_K_M) — smallest Qwen 3 variant, ~0.5 GB.
     ///
-    /// Full OpenAI-compatible tool calling with extended thinking mode.
-    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
-    /// consume 300–400 tokens before the real response begins.
-    pub fn qwen3_4b() -> Self {
+    /// Lightest tool-capable Qwen 3 model; fits tvOS and the most
+    /// memory-constrained mobile devices. Extended thinking mode — load with
+    /// `max_tokens ≥ 4096`.
+    pub fn qwen3_0_6b() -> Self {
         Self {
-            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
-            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
-            tok_model_id: None,
-            display_name: "Qwen 3 4B (Q4_K_M)".into(),
-            approx_memory: "~2.7 GB".into(),
+            model_id: super::models::BARTOWSKI_QWEN3_0_6B_GGUF.into(),
+            files: vec![super::models::QWEN3_0_6B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_0_6B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 0.6B (Q4_K_M)".into(),
+            approx_memory: "~0.5 GB".into(),
             chat_template: None,
         }
     }
@@ -2118,24 +2336,33 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_1_7B_GGUF.into(),
             files: vec![super::models::QWEN3_1_7B_GGUF_FILE.into()],
-            tok_model_id: None,
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_1_7B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
             display_name: "Qwen 3 1.7B (Q4_K_M)".into(),
             approx_memory: "~1.3 GB".into(),
             chat_template: None,
         }
     }
 
-    /// Qwen 3 14B Instruct (GGUF Q4_K_M) — ~8.4 GB.
+    /// Qwen 3 4B (GGUF Q4_K_M) — ~2.7 GB.
     ///
-    /// Strongest reasoning and tool-calling model with extended thinking.
-    /// Best all-around model for macOS with 16+ GB RAM.
-    pub fn qwen3_14b() -> Self {
+    /// Full OpenAI-compatible tool calling with extended thinking mode.
+    /// Always load with `max_tokens ≥ 4096`; the `<think>…</think>` block can
+    /// consume 300–400 tokens before the real response begins.
+    pub fn qwen3_4b() -> Self {
         Self {
-            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
-            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
-            tok_model_id: None,
-            display_name: "Qwen 3 14B (Q4_K_M)".into(),
-            approx_memory: "~8.4 GB".into(),
+            model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B (Q4_K_M)".into(),
+            approx_memory: "~2.7 GB".into(),
             chat_template: None,
         }
     }
@@ -2146,9 +2373,110 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_8B_GGUF.into(),
             files: vec![super::models::QWEN3_8B_GGUF_FILE.into()],
-            tok_model_id: None,
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_8B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
             display_name: "Qwen 3 8B (Q4_K_M)".into(),
             approx_memory: "~5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 14B (GGUF Q4_K_M) — ~8.4 GB.
+    ///
+    /// Strong reasoning and tool-calling model with extended thinking.
+    /// Best all-around model for macOS with 16+ GB RAM.
+    pub fn qwen3_14b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
+            files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_14B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 14B (Q4_K_M)".into(),
+            approx_memory: "~8.4 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 32B (GGUF Q4_K_M) — largest dense Qwen 3, ~19.8 GB.
+    ///
+    /// Highest-quality dense Qwen 3 variant. Requires a high-memory desktop
+    /// (32+ GB RAM / unified memory). Extended thinking and full tool calling.
+    pub fn qwen3_32b() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_32B_GGUF.into(),
+            files: vec![super::models::QWEN3_32B_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_32B_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 32B (Q4_K_M)".into(),
+            approx_memory: "~19.8 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 4B Instruct 2507 (GGUF Q4_K_M) — latest non-thinking 4B, ~2.5 GB.
+    ///
+    /// Updated instruction-tuned checkpoint that does *not* emit a `<think>`
+    /// block, making it faster and more predictable for chat and tool use.
+    /// Recommended general-purpose Qwen 3 model.
+    pub fn qwen3_4b_instruct_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_INSTRUCT_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_INSTRUCT_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B Instruct 2507 (Q4_K_M)".into(),
+            approx_memory: "~2.5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 4B Thinking 2507 (GGUF Q4_K_M) — latest reasoning 4B, ~2.5 GB.
+    ///
+    /// Updated thinking-only checkpoint with stronger reasoning and tool-use
+    /// accuracy. Always emits a `<think>` block — load with `max_tokens ≥ 4096`.
+    pub fn qwen3_4b_thinking_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_4B_THINKING_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_4B_THINKING_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 4B Thinking 2507 (Q4_K_M)".into(),
+            approx_memory: "~2.5 GB".into(),
+            chat_template: None,
+        }
+    }
+
+    /// Qwen 3 30B-A3B Instruct 2507 (GGUF Q4_K_M) — flagship MoE, ~18.6 GB.
+    ///
+    /// Mixture-of-experts model: 30B total parameters, ~3B active per token, so
+    /// inference is far cheaper than a 30B dense model while quality rivals it.
+    /// Loads via the `qwen3moe` GGUF architecture. Requires 32+ GB RAM.
+    pub fn qwen3_30b_a3b_instruct_2507() -> Self {
+        Self {
+            model_id: super::models::BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF.into(),
+            files: vec![super::models::QWEN3_30B_A3B_INSTRUCT_2507_GGUF_FILE.into()],
+            tok_model_id: if cfg!(target_os = "android") {
+                Some(super::models::QWEN3_30B_A3B_INSTRUCT_2507_TOK_MODEL_ID.into())
+            } else {
+                None
+            },
+            display_name: "Qwen 3 30B-A3B Instruct 2507 (Q4_K_M)".into(),
+            approx_memory: "~18.6 GB".into(),
             chat_template: None,
         }
     }
@@ -2231,6 +2559,53 @@ mod tests {
     }
 
     #[test]
+    fn gguf_model_config_qwen3_variants() {
+        // Every Qwen 3 constructor must produce a valid, single-file config
+        // whose repo ID is registered in the supported-models list.
+        let configs = [
+            GgufModelConfig::qwen3_0_6b(),
+            GgufModelConfig::qwen3_1_7b(),
+            GgufModelConfig::qwen3_4b(),
+            GgufModelConfig::qwen3_8b(),
+            GgufModelConfig::qwen3_14b(),
+            GgufModelConfig::qwen3_32b(),
+            GgufModelConfig::qwen3_4b_instruct_2507(),
+            GgufModelConfig::qwen3_4b_thinking_2507(),
+            GgufModelConfig::qwen3_30b_a3b_instruct_2507(),
+        ];
+        for cfg in &configs {
+            assert!(
+                cfg.model_id.contains("Qwen3"),
+                "unexpected id: {}",
+                cfg.model_id
+            );
+            assert_eq!(cfg.files.len(), 1);
+            assert!(cfg.files[0].ends_with("-Q4_K_M.gguf"));
+            assert!(
+                super::super::models::SUPPORTED_MODELS.contains(&cfg.model_id.as_str()),
+                "{} missing from SUPPORTED_MODELS",
+                cfg.model_id
+            );
+        }
+    }
+
+    #[test]
+    fn every_supported_model_resolves_to_download_config() {
+        for model_id in super::super::models::SUPPORTED_MODELS {
+            let config = GgufModelConfig::from_supported_model_id(model_id)
+                .unwrap_or_else(|| panic!("missing config for {model_id}"));
+            assert_eq!(config.model_id, *model_id);
+            assert_eq!(config.files.len(), 1);
+        }
+    }
+
+    #[test]
+    fn qwen3_thinking_models_request_extended_sampling() {
+        assert!(GgufModelConfig::qwen3_4b_thinking_2507().uses_extended_thinking());
+        assert!(!GgufModelConfig::qwen3_4b_instruct_2507().uses_extended_thinking());
+    }
+
+    #[test]
     fn gguf_model_config_platform_default() {
         let cfg = GgufModelConfig::platform_default();
         // On the test host (macOS or Linux), this should be the 3B model.
@@ -2256,6 +2631,31 @@ mod tests {
         match result.unwrap_err() {
             InferenceError::NoModelLoaded => {} // expected
             other => panic!("Expected NoModelLoaded, got: {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn engine_load_uqff_without_files_errors() {
+        let engine = ChatEngine::new();
+        let result = engine
+            .load_uqff_model(
+                UqffModelConfig {
+                    model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
+                    files: Vec::new(),
+                    display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
+                    approx_memory: "~2.5 GB (UQFF Q4K)".into(),
+                    chat_template: None,
+                },
+                None,
+                None,
+            )
+            .await;
+
+        match result.unwrap_err() {
+            InferenceError::ModelBuild { reason } => {
+                assert!(reason.contains("at least one UQFF file"));
+            }
+            other => panic!("Expected ModelBuild, got: {:?}", other),
         }
     }
 

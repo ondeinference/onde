@@ -80,21 +80,75 @@ cargo +nightly check -Z build-std --target aarch64-apple-tvos-sim
 
 ---
 
-## Tier 3 — Android, Windows, Linux (stable, may need cross-linker)
+## Tier 3 — Android, Windows, Linux (stable, needs cross toolchains)
 
-These check that CPU-only code paths compile. They may fail on linker resolution
-if cross-linkers aren't installed, but `cargo check` (no linking) should pass:
+These check that CPU-only code paths compile. For this crate, `cargo check`
+still runs C build scripts from dependencies such as `aws-lc-sys` and `ring`,
+so absent cross GCC toolchains are real blockers, not harmless link-only
+failures.
 
 ```bash
 # Android arm64 — CPU, requires hf-hub sandbox workaround
 cargo check --target aarch64-linux-android
 
-# Windows — CPU
+# Windows MSVC — CPU, exact CI target; run on Windows or a Windows CI runner
 cargo check --target x86_64-pc-windows-msvc
 
 # Linux — CPU
 cargo check --target x86_64-unknown-linux-gnu
 ```
+
+On macOS hosts without cross GCC installed, expect Linux checks to fail looking
+for `x86_64-linux-gnu-gcc`, and Windows GNU checks to fail looking for
+`x86_64-w64-mingw32-gcc`. Use the Colima/Docker flow below instead of treating
+those as code regressions.
+
+### macOS host fallback: Colima/Docker
+
+Use this when the goal is to run the Linux and Windows cross-checks on a macOS
+host and the host does not have cross GCC toolchains. On Apple Silicon, run a
+native `linux/arm64` container. Avoid `linux/amd64` emulation for this crate;
+the dependency build can crash under QEMU before reaching `onde` code.
+
+Give Colima enough memory before running these checks:
+
+```bash
+colima status
+colima stop
+colima start --memory 8
+```
+
+Run Linux and the local Windows GNU proxy check in the container:
+
+```bash
+docker run --rm --platform linux/arm64 \
+  -v "$PWD:/workspace" \
+  -v onde-cargo-registry:/usr/local/cargo/registry \
+  -v onde-cargo-git:/usr/local/cargo/git \
+  -w /workspace \
+  rust:1.92-bookworm \
+  bash -lc '
+    export PATH=/usr/local/cargo/bin:$PATH
+    apt-get update >/dev/null
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      gcc-x86-64-linux-gnu \
+      libc6-dev-amd64-cross \
+      linux-libc-dev-amd64-cross \
+      gcc-mingw-w64-x86-64 \
+      binutils-mingw-w64-x86-64 >/dev/null
+    rustup target add x86_64-unknown-linux-gnu x86_64-pc-windows-gnu >/dev/null
+    CARGO_BUILD_JOBS=1 cargo check --target x86_64-unknown-linux-gnu
+    CARGO_BUILD_JOBS=1 cargo check --target x86_64-pc-windows-gnu
+  '
+```
+
+`x86_64-pc-windows-gnu` exercises `#[cfg(target_os = "windows")]` and the
+CPU-only Windows path locally, but it is not a substitute for the CI
+`x86_64-pc-windows-msvc` check. The MSVC ABI check needs a Windows/MSVC
+toolchain, normally GitHub Actions `windows-latest`.
+
+If the container reaches `Checking onde ...` and then reports Rust errors, the
+cross toolchain is working. Fix the crate error and rerun the check.
 
 ---
 
@@ -136,6 +190,7 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 rustup target add aarch64-linux-android armv7-linux-androideabi
 rustup target add x86_64-linux-android i686-linux-android
 rustup target add x86_64-pc-windows-msvc
+rustup target add x86_64-pc-windows-gnu
 rustup target add x86_64-unknown-linux-gnu
 
 # Tier 2 — tvOS (nightly, no `rustup target add` — uses -Z build-std)
@@ -338,6 +393,11 @@ attribution obligations.
 
 ### The `onde-mistralrs` workaround
 
+> For the full inventory of every fork and `[patch.crates-io]` override in the
+> stack (mistral.rs, candle, sysctl, mio, tqdm, core2) and how the
+> git-vs-published tiers resolve differently, see the **forked-dependencies**
+> skill. This section covers only the mistral.rs publish mechanics.
+
 `cargo publish` strips every `git =` field before uploading to crates.io.
 That means a git-only dep is useless to anyone who installs `onde` from the
 registry — they can't resolve it.
@@ -359,6 +419,41 @@ target first.
 
 ---
 
+### Step 0 — check if the candle snapshot needs an `onde-candle-*` publish
+
+Since 0.9.x, upstream mistral.rs pins `candle` to a git rev past the latest
+released candle (e.g. rev `27f20fea`, 19 commits past `0.11.0`, adding
+`QTensor::indexed_gemv`, `gemv_fused_shared_lhs`, `BarrierPool::execute_chunked`).
+`cargo publish` strips git pins, so publish verification resolves candle from
+crates.io and fails with E0599 "method not found" if the pinned rev has APIs the
+released candle lacks.
+
+When that happens, publish the pinned rev under `onde-candle-*` names from the
+local candle checkout (`~/Repositories/candle`, branch pattern
+`onde/candle-<version>-<rev>`):
+
+```bash
+# Which candle crates actually diverged from the released version?
+git diff --stat <release-bump-commit> <pinned-rev> -- candle-core candle-nn candle-metal-kernels
+
+# Rename ONLY the diverged crates (0.11.0 era: candle-core + candle-nn; the
+# rest are byte-identical, official crates serve them). candle-nn must be
+# republished whenever candle-core is, even if unchanged, or the official
+# candle-nn drags the official candle-core into the graph -> two candle-core
+# crates -> type mismatch.
+cargo publish -p onde-candle-core
+cargo publish -p onde-candle-nn
+```
+
+Then in the mistral.rs fork workspace `Cargo.toml`:
+
+```toml
+candle-core = { version = "0.11.0", package = "onde-candle-core" }
+candle-nn = { version = "0.11.0", package = "onde-candle-nn" }
+candle-flash-attn-v3 = { version = "0.11.0" }   # unchanged at rev -> official
+candle-metal-kernels = { version = "0.11.0" }   # unchanged at rev -> official
+```
+
 ### Step 1 — check if `onde-mistralrs` needs a new publish
 
 First, see how far the fork has drifted from upstream:
@@ -370,21 +465,40 @@ curl -s "https://api.github.com/repos/setoelkahfi/mistral.rs/compare/EricLBuehle
 
 If there are new commits since the last `onde-mistralrs` publish, or if
 upstream cut a new release that the fork has rebased onto, bump the workspace
-version in the fork and publish. Sub-crates must go in dependency order:
+version in the fork and publish. As of 0.9.1 the set is **12 crates** (upstream
+split out flash-attn/metal-compile/code-exec/sandbox, and vision/audio/mcp must
+be onde-published too because crates.io only has upstream's old versions).
+The rename lives in the workspace dep table (`package = "onde-..."` on each
+entry, local dep keys unchanged so imports stay `mistralrs_*`).
 
 ```bash
 # 1. Edit the root Cargo.toml in setoelkahfi/mistral.rs
-#    bump version, e.g. 0.8.1 → 0.8.2
+#    bump version, e.g. 0.9.0 → 0.9.1
 
-# 2. Publish in order — each one depends on the previous:
+# 2. Publish in dependency order (leaves first):
 cargo publish -p onde-mistralrs-macros
+cargo publish -p onde-mistralrs-metal-compile
+cargo publish -p onde-mistralrs-sandbox
+cargo publish -p onde-mistralrs-flash-attn
+cargo publish -p onde-mistralrs-vision
+cargo publish -p onde-mistralrs-audio
+cargo publish -p onde-mistralrs-mcp
 cargo publish -p onde-mistralrs-paged-attn
 cargo publish -p onde-mistralrs-quant
+cargo publish -p onde-mistralrs-code-exec
 cargo publish -p onde-mistralrs-core
 cargo publish -p onde-mistralrs
 
-# 3. Give the index ~30 s to propagate before moving on.
+# 3. cargo waits for index propagation automatically after each publish.
 ```
+
+Known publish-verification snags (hit during 0.9.1):
+
+| Error | Fix |
+|-------|-----|
+| E0599 on candle APIs (`indexed_gemv`, ...) | Step 0 — publish `onde-candle-*` and repoint |
+| `dependency tqdm does not specify a version` | git dep needs a registry fallback: `version = "0.8.0"` alongside `git =` |
+| `core2 0.4.0 is yanked` | `cargo update -p bitstream-io` (4.10.0 dropped core2) |
 
 ---
 
@@ -513,7 +627,6 @@ consumers either way — but leaving it active makes the dry-run confusing.
 
 ---
 
-*Last updated: July 2025 — added hf-hub/mistralrs-core iOS/tvOS deps,
-cache path consistency checks, App Group convention, onde-mistralrs publish
-strategy, GresIQ/HF_TOKEN secrets documentation.*
-
+*Last updated: July 2026 — added Colima/Docker Linux and Windows GNU
+cross-check guidance for macOS hosts without cross GCC, plus the MSVC CI
+caveat.*

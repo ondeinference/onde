@@ -52,6 +52,20 @@ export interface GgufModelConfig {
   chatTemplate?: string;
 }
 
+/** Configuration for loading a UQFF model. */
+export interface UqffModelConfig {
+  /** HuggingFace base model repository ID or local model directory. */
+  modelId: string;
+  /** UQFF shard filename(s), first shard, or shorthand such as "q4k" / "4". */
+  files: string[];
+  /** Human-friendly display name. */
+  displayName: string;
+  /** Approximate memory footprint description. */
+  approxMemory: string;
+  /** Optional Jinja chat template override. */
+  chatTemplate?: string;
+}
+
 // ── Inference result ─────────────────────────────────────────────────────────
 
 /** Result of a completed inference request. */

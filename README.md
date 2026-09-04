@@ -26,13 +26,46 @@
 
 ## In production
 
-Onde is already shipping in real App Store apps. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
+Onde is already shipping in real apps on the App Store and Google Play. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
+
+**[Siti AI](https://github.com/ondeinference/siti)** is the flagship open reference app — a private, on-device assistant built on Onde, open source under Apache-2.0. Its source is a complete, readable example of wiring the engine into a shipping [Tauri](https://tauri.app) app across macOS, iOS, and Android.
 
 <p align="left">
-  <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993" target="_blank">
-    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="69">
+  <a href="https://apps.apple.com/se/app/siti-ai/id6780047972" target="_blank">
+    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download Siti AI on the App Store" height="52">
+  </a>
+  &nbsp;
+  <a href="https://play.google.com/store/apps/details?id=ai.siti.Siti" target="_blank">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get Siti AI on Google Play" height="52">
   </a>
 </p>
+
+---
+
+## Model formats
+
+Onde can load GGUF models and UQFF models through the same chat engine. UQFF is mistral.rs' native pre-quantized format. Point `model_id` at the UQFF export — the repository or local directory holding the shards, `residual.safetensors`, `config.json`, and the tokenizer — and name the first shard (or a shorthand such as `q4k`) in `files`. Use the UQFF repository, not the original unquantized one; the export is self-contained and everything is resolved relative to it.
+
+```rust
+use onde::inference::{ChatEngine, UqffModelConfig};
+
+let engine = ChatEngine::new();
+engine
+    .load_uqff_model(
+        UqffModelConfig {
+            model_id: "mistralrs-community/gemma-4-E4B-it-UQFF".into(),
+            files: vec!["q4k-0.uqff".into()],
+            display_name: "Gemma 4 E4B (UQFF Q4K)".into(),
+            approx_memory: "~2.5 GB (UQFF Q4K)".into(),
+            chat_template: None,
+        },
+        None,
+        None,
+    )
+    .await?;
+```
+
+For sharded UQFFs, passing the first shard is enough; mistral.rs discovers sibling shards with the same prefix.
 
 ---
 
@@ -76,4 +109,4 @@ Onde's own license (MIT OR Apache-2.0) is independent of these model licenses. I
 
 ## Copyright
 
-© 2026 [Onde Inference](https://ondeinference.com) (Splitfire AB).
+© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).

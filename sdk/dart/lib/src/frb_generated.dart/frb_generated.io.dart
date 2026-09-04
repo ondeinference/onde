@@ -3,7 +3,7 @@
 
 // ignore_for_file: type=lint, unused_import, unnecessary_import
 
-// ignore_for_file: unused_element, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
+// ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
 import 'dart:async';
@@ -73,6 +73,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  UqffModelConfig dco_decode_box_autoadd_uqff_model_config(dynamic raw);
 
   @protected
   ChatMessage dco_decode_chat_message(dynamic raw);
@@ -150,6 +153,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  UqffModelConfig dco_decode_uqff_model_config(dynamic raw);
+
+  @protected
   BigInt dco_decode_usize(dynamic raw);
 
   @protected
@@ -205,6 +211,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  UqffModelConfig sse_decode_box_autoadd_uqff_model_config(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ChatMessage sse_decode_chat_message(SseDeserializer deserializer);
@@ -286,6 +297,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
+  UqffModelConfig sse_decode_uqff_model_config(SseDeserializer deserializer);
+
+  @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
 
   @protected
@@ -353,6 +367,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_uqff_model_config(
+    UqffModelConfig self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_chat_message(ChatMessage self, SseSerializer serializer);
@@ -449,6 +469,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_uqff_model_config(
+    UqffModelConfig self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);

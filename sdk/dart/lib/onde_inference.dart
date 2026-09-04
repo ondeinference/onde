@@ -1,6 +1,5 @@
-// Copyright 2024 Onde Inference. All rights reserved.
-// Use of this source code is governed by the MIT license that can be found in
-// the LICENSE file.
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 /// On-device LLM inference SDK for Flutter & Dart.
 ///
@@ -79,7 +78,7 @@
 library;
 
 // Re-export the core data types (ChatMessage, SamplingConfig,
-// GgufModelConfig, and friends) from the FRB-generated api.dart via types.dart.
+// GgufModelConfig, UqffModelConfig, and friends) from the FRB-generated api.dart via types.dart.
 export 'src/types.dart';
 
 // Engine API: OndeChatEngineX helpers, OndeInference static helpers,

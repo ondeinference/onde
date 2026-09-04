@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 import OndeInferenceModule from "./OndeInferenceModule";
 import type {
   ChatMessage,
@@ -8,6 +11,7 @@ import type {
   SamplingConfig,
   StreamChunk,
   ToolCallInfo,
+  UqffModelConfig,
 } from "./types";
 import { OndeError } from "./types";
 
@@ -22,6 +26,7 @@ export type {
   SamplingConfig,
   StreamChunk,
   ToolCallInfo,
+  UqffModelConfig,
 } from "./types";
 export { OndeError } from "./types";
 
@@ -46,6 +51,17 @@ function serializeModelConfig(config: GgufModelConfig): string {
     model_id: config.modelId,
     files: config.files,
     tok_model_id: config.tokModelId,
+    display_name: config.displayName,
+    approx_memory: config.approxMemory,
+    chat_template: config.chatTemplate,
+  });
+}
+
+// Convert UqffModelConfig from camelCase TS to snake_case Rust
+function serializeUqffModelConfig(config: UqffModelConfig): string {
+  return JSON.stringify({
+    model_id: config.modelId,
+    files: config.files,
     display_name: config.displayName,
     approx_memory: config.approxMemory,
     chat_template: config.chatTemplate,
@@ -108,6 +124,23 @@ function parseModelConfig(json: string): GgufModelConfig {
     modelId: raw.model_id,
     files: raw.files,
     tokModelId: raw.tok_model_id,
+    displayName: raw.display_name,
+    approxMemory: raw.approx_memory,
+    chatTemplate: raw.chat_template,
+  };
+}
+
+function parseUqffModelConfig(json: string): UqffModelConfig {
+  const raw = parseResult<{
+    model_id: string;
+    files: string[];
+    display_name: string;
+    approx_memory: string;
+    chat_template?: string;
+  }>(json);
+  return {
+    modelId: raw.model_id,
+    files: raw.files,
     displayName: raw.display_name,
     approxMemory: raw.approx_memory,
     chatTemplate: raw.chat_template,
@@ -218,6 +251,29 @@ export const OndeChatEngine = {
     return result.elapsed_secs;
   },
 
+  /**
+   * Load a specific UQFF model.
+   *
+   * `config.modelId` is the base repo/local directory used for tokenizer and
+   * config resolution. `config.files` accepts the first shard, explicit
+   * shards, or mistral.rs shorthands such as `"q4k"` and `"4"`.
+   *
+   * @returns Wall-clock loading time in seconds.
+   */
+  async loadUqffModel(
+    config: UqffModelConfig,
+    systemPrompt?: string,
+    sampling?: SamplingConfig,
+  ): Promise<number> {
+    const json = await OndeInferenceModule.loadUqffModel(
+      serializeUqffModelConfig(config),
+      systemPrompt ?? null,
+      sampling ? serializeSampling(sampling) : null,
+    );
+    const result = parseResult<{ elapsed_secs: number }>(json);
+    return result.elapsed_secs;
+  },
+
   /** Unload the current model, freeing all memory. */
   async unloadModel(): Promise<string | null> {
     const json = await OndeInferenceModule.unloadModel();
@@ -308,6 +364,25 @@ export function defaultModelConfig(): GgufModelConfig {
   return parseModelConfig(OndeInferenceModule.defaultModelConfig());
 }
 
+/** Create a generic UQFF model config. */
+export function uqffModelConfig(
+  modelId: string,
+  files: string[],
+  displayName: string,
+  approxMemory: string,
+  chatTemplate?: string,
+): UqffModelConfig {
+  return parseUqffModelConfig(
+    OndeInferenceModule.uqffModelConfig(
+      modelId,
+      JSON.stringify(files),
+      displayName,
+      approxMemory,
+      chatTemplate ?? null,
+    ),
+  );
+}
+
 /** Return the Qwen 2.5 1.5B config (~941 MB). */
 export function qwen251_5bConfig(): GgufModelConfig {
   return parseModelConfig(OndeInferenceModule.qwen251_5bConfig());
@@ -316,6 +391,51 @@ export function qwen251_5bConfig(): GgufModelConfig {
 /** Return the Qwen 2.5 3B config (~1.93 GB). */
 export function qwen253bConfig(): GgufModelConfig {
   return parseModelConfig(OndeInferenceModule.qwen253bConfig());
+}
+
+/** Return the Qwen 3 0.6B config (~0.5 GB). */
+export function qwen3_0_6bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_0_6bConfig());
+}
+
+/** Return the Qwen 3 1.7B config (~1.3 GB). */
+export function qwen3_1_7bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_1_7bConfig());
+}
+
+/** Return the Qwen 3 4B config (~2.5 GB). */
+export function qwen3_4bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bConfig());
+}
+
+/** Return the Qwen 3 8B config (~5 GB). */
+export function qwen3_8bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_8bConfig());
+}
+
+/** Return the Qwen 3 14B config (~8.4 GB). */
+export function qwen3_14bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_14bConfig());
+}
+
+/** Return the Qwen 3 32B config (~19.8 GB). */
+export function qwen3_32bConfig(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_32bConfig());
+}
+
+/** Return the non-thinking Qwen 3 4B Instruct 2507 config (~2.5 GB). */
+export function qwen3_4bInstruct2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bInstruct2507Config());
+}
+
+/** Return the Qwen 3 4B Thinking 2507 config (~2.5 GB). */
+export function qwen3_4bThinking2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_4bThinking2507Config());
+}
+
+/** Return the Qwen 3 30B-A3B Instruct 2507 MoE config (~18.6 GB). */
+export function qwen3_30bA3bInstruct2507Config(): GgufModelConfig {
+  return parseModelConfig(OndeInferenceModule.qwen3_30bA3bInstruct2507Config());
 }
 
 /** Return default sampling parameters (temp=0.7, top_p=0.95, max_tokens=512). */

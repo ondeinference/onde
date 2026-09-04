@@ -119,6 +119,27 @@ impl OndeChatEngine {
         Ok(elapsed.as_secs_f64())
     }
 
+    /// Load a UQFF model into the engine.
+    ///
+    /// UQFF files are pre-quantised and load directly without runtime
+    /// conversion. `config.model_id` names the UQFF export (not the original
+    /// unquantised repo), and `config.files` should contain the first UQFF
+    /// shard or explicit shard filenames.
+    ///
+    /// Returns the wall-clock loading time in seconds.
+    pub async fn load_uqff_model(
+        &self,
+        config: UqffModelConfig,
+        system_prompt: Option<String>,
+        sampling: Option<SamplingConfig>,
+    ) -> Result<f64, InferenceError> {
+        let elapsed = self
+            .inner
+            .load_uqff_model(config, system_prompt, sampling)
+            .await?;
+        Ok(elapsed.as_secs_f64())
+    }
+
     /// Load the platform-appropriate default model.
     ///
     /// - tvOS / iOS / Android → Qwen 2.5 1.5B (~941 MB)
@@ -308,6 +329,30 @@ pub fn default_model_config() -> GgufModelConfig {
     GgufModelConfig::platform_default()
 }
 
+/// Create a generic UQFF model configuration.
+///
+/// `model_id` is the HuggingFace repo or local directory of the UQFF export
+/// (the shards plus `residual.safetensors`, `config.json`, and the tokenizer),
+/// not the original unquantised repo. `files` accepts a first shard
+/// (`q4k-0.uqff`), explicit shards, or mistral.rs shorthands such as `q4k`
+/// and `4`.
+#[uniffi::export]
+pub fn uqff_model_config(
+    model_id: String,
+    files: Vec<String>,
+    display_name: String,
+    approx_memory: String,
+    chat_template: Option<String>,
+) -> UqffModelConfig {
+    UqffModelConfig {
+        model_id,
+        files,
+        display_name,
+        approx_memory,
+        chat_template,
+    }
+}
+
 /// Return the Qwen 2.5 0.5B GGUF model configuration (~380 MB).
 #[uniffi::export]
 pub fn qwen25_0_5b_config() -> GgufModelConfig {
@@ -324,6 +369,66 @@ pub fn qwen25_1_5b_config() -> GgufModelConfig {
 #[uniffi::export]
 pub fn qwen25_3b_config() -> GgufModelConfig {
     GgufModelConfig::qwen25_3b()
+}
+
+// ── Qwen 3 family ────────────────────────────────────────────────────────────
+
+/// Return the Qwen 3 0.6B GGUF model configuration (~0.5 GB).
+#[uniffi::export]
+pub fn qwen3_0_6b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_0_6b()
+}
+
+/// Return the Qwen 3 1.7B GGUF model configuration (~1.3 GB).
+#[uniffi::export]
+pub fn qwen3_1_7b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_1_7b()
+}
+
+/// Return the Qwen 3 4B GGUF model configuration (~2.7 GB).
+#[uniffi::export]
+pub fn qwen3_4b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b()
+}
+
+/// Return the Qwen 3 8B GGUF model configuration (~5 GB).
+#[uniffi::export]
+pub fn qwen3_8b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_8b()
+}
+
+/// Return the Qwen 3 14B GGUF model configuration (~8.4 GB).
+#[uniffi::export]
+pub fn qwen3_14b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_14b()
+}
+
+/// Return the Qwen 3 32B GGUF model configuration (~19.8 GB).
+#[uniffi::export]
+pub fn qwen3_32b_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_32b()
+}
+
+/// Return the Qwen 3 4B Instruct 2507 GGUF model configuration (~2.5 GB).
+///
+/// Latest non-thinking 4B checkpoint — recommended general-purpose Qwen 3 model.
+#[uniffi::export]
+pub fn qwen3_4b_instruct_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b_instruct_2507()
+}
+
+/// Return the Qwen 3 4B Thinking 2507 GGUF model configuration (~2.5 GB).
+///
+/// Latest reasoning-focused 4B checkpoint; load with `max_tokens ≥ 4096`.
+#[uniffi::export]
+pub fn qwen3_4b_thinking_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_4b_thinking_2507()
+}
+
+/// Return the Qwen 3 30B-A3B Instruct 2507 (MoE) GGUF model configuration (~18.6 GB).
+#[uniffi::export]
+pub fn qwen3_30b_a3b_instruct_2507_config() -> GgufModelConfig {
+    GgufModelConfig::qwen3_30b_a3b_instruct_2507()
 }
 
 /// Return default sampling parameters for creative chat.

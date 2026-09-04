@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -467241906;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1633970317;
 
 // Section: executor
 
@@ -510,6 +510,70 @@ fn wire__crate__api__OndeChatEngine_load_gguf_model_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let output_ok = crate::api::OndeChatEngine::load_gguf_model(
+                            &*api_that_guard,
+                            api_config,
+                            api_system_prompt,
+                            api_sampling,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__OndeChatEngine_load_uqff_model_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "OndeChatEngine_load_uqff_model",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OndeChatEngine>,
+            >>::sse_decode(&mut deserializer);
+            let api_config = <crate::api::UqffModelConfig>::sse_decode(&mut deserializer);
+            let api_system_prompt = <Option<String>>::sse_decode(&mut deserializer);
+            let api_sampling = <Option<crate::api::SamplingConfig>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::api::OndeError>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::api::OndeChatEngine::load_uqff_model(
                             &*api_that_guard,
                             api_config,
                             api_system_prompt,
@@ -1178,6 +1242,308 @@ fn wire__crate__api__qwen25_coder_3b_config_impl(
         },
     )
 }
+fn wire__crate__api__qwen3_0_6b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_0_6b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_0_6b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_14b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_14b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_14b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_1_7b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_1_7b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_1_7b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_30b_a3b_instruct_2507_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_30b_a3b_instruct_2507_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok =
+                    Result::<_, ()>::Ok(crate::api::qwen3_30b_a3b_instruct_2507_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_32b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_32b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_32b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_4b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_4b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_4b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_4b_instruct_2507_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_4b_instruct_2507_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_4b_instruct_2507_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_4b_thinking_2507_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_4b_thinking_2507_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_4b_thinking_2507_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__qwen3_8b_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "qwen3_8b_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::qwen3_8b_config())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__uqff_model_config_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "uqff_model_config",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_model_id = <String>::sse_decode(&mut deserializer);
+            let api_files = <Vec<String>>::sse_decode(&mut deserializer);
+            let api_display_name = <String>::sse_decode(&mut deserializer);
+            let api_approx_memory = <String>::sse_decode(&mut deserializer);
+            let api_chat_template = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::uqff_model_config(
+                    api_model_id,
+                    api_files,
+                    api_display_name,
+                    api_approx_memory,
+                    api_chat_template,
+                ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 
 // Section: related_funcs
 
@@ -1561,6 +1927,24 @@ impl SseDecode for () {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {}
 }
 
+impl SseDecode for crate::api::UqffModelConfig {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_modelId = <String>::sse_decode(deserializer);
+        let mut var_files = <Vec<String>>::sse_decode(deserializer);
+        let mut var_displayName = <String>::sse_decode(deserializer);
+        let mut var_approxMemory = <String>::sse_decode(deserializer);
+        let mut var_chatTemplate = <Option<String>>::sse_decode(deserializer);
+        return crate::api::UqffModelConfig {
+            model_id: var_modelId,
+            files: var_files,
+            display_name: var_displayName,
+            approx_memory: var_approxMemory,
+            chat_template: var_chatTemplate,
+        };
+    }
+}
+
 impl SseDecode for usize {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1597,19 +1981,22 @@ fn pde_ffi_dispatcher_primary_impl(
         8 => {
             wire__crate__api__OndeChatEngine_load_gguf_model_impl(port, ptr, rust_vec_len, data_len)
         }
-        10 => wire__crate__api__OndeChatEngine_push_history_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__OndeChatEngine_send_message_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__OndeChatEngine_set_sampling_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__OndeChatEngine_set_system_prompt_impl(
+        9 => {
+            wire__crate__api__OndeChatEngine_load_uqff_model_impl(port, ptr, rust_vec_len, data_len)
+        }
+        11 => wire__crate__api__OndeChatEngine_push_history_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__OndeChatEngine_send_message_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__OndeChatEngine_set_sampling_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__OndeChatEngine_set_system_prompt_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => {
+        15 => {
             wire__crate__api__OndeChatEngine_stream_message_impl(port, ptr, rust_vec_len, data_len)
         }
-        15 => wire__crate__api__OndeChatEngine_unload_model_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__OndeChatEngine_unload_model_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1622,16 +2009,28 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        9 => wire__crate__api__OndeChatEngine_new_impl(ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__configure_cache_dir_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__default_model_config_impl(ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__default_sampling_config_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__deterministic_sampling_config_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__mobile_sampling_config_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__qwen25_1_5b_config_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__qwen25_3b_config_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__qwen25_coder_1_5b_config_impl(ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__qwen25_coder_3b_config_impl(ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__OndeChatEngine_new_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__configure_cache_dir_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__default_model_config_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__default_sampling_config_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__deterministic_sampling_config_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__mobile_sampling_config_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__qwen25_1_5b_config_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__qwen25_3b_config_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__qwen25_coder_1_5b_config_impl(ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__qwen25_coder_3b_config_impl(ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__qwen3_0_6b_config_impl(ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__qwen3_14b_config_impl(ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__qwen3_1_7b_config_impl(ptr, rust_vec_len, data_len),
+        29 => {
+            wire__crate__api__qwen3_30b_a3b_instruct_2507_config_impl(ptr, rust_vec_len, data_len)
+        }
+        30 => wire__crate__api__qwen3_32b_config_impl(ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__qwen3_4b_config_impl(ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__qwen3_4b_instruct_2507_config_impl(ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__qwen3_4b_thinking_2507_config_impl(ptr, rust_vec_len, data_len),
+        34 => wire__crate__api__qwen3_8b_config_impl(ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__uqff_model_config_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1847,6 +2246,27 @@ impl flutter_rust_bridge::IntoDart for crate::api::ToolCallInfo {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::ToolCallInfo {}
 impl flutter_rust_bridge::IntoIntoDart<crate::api::ToolCallInfo> for crate::api::ToolCallInfo {
     fn into_into_dart(self) -> crate::api::ToolCallInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::UqffModelConfig {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.model_id.into_into_dart().into_dart(),
+            self.files.into_into_dart().into_dart(),
+            self.display_name.into_into_dart().into_dart(),
+            self.approx_memory.into_into_dart().into_dart(),
+            self.chat_template.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::UqffModelConfig {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::UqffModelConfig>
+    for crate::api::UqffModelConfig
+{
+    fn into_into_dart(self) -> crate::api::UqffModelConfig {
         self
     }
 }
@@ -2167,6 +2587,17 @@ impl SseEncode for u8 {
 impl SseEncode for () {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {}
+}
+
+impl SseEncode for crate::api::UqffModelConfig {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.model_id, serializer);
+        <Vec<String>>::sse_encode(self.files, serializer);
+        <String>::sse_encode(self.display_name, serializer);
+        <String>::sse_encode(self.approx_memory, serializer);
+        <Option<String>>::sse_encode(self.chat_template, serializer);
+    }
 }
 
 impl SseEncode for usize {

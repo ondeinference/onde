@@ -1,3 +1,6 @@
+// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! C FFI bridge for the Onde React Native npm SDK.
 //!
 //! This crate wraps [`onde::inference::engine::ChatEngine`] with `extern "C"`
@@ -20,7 +23,7 @@ use serde::Serialize;
 use tokio::runtime::Runtime;
 
 use onde::inference::engine::ChatEngine;
-use onde::inference::types::{ChatMessage, GgufModelConfig, SamplingConfig};
+use onde::inference::types::{ChatMessage, GgufModelConfig, SamplingConfig, UqffModelConfig};
 
 // ── Global Tokio runtime ─────────────────────────────────────────────────────
 
@@ -181,6 +184,47 @@ pub extern "C" fn onde_engine_load_model(
 
     runtime().block_on(async {
         match engine_ref.load_gguf_model(config, prompt, sampling).await {
+            Ok(duration) => {
+                let result = serde_json::json!({ "elapsed_secs": duration.as_secs_f64() });
+                to_json_cstring(&result)
+            }
+            Err(err) => error_json(&err.to_string()),
+        }
+    })
+}
+
+/// Load a specific UQFF model from a JSON-encoded [`UqffModelConfig`].
+///
+/// # Parameters
+///
+/// - `config_json` — JSON-encoded `UqffModelConfig`.
+/// - `system_prompt` — optional C string (pass null to omit).
+/// - `sampling_json` — optional JSON-encoded `SamplingConfig` (pass null for defaults).
+///
+/// # Returns
+///
+/// Same JSON shape as [`onde_engine_load_default_model`].
+#[no_mangle]
+pub extern "C" fn onde_engine_load_uqff_model(
+    engine: *mut c_void,
+    config_json: *const c_char,
+    system_prompt: *const c_char,
+    sampling_json: *const c_char,
+) -> *mut c_char {
+    if engine.is_null() {
+        return error_json("engine pointer is null");
+    }
+    let engine_ref = unsafe { &*(engine as *const ChatEngine) };
+
+    let config: UqffModelConfig = match from_json_cstr(config_json) {
+        Some(c) => c,
+        None => return error_json("invalid or null config_json"),
+    };
+    let prompt = nullable_str(system_prompt);
+    let sampling: Option<SamplingConfig> = from_json_cstr(sampling_json);
+
+    runtime().block_on(async {
+        match engine_ref.load_uqff_model(config, prompt, sampling).await {
             Ok(duration) => {
                 let result = serde_json::json!({ "elapsed_secs": duration.as_secs_f64() });
                 to_json_cstring(&result)
@@ -458,6 +502,41 @@ pub extern "C" fn onde_default_model_config() -> *mut c_char {
     to_json_cstring(&GgufModelConfig::platform_default())
 }
 
+/// Build a generic UQFF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_uqff_model_config(
+    model_id: *const c_char,
+    files_json: *const c_char,
+    display_name: *const c_char,
+    approx_memory: *const c_char,
+    chat_template: *const c_char,
+) -> *mut c_char {
+    let model_id = match nullable_str(model_id) {
+        Some(value) => value,
+        None => return error_json("model_id is required"),
+    };
+    let files: Vec<String> = match from_json_cstr(files_json) {
+        Some(value) => value,
+        None => return error_json("invalid or null files_json"),
+    };
+    let display_name = match nullable_str(display_name) {
+        Some(value) => value,
+        None => return error_json("display_name is required"),
+    };
+    let approx_memory = match nullable_str(approx_memory) {
+        Some(value) => value,
+        None => return error_json("approx_memory is required"),
+    };
+
+    to_json_cstring(&UqffModelConfig {
+        model_id,
+        files,
+        display_name,
+        approx_memory,
+        chat_template: nullable_str(chat_template),
+    })
+}
+
 /// Return the Qwen 2.5 1.5B GGUF model config as JSON.
 #[no_mangle]
 pub extern "C" fn onde_qwen25_1_5b_config() -> *mut c_char {
@@ -468,6 +547,62 @@ pub extern "C" fn onde_qwen25_1_5b_config() -> *mut c_char {
 #[no_mangle]
 pub extern "C" fn onde_qwen25_3b_config() -> *mut c_char {
     to_json_cstring(&GgufModelConfig::qwen25_3b())
+}
+
+// ── Qwen 3 family ────────────────────────────────────────────────────────────
+
+/// Return the Qwen 3 0.6B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_0_6b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_0_6b())
+}
+
+/// Return the Qwen 3 1.7B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_1_7b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_1_7b())
+}
+
+/// Return the Qwen 3 4B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b())
+}
+
+/// Return the Qwen 3 8B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_8b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_8b())
+}
+
+/// Return the Qwen 3 14B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_14b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_14b())
+}
+
+/// Return the Qwen 3 32B GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_32b_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_32b())
+}
+
+/// Return the Qwen 3 4B Instruct 2507 GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_instruct_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b_instruct_2507())
+}
+
+/// Return the Qwen 3 4B Thinking 2507 GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_4b_thinking_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_4b_thinking_2507())
+}
+
+/// Return the Qwen 3 30B-A3B Instruct 2507 (MoE) GGUF model config as JSON.
+#[no_mangle]
+pub extern "C" fn onde_qwen3_30b_a3b_instruct_2507_config() -> *mut c_char {
+    to_json_cstring(&GgufModelConfig::qwen3_30b_a3b_instruct_2507())
 }
 
 // ── Sampling presets ─────────────────────────────────────────────────────────
@@ -559,7 +694,7 @@ mod android {
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineCreate(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineCreate(
         _env: JNIEnv,
         _class: JClass,
     ) -> jlong {
@@ -567,7 +702,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineDestroy(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineDestroy(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -576,7 +711,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineLoadDefaultModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadDefaultModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -601,7 +736,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineLoadModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -632,7 +767,42 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineUnloadModel(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineLoadUqffModel(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine: jlong,
+        config_json: JString,
+        system_prompt: JString,
+        sampling_json: JString,
+    ) -> jstring {
+        let config_cstr = jstring_to_cstring(&mut env, &config_json);
+        let prompt_cstr = jstring_to_cstring(&mut env, &system_prompt);
+        let sampling_cstr = jstring_to_cstring(&mut env, &sampling_json);
+
+        let config_ptr = config_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+        let prompt_ptr = prompt_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+        let sampling_ptr = sampling_cstr
+            .as_ref()
+            .map(|c| c.as_ptr())
+            .unwrap_or(std::ptr::null());
+
+        let result = onde_engine_load_uqff_model(
+            engine as *mut c_void,
+            config_ptr,
+            prompt_ptr,
+            sampling_ptr,
+        );
+        cstring_ptr_to_jstring(&mut env, result)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineUnloadModel(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -642,7 +812,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineIsLoaded(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineIsLoaded(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -657,7 +827,7 @@ mod android {
     // ── Engine info ──────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineInfo(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineInfo(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -669,7 +839,7 @@ mod android {
     // ── System prompt ────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSetSystemPrompt(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSetSystemPrompt(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -684,7 +854,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineClearSystemPrompt(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineClearSystemPrompt(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -695,7 +865,7 @@ mod android {
     // ── Sampling ─────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSetSampling(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSetSampling(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -712,7 +882,7 @@ mod android {
     // ── History ──────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineHistory(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -722,7 +892,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineClearHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineClearHistory(
         _env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -731,7 +901,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEnginePushHistory(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEnginePushHistory(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -748,7 +918,7 @@ mod android {
     // ── Inference ────────────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineSendMessage(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineSendMessage(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -764,7 +934,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeEngineGenerate(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeEngineGenerate(
         mut env: JNIEnv,
         _class: JClass,
         engine: jlong,
@@ -790,7 +960,7 @@ mod android {
     // ── Model config presets ─────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDefaultModelConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDefaultModelConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -799,7 +969,48 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeQwen251_5bConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeUqffModelConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+        model_id: JString,
+        files_json: JString,
+        display_name: JString,
+        approx_memory: JString,
+        chat_template: JString,
+    ) -> jstring {
+        let model_id_cstr = jstring_to_cstring(&mut env, &model_id);
+        let files_cstr = jstring_to_cstring(&mut env, &files_json);
+        let display_name_cstr = jstring_to_cstring(&mut env, &display_name);
+        let approx_memory_cstr = jstring_to_cstring(&mut env, &approx_memory);
+        let chat_template_cstr = jstring_to_cstring(&mut env, &chat_template);
+
+        let result = onde_uqff_model_config(
+            model_id_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            files_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            display_name_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            approx_memory_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+            chat_template_cstr
+                .as_ref()
+                .map(|c| c.as_ptr())
+                .unwrap_or(std::ptr::null()),
+        );
+        cstring_ptr_to_jstring(&mut env, result)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen251_15bConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -808,7 +1019,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeQwen253bConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen253bConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -816,10 +1027,82 @@ mod android {
         cstring_ptr_to_jstring(&mut env, result)
     }
 
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_10_16bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_0_6b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_11_17bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_1_7b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_18bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_8b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_114bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_14b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_132bConfig(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_32b_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bInstruct2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_instruct_2507_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_14bThinking2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_4b_thinking_2507_config())
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeQwen3_130bA3bInstruct2507Config(
+        mut env: JNIEnv,
+        _class: JClass,
+    ) -> jstring {
+        cstring_ptr_to_jstring(&mut env, onde_qwen3_30b_a3b_instruct_2507_config())
+    }
+
     // ── Sampling presets ─────────────────────────────────────────────────
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDefaultSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDefaultSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -828,7 +1111,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeDeterministicSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeDeterministicSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
@@ -837,7 +1120,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_ondeMobileSamplingConfig(
+    pub extern "system" fn Java_com_ondeinference_OndeInferenceModule_nativeMobileSamplingConfig(
         mut env: JNIEnv,
         _class: JClass,
     ) -> jstring {
