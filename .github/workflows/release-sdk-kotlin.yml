@@ -53,9 +53,24 @@ jobs:
           build-root-directory: sdk/kotlin
 
       # ── Rust ──────────────────────────────────────────────────────────────────
+      # Read the channel from rust-toolchain.toml so it is pinned in exactly one
+      # place. Without `toolchain:` the action installs plain stable and adds the
+      # Android targets to *that*, while bare `cargo` in this repo resolves to the
+      # pinned channel — a different toolchain with no Android std, which is why
+      # the 1.2.3 release failed on "can't find crate for `core`".
+      - name: Read Rust toolchain
+        run: |
+          rust_toolchain="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml | head -n 1)"
+          if [ -z "$rust_toolchain" ]; then
+            echo "::error::Failed to read channel from rust-toolchain.toml"
+            exit 1
+          fi
+          echo "RUST_TOOLCHAIN=${rust_toolchain}" >> "$GITHUB_ENV"
+
       - name: Install stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           targets: >-
             aarch64-linux-android,
             armv7-linux-androideabi,
