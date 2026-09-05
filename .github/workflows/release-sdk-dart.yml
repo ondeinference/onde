@@ -73,6 +73,16 @@ jobs:
         working-directory: sdk/dart
         run: flutter pub get
 
+      # flutter pub get rewrites tracked files: platform plugin registrants, and
+      # since Flutter 3.44 the analysis_options.yaml of the package and its
+      # example ("Upgrading analysis_options.yaml to exclude build and platform
+      # directories"). pub publish treats a dirty tree as a warning and exits 65,
+      # which is what failed the 1.2.3 release. Restore to HEAD, same as the
+      # publish job below.
+      - name: Restore generated files modified by flutter pub get
+        working-directory: sdk/dart
+        run: git checkout -- . 2>/dev/null || true
+
       - name: Analyze
         working-directory: sdk/dart
         # --no-fatal-infos: flutter_rust_bridge codegen files emit infos that

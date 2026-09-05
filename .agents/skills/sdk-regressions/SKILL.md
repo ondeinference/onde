@@ -497,7 +497,7 @@ Known publish-verification snags (hit during 0.9.1):
 | Error | Fix |
 |-------|-----|
 | E0599 on candle APIs (`indexed_gemv`, ...) | Step 0 — publish `onde-candle-*` and repoint |
-| `dependency tqdm does not specify a version` | git dep needs a registry fallback: `version = "0.8.0"` alongside `git =` |
+| `dependency tqdm does not specify a version` | tqdm must be a registry dep, not git — it is plain `tqdm = "0.8.1"` since the crossterm bump landed upstream |
 | `core2 0.4.0 is yanked` | `cargo update -p bitstream-io` (4.10.0 dropped core2) |
 
 ---
