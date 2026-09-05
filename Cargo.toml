@@ -121,8 +121,10 @@ uniffi = { version = "=0.31.0", features = ["build"] }
 # dropped — cargo just logs "patch was not used in the crate graph" and builds
 # the unpatched registry crate, which is how the watchOS check kept failing.
 #
-# mio no longer needs patching: onde-mistralrs-core 0.9.3 depends on onde-tqdm
-# 0.8.2 (crossterm 0.29 -> mio 1.x), so the old tqdm -> crossterm 0.25 -> mio
-# 0.8.11 chain (which lacked visionOS support) is gone from the tree.
+# mio no longer needs patching: onde-mistralrs-core pulls tqdm with crossterm
+# 0.29 -> mio 1.x, so the old tqdm -> crossterm 0.25 -> mio 0.8.11 chain (which
+# lacked visionOS support) is gone from the tree. 0.9.3 got that via the
+# onde-tqdm fork crate; from 0.9.4 it comes from upstream tqdm 0.8.1, which
+# carries the merged crossterm bump. onde-tqdm is retired.
 [patch.crates-io]
 sysctl = { git = "https://github.com/setoelkahfi/sysctl-rs.git", branch = "feature/watchos-0.6" }
