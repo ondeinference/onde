@@ -1,3 +1,9 @@
+## 1.2.4
+
+- Dependency updates across the Rust tree
+- onde-tqdm is retired: the mistral.rs fork now depends on upstream tqdm 0.8.1 directly, which carries the merged crossterm 0.29 bump
+- Release workflow fixes for the Dart and Kotlin SDK jobs (Flutter pub get no longer fails the publish on a dirty tree; the Kotlin job installs the pinned Rust toolchain before adding Android targets)
+
 ## 1.2.3
 
 - UQFF model support: `uqffModelConfig(...)` builds a config for a pre-quantised UQFF export, and `OndeChatEngine.loadUqffModel(...)` loads it. UQFF weights are quantised ahead of time, so loading skips the memory spike of in-situ quantisation
