@@ -90,6 +90,13 @@ jobs:
         # does not cover the frb_generated.dart/ directory structure.
         run: flutter analyze --no-fatal-infos
 
+      # flutter pub publish --dry-run runs pub get internally, which on newer
+      # Flutter (3.44+) rewrites analysis_options.yaml. Restore the tree right
+      # before the dry-run so pub publish sees a clean git state.
+      - name: Restore tree before dry-run
+        working-directory: sdk/dart
+        run: git checkout -- . 2>/dev/null || true
+
       - name: Dry-run publish
         working-directory: sdk/dart
         run: flutter pub publish --dry-run
