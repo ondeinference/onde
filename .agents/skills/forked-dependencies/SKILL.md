@@ -1,6 +1,6 @@
 ---
 name: forked-dependencies
-description: The complete inventory of forked crates and [patch.crates-io] overrides that the onde stack depends on — mistral.rs, candle, sysctl, mio, tqdm, core2. Explains what each fork is for, where it is consumed, how the git-vs-published two-tier model works, and how to update or add one. Apply whenever a build fails on a missing/incompatible crate for an Apple or Android target, when bumping the mistral.rs or candle fork, or when adding a new patched dependency.
+description: The complete inventory of forked crates and [patch.crates-io] overrides that the onde stack depends on — mistral.rs, candle, sysctl, mio, tqdm, core2 — including the retired ones. Explains what each fork is for, where it is consumed, how the git-vs-published two-tier model works, and how to update or add one. Apply whenever a build fails on a missing/incompatible crate for an Apple or Android target, when bumping the mistral.rs or candle fork, or when adding a new patched dependency.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 user-invocable: true
 ---
@@ -51,15 +51,17 @@ publish. onde therefore resolved crates.io `tqdm 0.8.0` → `crossterm 0.25` →
 visionOS patch even though the tqdm fork "already fixed" crossterm upstream of
 it.
 
-The fix that removed the whole problem: the crossterm-0.29 tqdm fork is now
-**published to crates.io as `onde-tqdm`** and consumed by the mistral.rs fork as
-a `version =` registry dep (package rename), exactly like `onde-mistralrs-*` and
-`onde-candle-*`. A registry dep survives publish, so onde's registry-resolved
-tree gets `onde-tqdm` → `crossterm 0.29` → `mio 1.x`, and the `mio 0.8.11`
-line disappears entirely. This is now **done**: `onde-mistralrs-*` 0.9.3
-(carrying the `onde-tqdm` dep) is published, onde consumes 0.9.3, and onde's
-`[patch.crates-io] mio` entry has been **deleted**. The `mio` fork is retired.
-See the onde-tqdm and mio entries.
+The fix that removed the whole problem was to make the crossterm-0.29 tqdm a
+**registry** dep of the mistral.rs fork rather than a git one, since a registry
+dep survives publish: onde's resolved tree then gets `crossterm 0.29` → `mio
+1.x` and the `mio 0.8.11` line disappears entirely. That shipped first as the
+stopgap fork crate `onde-tqdm` (in `onde-mistralrs-*` 0.9.3), which let onde
+delete its `[patch.crates-io] mio` entry and retire the `mio` fork.
+
+Upstream has since merged the crossterm bump (mrlazy1708/tqdm#28) and released
+it as **`tqdm 0.8.1`**, so the fork crate is no longer needed: the mistral.rs
+fork depends on plain `tqdm = "0.8.1"` and **`onde-tqdm` is retired**. See the
+tqdm and mio entries.
 
 ---
 
@@ -69,9 +71,14 @@ See the onde-tqdm and mio entries.
 |-------|---------------|-----|---------|----------------|
 | mistral.rs (12 crates) | `setoelkahfi/mistral.rs` | branch `fix/all-platform-fixes` | All-platform fixes; **published** as `onde-mistralrs-*` | onde deps (registry) |
 | candle-core, candle-nn | `setoelkahfi/candle` | branch `onde/candle-0.11.0-27f20fea` (rev `27f20fea`) | Post-0.11.0 candle APIs; **published** as `onde-candle-{core,nn}` | mistral.rs fork deps (registry) |
-| tqdm | `setoelkahfi/tqdm` | branch `release/onde-tqdm` (version `0.8.2`) | Bumps crossterm to 0.29 (→ mio 1.x); **published** as `onde-tqdm` | mistral.rs fork dep (registry) |
+| tqdm | *none — upstream* | crates.io `tqdm 0.8.1` | Crossterm 0.29 (→ mio 1.x) is upstream as of 0.8.1 | mistral.rs fork dep (registry) |
 | sysctl | `setoelkahfi/sysctl-rs` | branch `feature/watchos` | watchOS (`target_os = "watchos"`) support | `[patch.crates-io]` in onde **and** mistral.rs fork |
-| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | **RETIRED** — patch removed from onde once it consumed onde-mistralrs 0.9.3 (onde-tqdm → mio 1.x). Fork kept for history/upstream PR. |
+| mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | **RETIRED** — patch removed from onde once it consumed onde-mistralrs 0.9.3 (crossterm 0.29 → mio 1.x). Fork kept for history/upstream PR. |
+
+> **Retired:** `onde-tqdm` (`setoelkahfi/tqdm`, branch `release/onde-tqdm`,
+> published 0.8.1/0.8.2) — the stopgap republish of the crossterm-0.29 tqdm
+> fork. Upstream merged the bump and released `tqdm 0.8.1`, so the mistral.rs
+> fork now depends on upstream directly. See the tqdm entry.
 
 > **Retired:** `core2` (`bbqsrc/core2` rev `545e84bc`) — was a `[patch.crates-io]`
 > workaround for the yanked `core2 0.4.0`; removed from the mistral.rs fork after
@@ -150,25 +157,25 @@ See the onde-tqdm and mio entries.
   (`aarch64-apple-visionos{,-sim}`) `cargo +nightly check -Z build-std` pass with
   the `mio` patch deleted.
 
-### tqdm → crossterm 0.29 → `onde-tqdm`
+### tqdm → upstream (`onde-tqdm` RETIRED)
 
-- **Fork:** `setoelkahfi/tqdm`. Two branches:
-  - `deps/bump-crossterm` — keeps the crate named `tqdm`, feeds the **upstream
-    PR** mrlazy1708/tqdm#28 (do not rename the package here).
-  - `release/onde-tqdm` — sets `package = "onde-tqdm"` (crate lib name stays
-    `tqdm` so downstream `use tqdm::…` and doctests are unchanged) and is
-    **published to crates.io as `onde-tqdm`** (0.8.1, 0.8.2).
-- **Why:** bumps crossterm to 0.29 (→ mio 1.x), eliminating the whole `mio
-  0.8.11` visionOS problem at its source.
-- **Consumed in:** the mistral.rs fork's `[workspace.dependencies]` as
-  `tqdm = { version = "0.8.2", package = "onde-tqdm" }` — a **registry** rename
-  dep, so it survives `cargo publish` and reaches onde (unlike the old git dep,
-  which was stripped). This is the same rename trick as `onde-mistralrs-*` and
-  `onde-candle-*`.
-- **Publish order:** publish `onde-tqdm` **before** republishing the
-  `onde-mistralrs-*` crates that depend on it. Note the published
-  `onde-mistralrs-core 0.9.2` still uses plain `tqdm ^0.8.0` (pre-rename); the
-  `onde-tqdm` dep first ships in `0.9.3`.
+- **Status:** no fork. `setoelkahfi/tqdm` branch `deps/bump-crossterm` was
+  merged upstream as mrlazy1708/tqdm#28 and released as **`tqdm 0.8.1`**, which
+  carries the crossterm 0.29 bump (→ mio 1.x) that the whole `mio 0.8.11`
+  visionOS problem hinged on.
+- **Consumed in:** the mistral.rs fork's `[workspace.dependencies]` as plain
+  `tqdm = "0.8.1"`. It must stay a **registry** dep — `cargo publish` strips git
+  deps, so a git tqdm would never reach onde.
+- **The `onde-tqdm` stopgap (retired):** branch `release/onde-tqdm` set
+  `package = "onde-tqdm"` (lib name stayed `tqdm`, so `use tqdm::…` and doctests
+  were unchanged) and was published as `onde-tqdm` 0.8.1/0.8.2 — the same rename
+  trick as `onde-mistralrs-*` and `onde-candle-*`, needed only because upstream
+  hadn't released the bump yet. Its source was byte-identical to upstream
+  `tqdm 0.8.1` apart from the package metadata, so the swap back is a drop-in.
+- **Which release drops it:** `onde-mistralrs-core` 0.9.2 used plain
+  `tqdm ^0.8.0` (crossterm 0.25), 0.9.3 used `onde-tqdm 0.8.2`, and the next
+  publish (0.9.4) goes back to upstream `tqdm 0.8.1`. The published `onde-tqdm`
+  versions stay up so 0.9.3 keeps resolving; don't yank them.
 
 ### core2 → removed
 
