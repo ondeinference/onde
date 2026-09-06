@@ -32,6 +32,11 @@ pub struct InferenceEvent {
     pub request_id: String,
     /// Wall-clock time for the whole response, in milliseconds.
     pub duration_ms: u64,
+    /// Time to first token, in milliseconds. Only the streaming path can
+    /// observe this; a blocking `send_message` gets the whole response at
+    /// once and reports `None` rather than a stand-in value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttft_ms: Option<u64>,
     /// `"success"`, `"cancelled"`, or `"error"`. Currently always
     /// `"success"` here — inference errors throw before we reach this point.
     pub status: String,
@@ -66,10 +71,34 @@ mod tests {
             model_id: "org/repo".into(),
             request_id: "onde-1-0".into(),
             duration_ms: 42,
+            ttft_ms: None,
             status: "success".into(),
             onde_app_id: None,
         };
         let value = serde_json::to_value(&event).expect("serialize");
         assert!(value.get("onde_app_id").is_none());
+    }
+
+    #[test]
+    fn ttft_is_omitted_when_the_path_cannot_measure_it() {
+        let mut event = InferenceEvent {
+            edge_id: "edge-1".into(),
+            model_id: "org/repo".into(),
+            request_id: "onde-1-0".into(),
+            duration_ms: 42,
+            ttft_ms: None,
+            status: "success".into(),
+            onde_app_id: None,
+        };
+        assert!(serde_json::to_value(&event)
+            .expect("serialize")
+            .get("ttft_ms")
+            .is_none());
+
+        event.ttft_ms = Some(17);
+        assert_eq!(
+            serde_json::to_value(&event).expect("serialize")["ttft_ms"],
+            17
+        );
     }
 }

@@ -5436,9 +5436,9 @@ checksum = "e8e2fb0f499abb4d162f2bedad68f5ef91a1682b5a03596ddb67efd37768d100"
 
 [[package]]
 name = "smbcloud-gresiq-sdk"
-version = "0.4.13"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abf50719bb87bbe292d8dd6c25158a8a137f7cbc0caf9c87a12e511779fff028"
+checksum = "45cac3688bdeba866bfbc46b89ed8f4e39be7d6818cde24347776042db567e1d"
 dependencies = [
  "anyhow",
  "log",
@@ -5452,9 +5452,9 @@ dependencies = [
 
 [[package]]
 name = "smbcloud-model"
-version = "0.4.13"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b736a97ef06bd5f274f1cbc3910ea7c587d4c9915c3d2713fe7816a32cd9a56e"
+checksum = "e77a4fba4ede67959cca5b3531f4e01f9b03be559117018dee132a5709a44ab7"
 dependencies = [
  "chrono",
  "log",
@@ -5470,9 +5470,9 @@ dependencies = [
 
 [[package]]
 name = "smbcloud-network"
-version = "0.4.13"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bcb9f89f4d980978acd7b2fa84e65404d686caf33710d7503bac4e09cdbf4ad"
+checksum = "ba309eda605816132dfa079eb3d47d41dbcea65ca9c36efb6a4032cb6f18c25b"
 dependencies = [
  "clap 4.6.6",
  "log",

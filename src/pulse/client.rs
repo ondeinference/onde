@@ -40,21 +40,14 @@ impl PulseClient {
         )
     }
 
-    /// ADR-0003 M2 dual-write toggle. When enabled (the default), every pulse
+    /// ADR-0003 M2 dual-write toggle. The mirror is deliberately opt-in while
+    /// document parity is being proven. When enabled, every attributed pulse
     /// event is *also* written to the GresIQ document gateway
     /// (`/gresiq/v1/collections/:collection`) in addition to the semantic
     /// `pulse/*` routes, which still serve reads until the M5 cut-over. Set
-    /// `ONDE_PULSE_DUAL_WRITE=0` (or `false`/`no`/`off`) to suppress it.
+    /// `ONDE_PULSE_DUAL_WRITE=1` (or `true`/`yes`/`on`) to enable it.
     fn dual_write_enabled() -> bool {
-        !matches!(
-            std::env::var("ONDE_PULSE_DUAL_WRITE")
-                .ok()
-                .as_deref()
-                .map(str::trim)
-                .map(str::to_ascii_lowercase)
-                .as_deref(),
-            Some("0") | Some("false") | Some("no") | Some("off")
-        )
+        dual_write_enabled_value(std::env::var("ONDE_PULSE_DUAL_WRITE").ok().as_deref())
     }
 
     /// Build a pulse client using the GresIQ credentials embedded in the SDK.
@@ -159,7 +152,7 @@ impl PulseClient {
             if let Err(error) = client.inner.insert("pulse/model_loaded", &event).await {
                 log::warn!("pulse: model_loaded failed: {}", error);
             }
-            client.dual_write_model_loaded(&event).await;
+            client.spawn_model_loaded_dual_write(event);
         };
 
         if tokio::runtime::Handle::try_current().is_ok() {
@@ -203,6 +196,7 @@ impl PulseClient {
         model_id: String,
         request_id: String,
         duration_ms: u64,
+        ttft_ms: Option<u64>,
         status: String,
     ) {
         let client = self.clone();
@@ -212,6 +206,7 @@ impl PulseClient {
                 model_id,
                 request_id,
                 duration_ms,
+                ttft_ms,
                 status,
                 onde_app_id: client.onde_app_id.clone(),
             };
@@ -249,78 +244,86 @@ impl PulseClient {
     //
     // These mirror each semantic pulse event into JSONB collections under the
     // Onde gresiq_app. The relational `pulse/*` routes still own reads until the
-    // M5 cut-over, so these writes are fire-and-forget: a failure is logged and
-    // never affects inference. `onde_app_id` rides as a plain doc field — there
-    // is no FK in the document store.
+    // M5 cut-over, so failures are logged and never affect inference.
+
+    /// Move the three model-load mirror requests off the model-loading critical
+    /// path. A dedicated thread is acceptable here because this runs once per
+    /// model activation, not once per inference, and also works for callers
+    /// whose original async runtime is short-lived.
+    fn spawn_model_loaded_dual_write(&self, event: ModelLoadedEvent) {
+        if !Self::dual_write_enabled() || event.onde_app_id.is_none() {
+            return;
+        }
+
+        let client = self.clone();
+        std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+            match runtime {
+                Ok(runtime) => runtime.block_on(client.dual_write_model_loaded(&event)),
+                Err(error) => log::warn!(
+                    "pulse: could not create runtime for model-loaded dual-write: {}",
+                    error
+                ),
+            }
+        });
+    }
 
     /// Mirror a model-load into `pulse_edges`, `pulse_models`, and
     /// `pulse_deployments`. Each collection is a separate upsert (the
     /// FK-ordered chain of the semantic route becomes client-orchestrated
     /// multi-insert; the document store has no relationships to order).
     async fn dual_write_model_loaded(&self, event: &ModelLoadedEvent) {
-        if !Self::dual_write_enabled() {
+        let Some(onde_app_id) = event.onde_app_id.as_deref() else {
             return;
-        }
+        };
 
-        self.write_doc(
-            "pulse_edges",
-            Some(&event.edge_id),
-            &serde_json::json!({ "edge_id": event.edge_id }),
-        )
-        .await;
+        let edge_key = scoped_document_key(onde_app_id, &[&event.edge_id]);
 
-        // One model assignment per app (the relational table is unique on
-        // app_id); key by onde_app_id when present, else by the model itself.
-        let model_key = event
-            .onde_app_id
-            .clone()
-            .unwrap_or_else(|| event.model_id.clone());
-        self.write_doc(
-            "pulse_models",
-            Some(&model_key),
-            &serde_json::json!({
-                "slug": event.model_id,
-                "model_id": event.model_id,
-                "model_name": event.model_name,
-                "onde_app_id": event.onde_app_id,
-            }),
-        )
-        .await;
+        let model_key = scoped_document_key(onde_app_id, &[&event.model_id]);
+        let deployment_key = scoped_document_key(onde_app_id, &[&event.edge_id, &event.model_id]);
+        let edge_document = edge_document(event, onde_app_id);
+        let model_document = serde_json::json!({
+            "slug": event.model_id,
+            "model_id": event.model_id,
+            "model_name": event.model_name,
+            "onde_app_id": event.onde_app_id,
+        });
+        let deployment_document = serde_json::json!({
+            "edge_id": event.edge_id,
+            "model_id": event.model_id,
+            "load_duration_ms": event.load_duration_ms,
+            "onde_app_id": event.onde_app_id,
+            "residency_state": "loaded",
+        });
 
-        let deployment_key = format!("{}:{}", event.edge_id, event.model_id);
-        self.write_doc(
-            "pulse_deployments",
-            Some(&deployment_key),
-            &serde_json::json!({
-                "edge_id": event.edge_id,
-                "model_id": event.model_id,
-                "load_duration_ms": event.load_duration_ms,
-                "onde_app_id": event.onde_app_id,
-            }),
-        )
-        .await;
+        tokio::join!(
+            self.write_doc("pulse_edges", Some(&edge_key), &edge_document),
+            self.write_doc("pulse_models", Some(&model_key), &model_document),
+            self.write_doc(
+                "pulse_deployments",
+                Some(&deployment_key),
+                &deployment_document,
+            ),
+        );
     }
 
-    /// Mirror an inference event into the append-only `pulse_inference_events`
-    /// collection (no doc_key → server-generated UUID).
+    /// Mirror an inference event idempotently. Request IDs are already unique,
+    /// so using an app-scoped natural key prevents a retry from double-counting
+    /// the same inference during cutover validation.
     async fn dual_write_inference(&self, event: &InferenceEvent) {
         if !Self::dual_write_enabled() {
             return;
         }
+        let Some(onde_app_id) = event.onde_app_id.as_deref() else {
+            return;
+        };
+        let event_key = scoped_document_key(onde_app_id, &[&event.request_id]);
+        let document = inference_document(event);
 
-        self.write_doc(
-            "pulse_inference_events",
-            None,
-            &serde_json::json!({
-                "edge_id": event.edge_id,
-                "model_id": event.model_id,
-                "request_id": event.request_id,
-                "duration_ms": event.duration_ms,
-                "status": event.status,
-                "onde_app_id": event.onde_app_id,
-            }),
-        )
-        .await;
+        self.write_doc("pulse_inference_events", Some(&event_key), &document)
+            .await;
     }
 
     /// Upsert (or append, when `key` is `None`) one document, logging failures.
@@ -328,5 +331,139 @@ impl PulseClient {
         if let Err(error) = self.inner.upsert_document(collection, key, doc).await {
             log::warn!("pulse: dual-write to {} failed: {}", collection, error);
         }
+    }
+}
+
+fn dual_write_enabled_value(value: Option<&str>) -> bool {
+    matches!(
+        value.map(str::trim).map(str::to_ascii_lowercase).as_deref(),
+        Some("1") | Some("true") | Some("yes") | Some("on")
+    )
+}
+
+/// Keys are scoped inside Onde's shared GresIQ app so identical installation
+/// ids belonging to different Onde customer apps cannot overwrite each other.
+fn scoped_document_key(onde_app_id: &str, parts: &[&str]) -> String {
+    std::iter::once(onde_app_id)
+        .chain(parts.iter().copied())
+        .collect::<Vec<_>>()
+        .join(":")
+}
+
+/// Build the inference document. `ttft_ms` is omitted entirely when the path
+/// could not measure it, so a reader can tell "not measured" from a real zero
+/// — the relational route stores a hardcoded `0` and cannot make that
+/// distinction.
+fn inference_document(event: &InferenceEvent) -> serde_json::Value {
+    let mut document = serde_json::json!({
+        "edge_id": event.edge_id,
+        "model_id": event.model_id,
+        "request_id": event.request_id,
+        "duration_ms": event.duration_ms,
+        "status": event.status,
+        "onde_app_id": event.onde_app_id,
+    });
+
+    if let (Some(map), Some(ttft_ms)) = (document.as_object_mut(), event.ttft_ms) {
+        map.insert("ttft_ms".to_string(), serde_json::json!(ttft_ms));
+    }
+
+    document
+}
+
+/// `status` is always `"online"`: this document is only written when the edge
+/// just loaded a model, and nothing reports a shutdown. `last_seen_ms` is what
+/// makes that honest — a reader counts an edge as active by recency, the way
+/// the relational dashboard windows on `last_seen_at`, rather than trusting a
+/// status that is never revoked.
+fn edge_document(event: &ModelLoadedEvent, onde_app_id: &str) -> serde_json::Value {
+    serde_json::json!({
+        "edge_id": event.edge_id,
+        "onde_app_id": onde_app_id,
+        "status": "online",
+        "last_seen_ms": epoch_millis(),
+    })
+}
+
+/// Milliseconds since the Unix epoch. The crate has no date dependency and
+/// this is only ever read as a recency window, so an integer beats pulling in
+/// a formatting library for an RFC 3339 string.
+fn epoch_millis() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dual_write_requires_an_explicit_positive_flag() {
+        for disabled in [
+            None,
+            Some(""),
+            Some("0"),
+            Some("false"),
+            Some("no"),
+            Some("off"),
+        ] {
+            assert!(!dual_write_enabled_value(disabled));
+        }
+        for enabled in [Some("1"), Some("true"), Some("YES"), Some(" on ")] {
+            assert!(dual_write_enabled_value(enabled));
+        }
+    }
+
+    #[test]
+    fn document_keys_include_the_onde_app_boundary() {
+        assert_eq!(
+            scoped_document_key("app-a", &["edge-1", "model-1"]),
+            "app-a:edge-1:model-1"
+        );
+        assert_ne!(
+            scoped_document_key("app-a", &["onde-unknown"]),
+            scoped_document_key("app-b", &["onde-unknown"])
+        );
+        assert_eq!(
+            scoped_document_key("app-a", &["onde-1720000000000-42"]),
+            "app-a:onde-1720000000000-42"
+        );
+    }
+
+    #[test]
+    fn edge_document_carries_cutover_state_and_tenant_id() {
+        let event = ModelLoadedEvent {
+            edge_id: "edge-1".to_string(),
+            model_id: "model-1".to_string(),
+            model_name: "Model 1".to_string(),
+            load_duration_ms: 42,
+            onde_app_id: Some("app-a".to_string()),
+        };
+        let document = edge_document(&event, "app-a");
+        assert_eq!(document["edge_id"], "edge-1");
+        assert_eq!(document["onde_app_id"], "app-a");
+        assert_eq!(document["status"], "online");
+        // Liveness has to be derivable from the document itself: nothing ever
+        // writes an offline status, so a reader windows on this instead.
+        assert!(document["last_seen_ms"].as_u64().unwrap_or(0) > 0);
+    }
+
+    #[test]
+    fn inference_document_omits_ttft_when_it_was_not_measured() {
+        let mut event = InferenceEvent {
+            edge_id: "edge-1".to_string(),
+            model_id: "model-1".to_string(),
+            request_id: "req-1".to_string(),
+            duration_ms: 400,
+            ttft_ms: None,
+            status: "success".to_string(),
+            onde_app_id: Some("app-a".to_string()),
+        };
+        assert!(inference_document(&event).get("ttft_ms").is_none());
+
+        event.ttft_ms = Some(90);
+        assert_eq!(inference_document(&event)["ttft_ms"], 90);
     }
 }
