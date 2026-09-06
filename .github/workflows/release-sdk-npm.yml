@@ -81,11 +81,24 @@ jobs:
         run: npm pack --dry-run
 
   # ── Publish to npm (tag push only) ────────────────────────────────────────
+  #
+  # Publishing uses npm trusted publishing (OIDC), not a long-lived token.
+  # The npm side is configured at
+  #   npmjs.com/package/@ondeinference/react-native/access
+  # with the trusted publisher: repo ondeinference/onde, workflow
+  # release-sdk-npm.yml, no environment. Those must keep matching what this
+  # job declares below, or npm answers the publish with a 404 on PUT. In
+  # particular, do not add an `environment:` here without also setting the
+  # Environment name field on that npm page.
   publish:
     name: Publish to npm
     needs: validate
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      contents: read
+      id-token: write
 
     env:
       GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
@@ -103,6 +116,13 @@ jobs:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
 
+      # Node 22 ships npm 10, which predates OIDC publishing. Trusted
+      # publishing needs npm 11.5.1 or newer.
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@latest
+          npm --version
+
       - name: Install dependencies
         working-directory: sdk/react-native
         run: npm install
@@ -111,19 +131,8 @@ jobs:
         working-directory: sdk/react-native
         run: npm run build
 
-      # ── Publish ────────────────────────────────────────────────────────────
-      # NPM_TOKEN must be a repository secret containing an npm access token
-      # with publish permissions for the @ondeinference scope.
-      #
-      # To obtain the token:
-      #   1. Log in to https://www.npmjs.com as a member of the @ondeinference org.
-      #   2. Go to Access Tokens → Generate New Token → Granular Access Token.
-      #   3. Scope it to the @ondeinference org with read+write packages.
-      #   4. Add it as a repository secret named NPM_TOKEN on the onde repo.
       - name: Publish @ondeinference/react-native to npm
         working-directory: sdk/react-native
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm_package_name=$(node -p "require('./package.json').name")
           npm_package_version=$(node -p "require('./package.json').version")
