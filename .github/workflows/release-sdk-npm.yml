@@ -86,15 +86,15 @@ jobs:
   # The npm side is configured at
   #   npmjs.com/package/@ondeinference/react-native/access
   # with the trusted publisher: repo ondeinference/onde, workflow
-  # release-sdk-npm.yml, environment release-sdk-npm. All three must keep
-  # matching what this job declares below, or npm answers the publish with a
-  # 404 on PUT.
+  # release-sdk-npm.yml, no environment. Those must keep matching what this
+  # job declares below, or npm answers the publish with a 404 on PUT. In
+  # particular, do not add an `environment:` here without also setting the
+  # Environment name field on that npm page.
   publish:
     name: Publish to npm
     needs: validate
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    environment: release-sdk-npm
 
     permissions:
       contents: read
