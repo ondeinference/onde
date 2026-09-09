@@ -114,7 +114,7 @@ use mistralrs::{
     target_os = "linux",
     target_os = "android"
 ))]
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 #[cfg(any(
     target_os = "macos",
     target_os = "ios",
@@ -278,22 +278,6 @@ pub struct ChatEngine {
     target_os = "android"
 ))]
 impl ChatEngine {
-    /// Whether the currently loaded model is verified for structured tool calls.
-    pub async fn tool_calling_support(&self) -> super::types::ToolCallingSupport {
-        use super::types::ToolCallingSupport;
-
-        let guard = self.inner.lock().await;
-        let Some(loaded) = guard.as_ref() else {
-            return ToolCallingSupport::Unknown;
-        };
-        let model_id = match &loaded.config {
-            LoadedModelConfig::Gguf(config) => &config.model_id,
-            LoadedModelConfig::Uqff(config) => &config.model_id,
-            #[cfg(target_os = "macos")]
-            LoadedModelConfig::Isq(config) => &config.model_id,
-        };
-        super::models::tool_calling_support(model_id)
-    }
     // ── Construction ─────────────────────────────────────────────────────
 
     /// Create a new engine with no model loaded and no Onde app association.
@@ -1334,6 +1318,28 @@ impl ChatEngine {
 
     // ── Tool-aware inference (Rust-only) ─────────────────────────────────
 
+    /// Whether the currently loaded model is verified for structured tool calls.
+    ///
+    /// Returns [`Unsupported`](super::types::ToolCallingSupport::Unsupported) when no model
+    /// is loaded: an engine with nothing in it cannot produce tool calls, and
+    /// reporting `Unknown` there would conflate an empty engine with a model
+    /// repository Onde has not catalogued.
+    pub async fn tool_calling_support(&self) -> super::types::ToolCallingSupport {
+        use super::types::ToolCallingSupport;
+
+        let guard = self.inner.lock().await;
+        let Some(loaded) = guard.as_ref() else {
+            return ToolCallingSupport::Unsupported;
+        };
+        let model_id = match &loaded.config {
+            LoadedModelConfig::Gguf(config) => &config.model_id,
+            LoadedModelConfig::Uqff(config) => &config.model_id,
+            #[cfg(target_os = "macos")]
+            LoadedModelConfig::Isq(config) => &config.model_id,
+        };
+        super::models::tool_calling_support(model_id)
+    }
+
     /// Send a user message with tool definitions available. Non-streaming.
     ///
     /// If the model decides to call tools, [`ToolAwareResult::tool_calls`]
@@ -1503,16 +1509,67 @@ impl ChatEngine {
     /// Agent hosts use this when a turn is cancelled after the assistant has
     /// requested tools. Recording a result for every request keeps the history
     /// structurally valid for the next turn.
-    pub async fn record_tool_results(&self, results: Vec<ToolResult>) {
+    ///
+    /// Only results answering a call the assistant actually requested, and not
+    /// already recorded, are appended. Anything else is dropped with a warning:
+    /// a `ToolResult` with no matching `AssistantToolCall` ahead of it builds a
+    /// message sequence the model cannot interpret, and silently writing one
+    /// corrupts every subsequent turn rather than the current one. Returns how
+    /// many results were appended.
+    pub async fn record_tool_results(&self, results: Vec<ToolResult>) -> usize {
         let mut guard = self.inner.lock().await;
-        if let Some(loaded) = guard.as_mut() {
-            for result in results {
-                loaded.history.push(HistoryEntry::ToolResult {
-                    tool_call_id: result.tool_call_id,
-                    content: result.content,
-                });
+        let Some(loaded) = guard.as_mut() else {
+            return 0;
+        };
+
+        // Walk back over results already recorded for this round to find the
+        // assistant turn they answer. A `Text` entry means the round is closed.
+        let mut requested: Vec<String> = Vec::new();
+        let mut seen: HashSet<String> = HashSet::new();
+        for entry in loaded.history.iter().rev() {
+            match entry {
+                HistoryEntry::ToolResult { tool_call_id, .. } => {
+                    seen.insert(tool_call_id.clone());
+                }
+                HistoryEntry::AssistantToolCall { tool_calls, .. } => {
+                    requested = tool_calls.iter().map(|call| call.id.clone()).collect();
+                    break;
+                }
+                HistoryEntry::Text(_) => break,
             }
         }
+
+        if requested.is_empty() {
+            log::warn!(
+                "ChatEngine: record_tool_results found no assistant tool call to answer — dropping {} result(s)",
+                results.len()
+            );
+            return 0;
+        }
+
+        let mut appended = 0;
+        for result in results {
+            if !requested.contains(&result.tool_call_id) {
+                log::warn!(
+                    "ChatEngine: dropping tool result for unrequested call {:?}",
+                    result.tool_call_id
+                );
+                continue;
+            }
+            if !seen.insert(result.tool_call_id.clone()) {
+                log::warn!(
+                    "ChatEngine: dropping duplicate tool result for call {:?}",
+                    result.tool_call_id
+                );
+                continue;
+            }
+            loaded.history.push(HistoryEntry::ToolResult {
+                tool_call_id: result.tool_call_id,
+                content: result.content,
+            });
+            appended += 1;
+        }
+        appended
     }
 
     /// Stream tool execution results back to the model.
@@ -2070,10 +2127,14 @@ impl ChatEngine {
     pub async fn push_history(&self, _message: ChatMessage) {}
 
     pub async fn tool_calling_support(&self) -> super::types::ToolCallingSupport {
-        super::types::ToolCallingSupport::Unknown
+        // Inference cannot run on this platform at all, so tool calling is not
+        // merely unverified — it is unavailable.
+        super::types::ToolCallingSupport::Unsupported
     }
 
-    pub async fn record_tool_results(&self, _results: Vec<ToolResult>) {}
+    pub async fn record_tool_results(&self, _results: Vec<ToolResult>) -> usize {
+        0
+    }
 
     pub async fn send_message(
         &self,

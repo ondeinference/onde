@@ -1,6 +1,8 @@
 ## 1.2.5
 
-- Added engine-level tool-calling capability detection and tool-result history support for agent SDKs
+- Version aligned with the Rust crate. The 1.2.5 tool-calling additions
+  (`ChatEngine::tool_calling_support`, `ChatEngine::record_tool_results`) are
+  Rust-only and are not yet exposed through this package.
 
 ## 1.2.4
 

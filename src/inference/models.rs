@@ -231,18 +231,44 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
 ];
 
+/// Catalogued models Onde has verified for structured tool calling.
+///
+/// Every Qwen 3 repo routes through mistral.rs' Qwen tool parser. Qwen 2.5
+/// Coder 7B is the one Qwen 2.5 model in the catalogue verified alongside it.
+/// Entries must also appear in [`SUPPORTED_MODELS`].
+pub const TOOL_CALLING_MODELS: &[&str] = &[
+    BARTOWSKI_QWEN3_0_6B_GGUF,
+    BARTOWSKI_QWEN3_1_7B_GGUF,
+    BARTOWSKI_QWEN3_4B_GGUF,
+    BARTOWSKI_QWEN3_8B_GGUF,
+    BARTOWSKI_QWEN3_14B_GGUF,
+    BARTOWSKI_QWEN3_32B_GGUF,
+    BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF,
+    BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF,
+    BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF,
+    BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF,
+];
+
 /// Return Onde's verified tool-calling capability for a model repository.
 ///
-/// Qwen 3 models use mistral.rs' Qwen tool parser. Qwen 2.5 Coder 7B is the
-/// one verified Qwen 2.5 model in the built-in catalogue that also supports
-/// structured tool calls. Custom repositories remain `Unknown` rather than
-/// being rejected solely because Onde has not catalogued them.
+/// The three answers mean different things, and callers should treat them
+/// differently:
+///
+/// - `Supported` — catalogued and verified. Use tools freely.
+/// - `Unsupported` — catalogued, and *not* verified for tool calling. This is
+///   Onde's own test coverage talking, not an upstream capability claim: some
+///   of these models ship tool-call templates and may well work. A caller that
+///   wants to try one anyway should, but should not present it as supported.
+/// - `Unknown` — not in the catalogue at all. Onde has no opinion. Callers may
+///   try these, but should surface that the capability is unverified.
+///
+/// Matching is exact. A custom repository whose name merely resembles a
+/// catalogued one (`acme/my-qwen3-finetune`) is `Unknown`, not `Supported` —
+/// Onde has not tested it, and a name is not a verification.
 pub fn tool_calling_support(model_id: &str) -> super::types::ToolCallingSupport {
     use super::types::ToolCallingSupport;
 
-    if model_id.to_ascii_lowercase().contains("qwen3")
-        || model_id == BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF
-    {
+    if TOOL_CALLING_MODELS.contains(&model_id) {
         ToolCallingSupport::Supported
     } else if SUPPORTED_MODELS.contains(&model_id) {
         ToolCallingSupport::Unsupported
@@ -456,6 +482,39 @@ mod tests {
             tool_calling_support("acme/custom-agent-model"),
             ToolCallingSupport::Unknown
         );
+        // A custom repo that merely looks like a catalogued one is still
+        // uncatalogued. Onde has not verified it, so it must not claim to have.
+        assert_eq!(
+            tool_calling_support("acme/my-qwen3-finetune"),
+            ToolCallingSupport::Unknown
+        );
+    }
+
+    /// A tool-calling entry that is not a supported model would be dead: the
+    /// engine only ever asks about repos it has actually loaded.
+    #[test]
+    fn every_tool_calling_model_is_a_supported_model() {
+        for model_id in TOOL_CALLING_MODELS {
+            assert!(
+                SUPPORTED_MODELS.contains(model_id),
+                "{model_id} is listed for tool calling but is not a supported model"
+            );
+        }
+    }
+
+    /// Catches the drift the old substring match papered over: a Qwen 3 repo
+    /// added to the catalogue without being added to the tool-calling list
+    /// would silently report `Unsupported`.
+    #[test]
+    fn every_catalogued_qwen3_model_supports_tool_calling() {
+        for model_id in SUPPORTED_MODELS {
+            if model_id.to_ascii_lowercase().contains("qwen3") {
+                assert!(
+                    TOOL_CALLING_MODELS.contains(model_id),
+                    "{model_id} is a catalogued Qwen 3 repo but is missing from TOOL_CALLING_MODELS"
+                );
+            }
+        }
     }
 
     /// Every supported model must have a corresponding display-metadata entry
