@@ -278,6 +278,22 @@ pub struct ChatEngine {
     target_os = "android"
 ))]
 impl ChatEngine {
+    /// Whether the currently loaded model is verified for structured tool calls.
+    pub async fn tool_calling_support(&self) -> super::types::ToolCallingSupport {
+        use super::types::ToolCallingSupport;
+
+        let guard = self.inner.lock().await;
+        let Some(loaded) = guard.as_ref() else {
+            return ToolCallingSupport::Unknown;
+        };
+        let model_id = match &loaded.config {
+            LoadedModelConfig::Gguf(config) => &config.model_id,
+            LoadedModelConfig::Uqff(config) => &config.model_id,
+            #[cfg(target_os = "macos")]
+            LoadedModelConfig::Isq(config) => &config.model_id,
+        };
+        super::models::tool_calling_support(model_id)
+    }
     // ── Construction ─────────────────────────────────────────────────────
 
     /// Create a new engine with no model loaded and no Onde app association.
@@ -1482,6 +1498,23 @@ impl ChatEngine {
         })
     }
 
+    /// Append tool results to history without starting another inference round.
+    ///
+    /// Agent hosts use this when a turn is cancelled after the assistant has
+    /// requested tools. Recording a result for every request keeps the history
+    /// structurally valid for the next turn.
+    pub async fn record_tool_results(&self, results: Vec<ToolResult>) {
+        let mut guard = self.inner.lock().await;
+        if let Some(loaded) = guard.as_mut() {
+            for result in results {
+                loaded.history.push(HistoryEntry::ToolResult {
+                    tool_call_id: result.tool_call_id,
+                    content: result.content,
+                });
+            }
+        }
+    }
+
     /// Stream tool execution results back to the model.
     ///
     /// Similar to [`send_tool_results`](Self::send_tool_results) but returns
@@ -2035,6 +2068,12 @@ impl ChatEngine {
     }
 
     pub async fn push_history(&self, _message: ChatMessage) {}
+
+    pub async fn tool_calling_support(&self) -> super::types::ToolCallingSupport {
+        super::types::ToolCallingSupport::Unknown
+    }
+
+    pub async fn record_tool_results(&self, _results: Vec<ToolResult>) {}
 
     pub async fn send_message(
         &self,

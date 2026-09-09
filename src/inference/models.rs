@@ -231,6 +231,26 @@ pub const SUPPORTED_MODELS: &[&str] = &[
     THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF,
 ];
 
+/// Return Onde's verified tool-calling capability for a model repository.
+///
+/// Qwen 3 models use mistral.rs' Qwen tool parser. Qwen 2.5 Coder 7B is the
+/// one verified Qwen 2.5 model in the built-in catalogue that also supports
+/// structured tool calls. Custom repositories remain `Unknown` rather than
+/// being rejected solely because Onde has not catalogued them.
+pub fn tool_calling_support(model_id: &str) -> super::types::ToolCallingSupport {
+    use super::types::ToolCallingSupport;
+
+    if model_id.to_ascii_lowercase().contains("qwen3")
+        || model_id == BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF
+    {
+        ToolCallingSupport::Supported
+    } else if SUPPORTED_MODELS.contains(&model_id) {
+        ToolCallingSupport::Unsupported
+    } else {
+        ToolCallingSupport::Unknown
+    }
+}
+
 /// Rich metadata for a supported model, used by the frontend to display
 /// unavailable models that can be downloaded.
 pub struct SupportedModelInfo {
@@ -415,6 +435,28 @@ pub fn tok_model_id_for_repo(hf_repo_id: &str) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tool_calling_capability_is_authoritative_for_known_and_custom_models() {
+        use super::super::types::ToolCallingSupport;
+
+        assert_eq!(
+            tool_calling_support(BARTOWSKI_QWEN3_1_7B_GGUF),
+            ToolCallingSupport::Supported
+        );
+        assert_eq!(
+            tool_calling_support(BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF),
+            ToolCallingSupport::Supported
+        );
+        assert_eq!(
+            tool_calling_support(BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF),
+            ToolCallingSupport::Unsupported
+        );
+        assert_eq!(
+            tool_calling_support("acme/custom-agent-model"),
+            ToolCallingSupport::Unknown
+        );
+    }
 
     /// Every supported model must have a corresponding display-metadata entry
     /// so the model-list UI can render it.

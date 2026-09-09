@@ -1,3 +1,7 @@
+## 1.2.5
+
+- Added engine-level tool-calling capability detection and tool-result history support for agent SDKs
+
 ## 1.2.4
 
 - Dependency updates across the Rust tree
