@@ -40,7 +40,7 @@ in a single commit before tagging.**
 | 8 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
 | 9 | `sdk/react-native/rust/Cargo.lock` | `onde` package version | Run `cd sdk/react-native/rust && cargo update -p onde` |
 | 10 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
-| 11 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. Missed for every 1.2.x release, which is why the file jumps from 1.1.1 to 1.2.5 |
+| 11 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
 
 ### Files you do NOT manually edit
 
@@ -371,7 +371,8 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | Forgot to update `sdk/react-native/rust/Cargo.lock` | npm SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/react-native/rust && cargo update -p onde` |
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to bump `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
-| Forgot to update the root `CHANGELOG.md` | No CI failure at all, the file just goes stale silently | Prepend the new section before tagging. Nothing validates this one, so it is the easiest to miss |
+| Forgot to update the root `CHANGELOG.md` | Preflight fails: "CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging |
+| crates.io publish reports success but nothing is published | `cargo publish` step logs "already on crates.io — skipping" for a version that is not there | Fixed in 1.2.5. The guard used `cargo info`, which resolves against the local workspace. If it recurs, check that `scripts/crates-io-published.py` is still what the workflow calls |
 | Forgot to bump `sdk/kotlin/gradle.properties` `VERSION_NAME` | Kotlin CI fails: tag vs gradle.properties mismatch | Bump `VERSION_NAME`, amend commit, re-tag |
 | Tag has `v` prefix (`v0.1.3`) | CI does not trigger — tag pattern requires bare semver | Delete the tag, re-tag without `v` |
 | `CARGO_REGISTRY_TOKEN` missing | `cargo publish` fails with auth error | Create a scoped token at crates.io/settings/tokens, add as repo secret |

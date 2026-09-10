@@ -13,6 +13,8 @@ None of this reaches the UniFFI surface yet, so the Swift, Kotlin, Flutter/Dart,
 
 * The React Native package publishes through npm trusted publishing (OIDC) instead of a long-lived `NPM_TOKEN`. The publish job requests `id-token: write` and upgrades npm before publishing, since Node 22 still ships npm 10 and trusted publishing needs 11.5.1 or newer. The trusted publisher configured on npmjs.com has to keep matching what the job declares, or npm answers the publish with a 404.
 * The npm workflow runs a preflight gate before the publish step.
+* Fixed the crates.io publish guard. It asked `cargo info onde@$VERSION`, which resolves against the local workspace rather than the registry when run from inside the repo, so it reported every version as already published and skipped the upload while exiting green. That is why 1.2.3 and 1.2.4 were tagged, showed a passing release run, and never reached crates.io. The check now queries the sparse index through `scripts/crates-io-published.py`, and the workflow asserts the version is actually on the index after publishing.
+* `sync-release-version.py --check` now gates on the root `CHANGELOG.md` as well as the Dart and React Native ones, so a release cannot be tagged without notes here.
 
 ### Packaging
 

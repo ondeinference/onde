@@ -28,6 +28,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 CARGO_TOML = REPO_ROOT / "Cargo.toml"
+ROOT_CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 DART_PUBSPEC = REPO_ROOT / "sdk/dart/pubspec.yaml"
 DART_CHANGELOG = REPO_ROOT / "sdk/dart/CHANGELOG.md"
 RN_PACKAGE_JSON = REPO_ROOT / "sdk/react-native/package.json"
@@ -36,7 +37,10 @@ RN_RUST_CARGO = REPO_ROOT / "sdk/react-native/rust/Cargo.toml"
 RN_CHANGELOG = REPO_ROOT / "sdk/react-native/CHANGELOG.md"
 KOTLIN_PROPS = REPO_ROOT / "sdk/kotlin/gradle.properties"
 
-CHANGELOGS = (DART_CHANGELOG, RN_CHANGELOG)
+# The root changelog is in here so `--check` gates on it like the other two.
+# It is the only version source nothing validated, which is how it went from
+# 1.1.1 straight to 1.2.5 with five releases unwritten in between.
+CHANGELOGS = (ROOT_CHANGELOG, DART_CHANGELOG, RN_CHANGELOG)
 
 # Cargo.lock entries carrying a release version, and the packages to patch in
 # each. A version bump only changes these strings, so they are rewritten
