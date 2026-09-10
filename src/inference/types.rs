@@ -360,6 +360,18 @@ pub struct ToolResult {
     pub content: String,
 }
 
+/// Whether the loaded model can reliably produce structured tool calls.
+///
+/// `Unknown` is used for custom model repositories that Onde does not ship in
+/// its built-in catalogue. Callers may choose to try those models, but should
+/// surface that the capability has not been verified.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+pub enum ToolCallingSupport {
+    Supported,
+    Unsupported,
+    Unknown,
+}
+
 // ── Streaming chunk ──────────────────────────────────────────────────────────
 
 /// A single streaming token chunk from the inference engine.

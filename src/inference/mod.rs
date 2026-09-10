@@ -81,6 +81,7 @@ pub use types::{
     ToolAwareResult,
     ToolCallInfo,
     ToolCallRequest,
+    ToolCallingSupport,
     ToolDefinition,
     ToolResult,
     UqffModelConfig,

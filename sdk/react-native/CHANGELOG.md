@@ -1,3 +1,9 @@
+## 1.2.5
+
+- Version aligned with the Rust crate. The 1.2.5 tool-calling additions
+  (`ChatEngine::tool_calling_support`, `ChatEngine::record_tool_results`) are
+  Rust-only and are not yet exposed through this package.
+
 ## 1.2.4
 
 - Dependency updates across the Rust tree
