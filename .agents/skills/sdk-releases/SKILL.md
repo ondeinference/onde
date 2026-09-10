@@ -40,6 +40,7 @@ in a single commit before tagging.**
 | 8 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
 | 9 | `sdk/react-native/rust/Cargo.lock` | `onde` package version | Run `cd sdk/react-native/rust && cargo update -p onde` |
 | 10 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
+| 11 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
 
 ### Files you do NOT manually edit
 
@@ -58,13 +59,14 @@ in a single commit before tagging.**
 # 5. Edit sdk/react-native/rust/Cargo.toml version (manual)
 # 6. Prepend new section to sdk/react-native/CHANGELOG.md (manual)
 # 7. Edit sdk/kotlin/gradle.properties VERSION_NAME (manual)
+# 8. Prepend new section to CHANGELOG.md at the repo root (manual)
 
-# 8. Sync lockfiles
+# 9. Sync lockfiles
 cargo check                              # updates root Cargo.lock
 cd sdk/dart/rust && cargo update -p onde  # updates Dart SDK's Cargo.lock
 cd sdk/react-native/rust && cargo update -p onde   # updates React Native SDK's Cargo.lock
 
-# 9. Verify
+# 10. Verify
 grep '^version' Cargo.toml                          # "0.1.3"
 grep '^version:' sdk/dart/pubspec.yaml               # 0.1.3
 grep '"version"' sdk/react-native/package.json                # "0.1.3"
@@ -74,7 +76,7 @@ grep 'name = "onde"' -A1 Cargo.lock                  # version = "0.1.3"
 grep 'name = "onde"' -A1 sdk/dart/rust/Cargo.lock    # version = "0.1.3"
 grep 'name = "onde"' -A1 sdk/react-native/rust/Cargo.lock     # version = "0.1.3"
 
-# 10. Commit and tag
+# 11. Commit and tag
 git add -A
 git commit -m "0.1.3"
 git tag 0.1.3
@@ -243,10 +245,23 @@ The publish step checks `npm view <package>@<version>` before publishing. If the
 version already exists, it **skips** with a success exit code. This makes the npm
 workflow safe to re-run — unlike Dart/Rust, it won't fail on a duplicate version.
 
-### Required secret
+### No secret: trusted publishing
 
-`NPM_TOKEN` — a granular npm access token scoped to the `@ondeinference` org
-with read+write packages. Create at npmjs.com → Access Tokens.
+Since 1.2.5 the npm workflow publishes over OIDC rather than a long-lived token,
+so there is no `NPM_TOKEN` to rotate. Two things have to line up instead:
+
+- The `publish` job declares `permissions: id-token: write`.
+- The trusted publisher on
+  npmjs.com/package/@ondeinference/react-native/access names repo
+  `ondeinference/onde`, workflow `release-sdk-npm.yml`, and no environment.
+
+If those drift apart, npm answers the publish with a 404 on PUT rather than an
+auth error, which reads as a missing package and sends you looking in the wrong
+place. Adding an `environment:` to the job without setting the matching
+Environment name field on that npm page is the usual way to cause it.
+
+The job also upgrades npm before publishing: Node 22 ships npm 10, and trusted
+publishing needs 11.5.1 or newer.
 
 ---
 
@@ -332,7 +347,6 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | `CARGO_REGISTRY_TOKEN` | `release-sdk-rust.yml` | Authenticate with crates.io for `cargo publish`. Scoped to `publish-update` for the `onde` crate. Create at https://crates.io/settings/tokens. |
 | `ONDE_SWIFT_PAT` | `release-sdk-swift.yml` | Push commits + tags to `ondeinference/onde-swift`. Must be a PAT (not `GITHUB_TOKEN`) so it triggers workflows on `onde-swift`. Needs `contents: write` scope. |
 | `PUB_CREDENTIALS` | `release-sdk-dart.yml` | Authenticate with pub.dev for `flutter pub publish`. Full JSON from `~/.config/dart/pub-credentials.json`. |
-| `NPM_TOKEN` | `release-sdk-npm.yml` | Authenticate with npm for `npm publish`. Granular access token scoped to the `@ondeinference` org with read+write packages. Create at npmjs.com → Access Tokens. |
 | `ORG_GRADLE_PROJECT_MAVENCENTRALUSERNAME` | `release-sdk-kotlin.yml` | Sonatype Central Portal token username. Generate at central.sonatype.com → Profile → Generate User Token. |
 | `ORG_GRADLE_PROJECT_MAVENCENTRALPASSWORD` | `release-sdk-kotlin.yml` | Sonatype Central Portal token password. Same dialog as above. |
 | `ORG_GRADLE_PROJECT_SIGNINGKEYID` | `release-sdk-kotlin.yml` | Last 8 chars of GPG key fingerprint used to sign Maven Central artifacts. |
@@ -357,12 +371,14 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | Forgot to update `sdk/react-native/rust/Cargo.lock` | npm SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/react-native/rust && cargo update -p onde` |
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to bump `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
+| Forgot to update the root `CHANGELOG.md` | Preflight fails: "CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging |
+| crates.io publish reports success but nothing is published | `cargo publish` step logs "already on crates.io — skipping" for a version that is not there | Fixed in 1.2.5. The guard used `cargo info`, which resolves against the local workspace. If it recurs, check that `scripts/crates-io-published.py` is still what the workflow calls |
 | Forgot to bump `sdk/kotlin/gradle.properties` `VERSION_NAME` | Kotlin CI fails: tag vs gradle.properties mismatch | Bump `VERSION_NAME`, amend commit, re-tag |
 | Tag has `v` prefix (`v0.1.3`) | CI does not trigger — tag pattern requires bare semver | Delete the tag, re-tag without `v` |
 | `CARGO_REGISTRY_TOKEN` missing | `cargo publish` fails with auth error | Create a scoped token at crates.io/settings/tokens, add as repo secret |
 | `ONDE_SWIFT_PAT` expired | `onde-swift` push fails with 403 | Regenerate PAT at github.com/settings/tokens, update repo secret |
 | `PUB_CREDENTIALS` expired | `flutter pub publish` fails with 401 | Run `dart pub login` locally, copy new credentials JSON to repo secret |
-| `NPM_TOKEN` expired | `npm publish` fails with 401/403 | Regenerate token at npmjs.com → Access Tokens, update repo secret |
+| npm trusted publisher does not match the workflow | `npm publish` fails with a 404 on PUT, not a 401 | Check repo, workflow filename, and environment on npmjs.com/package/@ondeinference/react-native/access against what the `publish` job declares |
 | crates.io version already published | `cargo publish` fails with "already uploaded" | crates.io is immutable — bump to next version. `cargo yank` hides but doesn't delete. |
 | npm version already published | npm publish step skips (idempotency guard) | Safe — the workflow exits 0. No action needed. |
 | pub.dev version already published | `flutter pub publish` fails | pub.dev is immutable — bump to next version |
@@ -434,7 +450,8 @@ npm run build
 npm publish --access public
 ```
 
-Requires `npm login` or `NPM_TOKEN` env var.
+Requires `npm login`. Trusted publishing is CI-only, so a manual publish falls
+back to your own npm credentials.
 
 ### When to use manual publish
 

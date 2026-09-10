@@ -50,14 +50,24 @@ jobs:
       # Skip a version already on crates.io instead of hard-failing. crates.io is
       # immutable, so a re-run of a partially-failed release would otherwise die
       # here on "already uploaded" — the npm workflow has had this guard all along.
+      #
+      # The check must not go through cargo. `cargo info onde@$VERSION` run from
+      # inside this workspace resolves against the local package rather than the
+      # registry, so it answered yes for every version, the skip was always
+      # taken, and 1.2.3 and 1.2.4 were tagged, reported green, and never
+      # published. crates-io-published.py queries the index directly.
       - name: Check whether this version is already published
         id: published
         run: |
           VERSION="$(python3 scripts/sync-release-version.py --print)"
-          if cargo info "onde@${VERSION}" >/dev/null 2>&1; then
-            echo "onde ${VERSION} is already on crates.io — skipping publish."
+          if python3 scripts/crates-io-published.py "$VERSION"; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
+            status=$?
+            if [ "$status" -ne 1 ]; then
+              echo "::error::Could not determine whether onde ${VERSION} is published"
+              exit "$status"
+            fi
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -72,3 +82,12 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --locked
+
+      # A green run that published nothing is the exact failure this workflow
+      # already shipped twice, so assert the upload landed rather than trusting
+      # the exit code above.
+      - name: Verify the version reached crates.io
+        if: startsWith(github.ref, 'refs/tags/') && steps.published.outputs.skip != 'true'
+        run: |
+          VERSION="$(python3 scripts/sync-release-version.py --print)"
+          python3 scripts/crates-io-published.py "$VERSION" --wait
