@@ -1,3 +1,23 @@
+## 1.2.5
+
+### Tool calling (Rust-native only)
+
+* `ChatEngine::tool_calling_support()` reports whether the loaded model is one Onde has verified for structured tool calls. `Supported` means catalogued and tested. `Unsupported` means catalogued and not tested, which is a statement about Onde's coverage rather than the model's capability: some of those models ship tool-call templates and may well work. `Unknown` means the repository is not in the catalogue at all. An engine with nothing loaded answers `Unsupported`.
+* `models::tool_calling_support()` and `models::TOOL_CALLING_MODELS` give the same answer without an engine. Matching is exact, so a custom repository whose name resembles a catalogued one stays `Unknown` rather than inheriting a verification it never had.
+* `ChatEngine::record_tool_results()` appends tool results to history without starting another inference round. Agent hosts need it when a turn is cancelled after the assistant has already asked for tools. It records only results answering a call the assistant actually made and has not already been answered, and returns how many it kept, because a tool result with no matching request builds a message sequence the model cannot read.
+* `ToolCallingSupport` is exported from `onde::inference`.
+
+None of this reaches the UniFFI surface yet, so the Swift, Kotlin, Flutter/Dart, and React Native packages gain no new API in this release.
+
+### Release automation
+
+* The React Native package publishes through npm trusted publishing (OIDC) instead of a long-lived `NPM_TOKEN`. The publish job requests `id-token: write` and upgrades npm before publishing, since Node 22 still ships npm 10 and trusted publishing needs 11.5.1 or newer. The trusted publisher configured on npmjs.com has to keep matching what the job declares, or npm answers the publish with a 404.
+* The npm workflow runs a preflight gate before the publish step.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.2.5`.
+
 ## 1.1.1
 
 ### Apple SDK compatibility
