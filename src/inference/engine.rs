@@ -1244,6 +1244,7 @@ impl ChatEngine {
                     let mut assembled = String::new();
                     let mut last_finish_reason = None;
                     let mut ttft_ms = None;
+                    let mut status = "success";
 
                     // `Stream::next()` is an inherent async method on
                     // mistralrs::Stream that returns `Option<Response>`.
@@ -1277,14 +1278,17 @@ impl ChatEngine {
                             }
                             mistralrs::Response::InternalError(e) => {
                                 log::error!("ChatEngine stream internal error: {}", e);
+                                status = "error";
                                 break;
                             }
                             mistralrs::Response::ValidationError(e) => {
                                 log::error!("ChatEngine stream validation error: {}", e);
+                                status = "error";
                                 break;
                             }
                             mistralrs::Response::ModelError(msg, _) => {
                                 log::error!("ChatEngine stream model error: {}", msg);
+                                status = "error";
                                 break;
                             }
                             _ => {
@@ -1317,7 +1321,7 @@ impl ChatEngine {
                             crate::pulse::next_request_id(),
                             started.elapsed().as_millis() as u64,
                             ttft_ms,
-                            "success".to_string(),
+                            status.to_string(),
                         );
                     }
 

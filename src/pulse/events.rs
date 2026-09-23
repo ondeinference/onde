@@ -37,8 +37,10 @@ pub struct InferenceEvent {
     /// once and reports `None` rather than a stand-in value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ttft_ms: Option<u64>,
-    /// `"success"`, `"cancelled"`, or `"error"`. Currently always
-    /// `"success"` here — inference errors throw before we reach this point.
+    /// `"success"`, `"cancelled"`, or `"error"`. A blocking request only
+    /// reports `"success"`, since its errors return before reaching pulse. A
+    /// stream can fail after it starts, so a mid-stream model error reports
+    /// `"error"`, usually with no `ttft_ms`.
     pub status: String,
     /// Same Onde app as the corresponding `ModelLoadedEvent`. `None` for SDK
     /// builds without app credentials or direct Rust consumers.
