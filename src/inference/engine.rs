@@ -1258,13 +1258,20 @@ impl ChatEngine {
                                             started.elapsed().as_millis() as u64
                                         });
                                         assembled.push_str(text);
-                                        let _ = tx
+                                        let sent = tx
                                             .send(StreamChunk {
                                                 delta: text.clone(),
                                                 done: false,
                                                 finish_reason: None,
                                             })
                                             .await;
+                                        // The receiver is gone, so nobody is
+                                        // reading the rest. Stop generating and
+                                        // keep only what the caller received.
+                                        if sent.is_err() {
+                                            status = "cancelled";
+                                            break;
+                                        }
                                     }
                                     if let Some(ref reason) = choice.finish_reason {
                                         last_finish_reason = Some(reason.clone());

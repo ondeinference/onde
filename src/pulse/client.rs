@@ -309,9 +309,11 @@ impl PulseClient {
         );
     }
 
-    /// Mirror an inference event idempotently. Request IDs are already unique,
-    /// so using an app-scoped natural key prevents a retry from double-counting
-    /// the same inference during cutover validation.
+    /// Mirror an inference event idempotently, so a retry can't double-count
+    /// the same inference during cutover validation. Request IDs are only
+    /// unique within one process (millisecond plus a per-process counter), so
+    /// two edges of the same app can mint the same ID; the edge is part of the
+    /// key for that reason.
     async fn dual_write_inference(&self, event: &InferenceEvent) {
         if !Self::dual_write_enabled() {
             return;
@@ -319,7 +321,7 @@ impl PulseClient {
         let Some(onde_app_id) = event.onde_app_id.as_deref() else {
             return;
         };
-        let event_key = scoped_document_key(onde_app_id, &[&event.request_id]);
+        let event_key = scoped_document_key(onde_app_id, &[&event.edge_id, &event.request_id]);
         let document = inference_document(event);
 
         self.write_doc("pulse_inference_events", Some(&event_key), &document)
@@ -426,9 +428,11 @@ mod tests {
             scoped_document_key("app-a", &["onde-unknown"]),
             scoped_document_key("app-b", &["onde-unknown"])
         );
-        assert_eq!(
-            scoped_document_key("app-a", &["onde-1720000000000-42"]),
-            "app-a:onde-1720000000000-42"
+        // Request IDs collide across edges (each process counts from 0), so
+        // the inference key carries the edge.
+        assert_ne!(
+            scoped_document_key("app-a", &["edge-1", "onde-1720000000000-0"]),
+            scoped_document_key("app-a", &["edge-2", "onde-1720000000000-0"])
         );
     }
 
