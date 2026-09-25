@@ -265,6 +265,9 @@ pub struct ChatEngine {
     /// pulse event so the document store associates rows with the right app.
     /// `None` for open-ended SDK consumers (UniFFI `OndeChatEngine`).
     onde_app_id: Option<String>,
+    /// Device-declared ISO 3166-1 alpha-2 country for the public Pulse globe
+    /// (spec 0008). `None` writes no geography.
+    pulse_country: Option<String>,
 }
 
 #[cfg(any(
@@ -297,7 +300,20 @@ impl ChatEngine {
             inner: Mutex::new(None),
             pulse: std::sync::OnceLock::new(),
             onde_app_id,
+            pulse_country: None,
         }
+    }
+
+    /// Declare the device's country for Pulse geography. Pass the ISO 3166-1
+    /// alpha-2 region from the OS locale or time zone (for example `"SE"`),
+    /// never a full locale string or anything derived from the network.
+    ///
+    /// Only the country code is sent, as one observation per edge per UTC
+    /// day, and only when dual-write and an Onde app id are both enabled.
+    /// UniFFI hosts can set `ONDE_PULSE_COUNTRY` instead.
+    pub fn with_pulse_country(mut self, country_code: Option<String>) -> Self {
+        self.pulse_country = country_code;
+        self
     }
 
     /// Lazily initialise the pulse telemetry client.
@@ -320,7 +336,13 @@ impl ChatEngine {
                         .ok()
                         .filter(|id| !id.is_empty())
                 });
-                let client = crate::pulse::PulseClient::new(environment, edge_id, onde_app_id);
+                let country_code = self.pulse_country.clone().or_else(|| {
+                    std::env::var("ONDE_PULSE_COUNTRY")
+                        .ok()
+                        .filter(|code| !code.is_empty())
+                });
+                let client =
+                    crate::pulse::PulseClient::new(environment, edge_id, onde_app_id, country_code);
 
                 match &client {
                     Some(_) => log::info!(
@@ -2119,6 +2141,11 @@ impl ChatEngine {
     /// ignores telemetry, so the app id is dropped.
     pub fn with_app_id(_onde_app_id: Option<String>) -> Self {
         Self
+    }
+
+    /// Stub mirror of the real `with_pulse_country`; no telemetry is sent.
+    pub fn with_pulse_country(self, _country_code: Option<String>) -> Self {
+        self
     }
 
     pub async fn load_gguf_model(

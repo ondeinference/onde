@@ -24,20 +24,15 @@ pub struct PulseClient {
     inner: GresiqClient,
     edge_id: String,
     onde_app_id: Option<String>,
+    /// Device-declared ISO 3166-1 alpha-2 country (spec 0008), already
+    /// validated. `None` means no geography is ever written.
+    country_code: Option<String>,
 }
 
 impl PulseClient {
     /// Returns true when pulse telemetry is disabled explicitly by the host app.
     pub fn disabled_by_env() -> bool {
-        matches!(
-            std::env::var("ONDE_DISABLE_PULSE")
-                .ok()
-                .as_deref()
-                .map(str::trim)
-                .map(str::to_ascii_lowercase)
-                .as_deref(),
-            Some("1") | Some("true") | Some("yes") | Some("on")
-        )
+        flag_set(std::env::var("ONDE_DISABLE_PULSE").ok().as_deref())
     }
 
     /// ADR-0003 M2 dual-write toggle. The mirror is deliberately opt-in while
@@ -47,7 +42,18 @@ impl PulseClient {
     /// `pulse/*` routes, which still serve reads until the M5 cut-over. Set
     /// `ONDE_PULSE_DUAL_WRITE=1` (or `true`/`yes`/`on`) to enable it.
     fn dual_write_enabled() -> bool {
-        dual_write_enabled_value(std::env::var("ONDE_PULSE_DUAL_WRITE").ok().as_deref())
+        flag_set(std::env::var("ONDE_PULSE_DUAL_WRITE").ok().as_deref())
+    }
+
+    /// Kill switch for country observations alone (spec 0008). Setting
+    /// `ONDE_DISABLE_PULSE_GEOGRAPHY=1` stops geography writes while every
+    /// other pulse event keeps flowing.
+    fn geography_disabled() -> bool {
+        flag_set(
+            std::env::var("ONDE_DISABLE_PULSE_GEOGRAPHY")
+                .ok()
+                .as_deref(),
+        )
     }
 
     /// Build a pulse client using the GresIQ credentials embedded in the SDK.
@@ -62,10 +68,15 @@ impl PulseClient {
     /// `onde_app_id` is the Onde app UUID (from the ondeinference.com
     /// dashboard) that owns this telemetry. `None` is fine — events then carry
     /// no app association (open-source/direct Rust consumers).
+    ///
+    /// `country_code` is the ISO 3166-1 alpha-2 region the host read from the
+    /// OS locale or time zone. A malformed or user-assigned code is dropped
+    /// rather than guessed at, so the observation is simply never written.
     pub fn new(
         environment: Environment,
         edge_id: String,
         onde_app_id: Option<String>,
+        country_code: Option<String>,
     ) -> Option<Self> {
         if Self::disabled_by_env() {
             return None;
@@ -115,10 +126,19 @@ impl PulseClient {
             }
         };
 
+        let country_code = country_code.and_then(|raw| {
+            let normalized = normalize_country_code(&raw);
+            if normalized.is_none() {
+                log::debug!("pulse: ignoring unsupported country code");
+            }
+            normalized
+        });
+
         Some(PulseClient {
             inner,
             edge_id,
             onde_app_id,
+            country_code,
         })
     }
 
@@ -246,7 +266,7 @@ impl PulseClient {
     // Onde gresiq_app. The relational `pulse/*` routes still own reads until the
     // M5 cut-over, so failures are logged and never affect inference.
 
-    /// Move the three model-load mirror requests off the model-loading critical
+    /// Move the model-load mirror requests off the model-loading critical
     /// path. A dedicated thread is acceptable here because this runs once per
     /// model activation, not once per inference, and also works for callers
     /// whose original async runtime is short-lived.
@@ -306,7 +326,32 @@ impl PulseClient {
                 Some(&deployment_key),
                 &deployment_document,
             ),
+            self.write_geography_observation(onde_app_id, &event.edge_id),
         );
+    }
+
+    /// Record the device-declared country in `pulse_geography_observations`
+    /// (spec 0008). Country is kept off `pulse_edges` on purpose: that upsert
+    /// is durable, and edge-linked geography must age out after 30 days.
+    ///
+    /// The key carries the UTC date, so repeated model loads within a day
+    /// overwrite one document instead of building a location trail. The
+    /// gateway keeps `created_at` on upsert, which is what the retention sweep
+    /// ages on.
+    async fn write_geography_observation(&self, onde_app_id: &str, edge_id: &str) {
+        let Some(country_code) = self.country_code.as_deref() else {
+            return;
+        };
+        if Self::geography_disabled() {
+            return;
+        }
+
+        let observed_at_ms = epoch_millis();
+        let key = scoped_document_key(onde_app_id, &[edge_id, &utc_date(observed_at_ms)]);
+        let document = geography_document(onde_app_id, edge_id, country_code, observed_at_ms);
+
+        self.write_doc("pulse_geography_observations", Some(&key), &document)
+            .await;
     }
 
     /// Mirror an inference event idempotently, so a retry can't double-count
@@ -336,7 +381,8 @@ impl PulseClient {
     }
 }
 
-fn dual_write_enabled_value(value: Option<&str>) -> bool {
+/// Parse an opt-in env flag: `1`, `true`, `yes` or `on`, case-insensitive.
+fn flag_set(value: Option<&str>) -> bool {
     matches!(
         value.map(str::trim).map(str::to_ascii_lowercase).as_deref(),
         Some("1") | Some("true") | Some("yes") | Some("on")
@@ -387,6 +433,61 @@ fn edge_document(event: &ModelLoadedEvent, onde_app_id: &str) -> serde_json::Val
     })
 }
 
+/// The spec 0008 raw observation. It holds nothing except the country: no
+/// locale string, time zone, IP, or coordinates.
+fn geography_document(
+    onde_app_id: &str,
+    edge_id: &str,
+    country_code: &str,
+    observed_at_ms: u64,
+) -> serde_json::Value {
+    serde_json::json!({
+        "onde_app_id": onde_app_id,
+        "edge_id": edge_id,
+        "country_code": country_code,
+        "observed_at_ms": observed_at_ms,
+    })
+}
+
+/// Accept exactly two ASCII letters and uppercase them. ISO 3166-1
+/// user-assigned codes (`AA`, `QM`–`QZ`, `XA`–`XZ`, `ZZ`) name no country and
+/// are rejected, except `XK`, which Apple and Android both report for Kosovo.
+fn normalize_country_code(raw: &str) -> Option<String> {
+    let code = raw.trim().to_ascii_uppercase();
+    let [first, second] = code.as_bytes() else {
+        return None;
+    };
+    if !first.is_ascii_uppercase() || !second.is_ascii_uppercase() {
+        return None;
+    }
+    let user_assigned = code == "AA"
+        || code == "ZZ"
+        || (*first == b'Q' && *second >= b'M')
+        || (*first == b'X' && code != "XK");
+    (!user_assigned).then_some(code)
+}
+
+/// `YYYY-MM-DD` for a Unix-epoch millisecond timestamp, in UTC. This is
+/// Howard Hinnant's `civil_from_days`, which avoids a date dependency.
+fn utc_date(epoch_ms: u64) -> String {
+    let days = (epoch_ms / 86_400_000) as i64;
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let day_of_era = z.rem_euclid(146_097);
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let shifted_month = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * shifted_month + 2) / 5 + 1;
+    let month = if shifted_month < 10 {
+        shifted_month + 3
+    } else {
+        shifted_month - 9
+    };
+    let year = year_of_era + era * 400 + i64::from(month <= 2);
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
 /// Milliseconds since the Unix epoch. The crate has no date dependency and
 /// this is only ever read as a recency window, so an integer beats pulling in
 /// a formatting library for an RFC 3339 string.
@@ -402,7 +503,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn dual_write_requires_an_explicit_positive_flag() {
+    fn env_flags_require_an_explicit_positive_value() {
         for disabled in [
             None,
             Some(""),
@@ -411,10 +512,10 @@ mod tests {
             Some("no"),
             Some("off"),
         ] {
-            assert!(!dual_write_enabled_value(disabled));
+            assert!(!flag_set(disabled));
         }
         for enabled in [Some("1"), Some("true"), Some("YES"), Some(" on ")] {
-            assert!(dual_write_enabled_value(enabled));
+            assert!(flag_set(enabled));
         }
     }
 
@@ -452,6 +553,59 @@ mod tests {
         // Liveness has to be derivable from the document itself: nothing ever
         // writes an offline status, so a reader windows on this instead.
         assert!(document["last_seen_ms"].as_u64().unwrap_or(0) > 0);
+    }
+
+    #[test]
+    fn country_codes_are_two_letters_and_never_user_assigned() {
+        assert_eq!(normalize_country_code("SE").as_deref(), Some("SE"));
+        assert_eq!(normalize_country_code(" id ").as_deref(), Some("ID"));
+        assert_eq!(normalize_country_code("XK").as_deref(), Some("XK"));
+        // Full locale strings, numeric UN M.49 regions and time zones must be
+        // rejected rather than parsed: the host extracts the country.
+        for rejected in [
+            "",
+            "S",
+            "SWE",
+            "sv_SE",
+            "sv-SE",
+            "001",
+            "Europe/Stockholm",
+            "S1",
+            "ÅÄ",
+        ] {
+            assert_eq!(normalize_country_code(rejected), None, "{rejected}");
+        }
+        for user_assigned in ["AA", "QM", "QZ", "XA", "XX", "ZZ"] {
+            assert_eq!(
+                normalize_country_code(user_assigned),
+                None,
+                "{user_assigned}"
+            );
+        }
+    }
+
+    #[test]
+    fn utc_date_formats_civil_days() {
+        assert_eq!(utc_date(0), "1970-01-01");
+        assert_eq!(utc_date(1_709_164_800_000), "2024-02-29");
+        assert_eq!(utc_date(1_788_525_296_000), "2026-09-04");
+        // The last millisecond of a day still belongs to it.
+        assert_eq!(utc_date(86_400_000 - 1), "1970-01-01");
+    }
+
+    #[test]
+    fn geography_document_carries_only_the_country() {
+        let document = geography_document("app-a", "edge-1", "SE", 1_788_525_296_000);
+        let mut fields: Vec<_> = document
+            .as_object()
+            .map(|map| map.keys().cloned().collect())
+            .unwrap_or_default();
+        fields.sort();
+        assert_eq!(
+            fields,
+            ["country_code", "edge_id", "observed_at_ms", "onde_app_id"]
+        );
+        assert_eq!(document["country_code"], "SE");
     }
 
     #[test]
