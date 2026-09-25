@@ -265,6 +265,9 @@ pub struct ChatEngine {
     /// pulse event so the document store associates rows with the right app.
     /// `None` for open-ended SDK consumers (UniFFI `OndeChatEngine`).
     onde_app_id: Option<String>,
+    /// Device-declared ISO 3166-1 alpha-2 country for the public Pulse globe
+    /// (spec 0008). `None` writes no geography.
+    pulse_country: Option<String>,
 }
 
 #[cfg(any(
@@ -297,7 +300,20 @@ impl ChatEngine {
             inner: Mutex::new(None),
             pulse: std::sync::OnceLock::new(),
             onde_app_id,
+            pulse_country: None,
         }
+    }
+
+    /// Declare the device's country for Pulse geography. Pass the ISO 3166-1
+    /// alpha-2 region from the OS locale or time zone (for example `"SE"`),
+    /// never a full locale string or anything derived from the network.
+    ///
+    /// Only the country code is sent, as one observation per edge per UTC
+    /// day, and only when dual-write and an Onde app id are both enabled.
+    /// UniFFI hosts can set `ONDE_PULSE_COUNTRY` instead.
+    pub fn with_pulse_country(mut self, country_code: Option<String>) -> Self {
+        self.pulse_country = country_code;
+        self
     }
 
     /// Lazily initialise the pulse telemetry client.
@@ -320,7 +336,13 @@ impl ChatEngine {
                         .ok()
                         .filter(|id| !id.is_empty())
                 });
-                let client = crate::pulse::PulseClient::new(environment, edge_id, onde_app_id);
+                let country_code = self.pulse_country.clone().or_else(|| {
+                    std::env::var("ONDE_PULSE_COUNTRY")
+                        .ok()
+                        .filter(|code| !code.is_empty())
+                });
+                let client =
+                    crate::pulse::PulseClient::new(environment, edge_id, onde_app_id, country_code);
 
                 match &client {
                     Some(_) => log::info!(
@@ -1096,6 +1118,9 @@ impl ChatEngine {
                 pulse_model_id,
                 crate::pulse::next_request_id(),
                 elapsed.as_millis() as u64,
+                // A blocking request returns the whole completion at once,
+                // so there is no first-token moment to measure here.
+                None,
                 "success".to_string(),
             );
         }
@@ -1195,11 +1220,17 @@ impl ChatEngine {
     ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
         let user_message = user_message.into();
 
-        let (model, request) = {
+        let (model, request, pulse_model_id) = {
             let guard = self.inner.lock().await;
             let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
             let request = self::build_request(loaded, &user_message);
-            (loaded.model.clone(), request)
+            let pulse_model_id = match &loaded.config {
+                LoadedModelConfig::Gguf(c) => c.model_id.clone(),
+                LoadedModelConfig::Uqff(c) => c.model_id.clone(),
+                #[cfg(target_os = "macos")]
+                LoadedModelConfig::Isq(c) => c.model_id.clone(),
+            };
+            (loaded.model.clone(), request, pulse_model_id)
         };
 
         let (tx, rx) = tokio::sync::mpsc::channel::<StreamChunk>(64);
@@ -1219,17 +1250,23 @@ impl ChatEngine {
         let inner_ref: &'static Mutex<Option<LoadedModel>> = unsafe { &*inner_ptr };
 
         let user_msg_clone = user_message.clone();
+        // Cloning the pulse client is a pointer bump (Arc-backed reqwest
+        // client), so the task owns one rather than borrowing the engine.
+        let pulse = self.pulse().cloned();
 
         tokio::task::spawn(async move {
             // `model` is an `Arc<Model>` moved into this task, so it's owned.
             // `stream_chat_request` borrows `&Model` — the borrow is scoped
             // to this async block and does NOT need to be `'static`.
+            let started = std::time::Instant::now();
             let stream_result = model.stream_chat_request(request).await;
 
             match stream_result {
                 Ok(mut stream) => {
                     let mut assembled = String::new();
                     let mut last_finish_reason = None;
+                    let mut ttft_ms = None;
+                    let mut status = "success";
 
                     // `Stream::next()` is an inherent async method on
                     // mistralrs::Stream that returns `Option<Response>`.
@@ -1239,14 +1276,24 @@ impl ChatEngine {
                             mistralrs::Response::Chunk(chunk) => {
                                 if let Some(choice) = chunk.choices.first() {
                                     if let Some(ref text) = choice.delta.content {
+                                        ttft_ms.get_or_insert_with(|| {
+                                            started.elapsed().as_millis() as u64
+                                        });
                                         assembled.push_str(text);
-                                        let _ = tx
+                                        let sent = tx
                                             .send(StreamChunk {
                                                 delta: text.clone(),
                                                 done: false,
                                                 finish_reason: None,
                                             })
                                             .await;
+                                        // The receiver is gone, so nobody is
+                                        // reading the rest. Stop generating and
+                                        // keep only what the caller received.
+                                        if sent.is_err() {
+                                            status = "cancelled";
+                                            break;
+                                        }
                                     }
                                     if let Some(ref reason) = choice.finish_reason {
                                         last_finish_reason = Some(reason.clone());
@@ -1260,14 +1307,17 @@ impl ChatEngine {
                             }
                             mistralrs::Response::InternalError(e) => {
                                 log::error!("ChatEngine stream internal error: {}", e);
+                                status = "error";
                                 break;
                             }
                             mistralrs::Response::ValidationError(e) => {
                                 log::error!("ChatEngine stream validation error: {}", e);
+                                status = "error";
                                 break;
                             }
                             mistralrs::Response::ModelError(msg, _) => {
                                 log::error!("ChatEngine stream model error: {}", msg);
+                                status = "error";
                                 break;
                             }
                             _ => {
@@ -1291,6 +1341,19 @@ impl ChatEngine {
                         }
                     }
 
+                    // Streamed inferences were invisible to pulse until now;
+                    // only the blocking path reported. This is also the one
+                    // path that can supply a real TTFT.
+                    if let Some(pulse) = pulse {
+                        pulse.record_inference(
+                            pulse_model_id,
+                            crate::pulse::next_request_id(),
+                            started.elapsed().as_millis() as u64,
+                            ttft_ms,
+                            status.to_string(),
+                        );
+                    }
+
                     // Send the final "done" chunk.
                     let _ = tx
                         .send(StreamChunk {
@@ -1302,6 +1365,15 @@ impl ChatEngine {
                 }
                 Err(e) => {
                     log::error!("ChatEngine: stream_chat_request failed: {}", e);
+                    if let Some(pulse) = pulse {
+                        pulse.record_inference(
+                            pulse_model_id,
+                            crate::pulse::next_request_id(),
+                            started.elapsed().as_millis() as u64,
+                            None,
+                            "error".to_string(),
+                        );
+                    }
                     let _ = tx
                         .send(StreamChunk {
                             delta: String::new(),
@@ -2069,6 +2141,11 @@ impl ChatEngine {
     /// ignores telemetry, so the app id is dropped.
     pub fn with_app_id(_onde_app_id: Option<String>) -> Self {
         Self
+    }
+
+    /// Stub mirror of the real `with_pulse_country`; no telemetry is sent.
+    pub fn with_pulse_country(self, _country_code: Option<String>) -> Self {
+        self
     }
 
     pub async fn load_gguf_model(

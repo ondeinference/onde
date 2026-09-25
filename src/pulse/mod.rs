@@ -8,6 +8,12 @@
 //! machine gets called in the dashboard.  Anything works — just keep it stable
 //! across restarts or you'll end up with duplicate edges.  Defaults to
 //! `"onde-unknown"`.
+//!
+//! `ONDE_PULSE_COUNTRY` (or `ChatEngine::with_pulse_country`) declares the
+//! device's ISO 3166-1 alpha-2 country for the public Pulse globe. It is only
+//! written with `ONDE_PULSE_DUAL_WRITE` and an Onde app id, and
+//! `ONDE_DISABLE_PULSE_GEOGRAPHY=1` turns it off on its own. Leave it unset
+//! and no location is ever sent.
 
 mod client;
 mod events;
