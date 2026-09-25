@@ -1343,6 +1343,15 @@ impl ChatEngine {
                 }
                 Err(e) => {
                     log::error!("ChatEngine: stream_chat_request failed: {}", e);
+                    if let Some(pulse) = pulse {
+                        pulse.record_inference(
+                            pulse_model_id,
+                            crate::pulse::next_request_id(),
+                            started.elapsed().as_millis() as u64,
+                            None,
+                            "error".to_string(),
+                        );
+                    }
                     let _ = tx
                         .send(StreamChunk {
                             delta: String::new(),
