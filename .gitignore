@@ -33,5 +33,8 @@ sdk/python/.pytest_cache/
 # Zed settings
 .zed
 
+# JetBrains settings
+.idea/
+
 # SDK credentials (build-time secrets)
 .env
