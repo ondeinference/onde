@@ -1,3 +1,13 @@
+## 1.3.0
+
+- Streamed inferences now report Pulse duration, measured time to first token,
+  and accurate success, error, or cancellation status.
+- Pulse document mirroring uses app- and edge-scoped identities and records
+  edge recency for reliable liveness reporting.
+- Version aligned with the Rust core. The new Rust-native
+  `ChatEngine::with_pulse_country()` builder is not exposed through Dart; hosts
+  that explicitly configure the SDK can use `ONDE_PULSE_COUNTRY`.
+
 ## 1.2.5
 
 - Version aligned with the Rust crate. The 1.2.5 tool-calling additions
