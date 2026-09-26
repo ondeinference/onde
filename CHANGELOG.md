@@ -1,3 +1,20 @@
+## 1.3.0
+
+### Pulse document telemetry
+
+* Added opt-in dual-write to the GresIQ document gateway for attributed model-load and inference events. Documents are scoped by Onde app and edge identities so retries remain idempotent and separate installations cannot overwrite one another.
+* Streaming inference now reports Pulse events, including measured time to first token. Setup and mid-stream failures report `error`, dropped receivers report `cancelled`, and unmeasured TTFT stays absent instead of becoming a misleading zero.
+* Edge documents now carry a last-seen timestamp so readers can derive liveness from recency instead of a durable `online` value.
+
+### Privacy-preserving geography
+
+* Added `ChatEngine::with_pulse_country()` and the `ONDE_PULSE_COUNTRY` host setting for an optional, device-declared ISO 3166-1 alpha-2 country.
+* Country observations are limited to one app-scoped edge document per UTC day. Invalid or user-assigned codes are ignored, no network-derived location is used, and `ONDE_DISABLE_PULSE_GEOGRAPHY` disables geography without stopping other telemetry.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.3.0`.
+
 ## 1.2.5
 
 ### Tool calling (Rust-native only)
