@@ -2096,7 +2096,7 @@ fn chat_role_to_mistral(role: &ChatRole) -> TextMessageRole {
 /// Truncate a string for log output, appending `"..."` if truncated.
 fn truncate_for_log(s: &str, max_len: usize) -> String {
     if s.len() > max_len {
-        format!("{}...", &s[..max_len])
+        format!("{}...", &s[..s.floor_char_boundary(max_len)])
     } else {
         s.to_string()
     }
@@ -2690,6 +2690,33 @@ mod tests {
         let result = truncate_for_log(&long, 50);
         assert!(result.ends_with("..."));
         assert_eq!(result.len(), 53); // 50 chars + "..."
+    }
+
+    #[test]
+    fn truncate_for_log_unicode_boundaries() {
+        for character in ['é', '—', '界', '🦀'] {
+            let input = format!("{}{}tail", "a".repeat(99), character);
+            for limit in 99..99 + character.len_utf8() {
+                assert_eq!(
+                    truncate_for_log(&input, limit),
+                    format!("{}...", "a".repeat(99))
+                );
+            }
+            let boundary = 99 + character.len_utf8();
+            assert_eq!(
+                truncate_for_log(&input, boundary),
+                format!("{}{}...", "a".repeat(99), character)
+            );
+        }
+    }
+
+    #[test]
+    fn truncate_for_log_empty_and_zero_limit() {
+        assert_eq!(truncate_for_log("", 0), "");
+        assert_eq!(truncate_for_log("—", 0), "...");
+        assert_eq!(truncate_for_log("—", 1), "...");
+        assert_eq!(truncate_for_log("—", 3), "—");
+        assert_eq!(truncate_for_log("hello", 5), "hello");
     }
 
     #[test]
