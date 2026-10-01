@@ -2096,11 +2096,7 @@ fn chat_role_to_mistral(role: &ChatRole) -> TextMessageRole {
 /// Truncate a string for log output, appending `"..."` if truncated.
 fn truncate_for_log(s: &str, max_len: usize) -> String {
     if s.len() > max_len {
-        let mut end = max_len;
-        while !s.is_char_boundary(end) {
-            end -= 1;
-        }
-        format!("{}...", &s[..end])
+        format!("{}...", &s[..s.floor_char_boundary(max_len)])
     } else {
         s.to_string()
     }
