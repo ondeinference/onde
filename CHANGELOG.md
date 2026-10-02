@@ -1,3 +1,13 @@
+## 1.3.1
+
+### Fixes
+
+* Fixed a panic when logging a chat message or reply longer than 100 bytes whose 100th byte fell inside a multi-byte UTF-8 character. The log preview sliced the string at a fixed byte index, so text with accented letters, CJK, or emoji at that position could abort `send_message` and the streaming paths. The preview now cuts at the nearest character boundary at or below the limit.
+
+### Packaging
+
+* Release metadata is aligned for Rust, Swift, Kotlin, Flutter/Dart, and React Native SDKs under version `1.3.1`.
+
 ## 1.3.0
 
 ### Pulse document telemetry
