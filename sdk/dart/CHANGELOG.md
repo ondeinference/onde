@@ -1,3 +1,10 @@
+## 1.3.1
+
+- Fixed a crash in the Rust core when a chat message or reply longer than 100
+  bytes had a multi-byte character (accented letters, CJK, emoji) at the point
+  where the log preview was cut.
+- Version aligned with the Rust core. No Dart API changes.
+
 ## 1.3.0
 
 - Streamed inferences now report Pulse duration, measured time to first token,
