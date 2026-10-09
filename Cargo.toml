@@ -11,6 +11,11 @@ readme = "README.md"
 keywords = ["inference", "on-device", "chat", "llm", "mistral"]
 categories = ["artificial-intelligence", "api-bindings"]
 
+[workspace]
+resolver = "2"
+members = [".", "uniffi-bindgen", "sdk/dart/rust", "sdk/react-native/rust"]
+exclude = ["sdk/react-native/example"]
+
 [lib]
 name = "onde"
 # "lib"        – normal Rust dependency for other crates.
