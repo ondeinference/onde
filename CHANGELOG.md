@@ -1,3 +1,12 @@
+## Unreleased
+
+### Stateless tool calling (Rust-native only)
+
+* Added `ChatEngine::complete(turns, tools, sampling)`, which runs the loaded model on a conversation the caller supplies instead of the engine's history. `turns` is a list of `ChatTurn`s (system, user, assistant with its tool calls, tool result) and is the whole conversation: the engine's history and system prompt are neither read nor changed. Hosts that keep their own conversation, such as an ACP agent that persists and reloads sessions, can now use on-device tool calling. Previously only the stateful `send_message_with_tools` and `send_tool_results` could, and `push_history` can't restore tool calls or tool results.
+* `complete` returns a `CompletionResult` with the reply text, the tool calls, the finish reason, prompt and completion token counts, and the model's reasoning. Reasoning comes from the model's reasoning output or, for Qwen3 thinking models, from a leading `<think>…</think>` block, which is removed from the reply text.
+* `GgufModelConfig::from_supported_model_id` is now public, so a host can load a model from `models::TOOL_CALLING_MODELS` or `models::SUPPORTED_MODELS` by its ID.
+* `ToolCallRequest` now implements `PartialEq` and `Eq`.
+
 ## 1.3.1
 
 ### Fixes
