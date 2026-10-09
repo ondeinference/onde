@@ -30,6 +30,9 @@ sdk/python/**/__pycache__/
 sdk/python/**/*.egg-info/
 sdk/python/.pytest_cache/
 
+# Node
+node_modules/
+
 # Zed settings
 .zed
 
