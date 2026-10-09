@@ -1,0 +1,9 @@
+[agent]
+model = "onde-large"
+
+[harvest]
+state = "closed"
+limit = 50
+since = "2026-09-01"
+cadence = "weekly"
+day_of_week = "Mon"
