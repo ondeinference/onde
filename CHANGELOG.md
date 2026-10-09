@@ -1,4 +1,4 @@
-## Unreleased
+## 1.3.2
 
 ### Stateless tool calling (Rust-native only)
 

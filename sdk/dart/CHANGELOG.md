@@ -1,3 +1,8 @@
+## 1.3.2
+
+- Version aligned with the Rust core. No Dart API changes. The core adds
+  `ChatEngine::complete` for caller-owned conversations (Rust-native only).
+
 ## 1.3.1
 
 - Fixed a crash in the Rust core when a chat message or reply longer than 100
