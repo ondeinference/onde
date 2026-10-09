@@ -16,6 +16,20 @@ resolver = "2"
 members = [".", "uniffi-bindgen", "sdk/dart/rust", "sdk/react-native/rust"]
 exclude = ["sdk/react-native/example"]
 
+# Shared dependency versions. Members opt in with `workspace = true` and keep
+# their own `features` list — only the version requirement is hoisted here, so
+# a single bump stays consistent across the root crate and the SDK crates.
+[workspace.dependencies]
+log = "0.4"
+serde = "1"
+serde_json = "1"
+thiserror = "2"
+tokio = "1"
+# Pinned to =0.31.0 — the version MUST be identical across the onde crate and
+# the uniffi-bindgen binary crate.
+uniffi = "=0.31.0"
+smbcloud-gresiq-sdk = "0.4.7"
+
 [lib]
 name = "onde"
 # "lib"        – normal Rust dependency for other crates.
@@ -80,23 +94,21 @@ mistralrs = { version = "0.9.3", package = "onde-mistralrs" }
 [dependencies]
 anyhow = "1"
 home = "0.5.4"
-log = "^0.4"
+log = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 
-thiserror = "2"
-tokio = { version = "1", features = ["macros", "rt", "sync"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync"] }
 tsync = "2"
 
-# Pinned to =0.31.0 — the versions MUST be identical across the crate and
-# the uniffi-bindgen binary crate.
-uniffi = { version = "=0.31.0", features = ["tokio"] }
+uniffi = { workspace = true, features = ["tokio"] }
 
 [dependencies.smbcloud-gresiq-sdk]
 # 0.4.7 adds the document-gateway methods (upsert_document/get_collection) the
 # M2 dual-write path uses. See ADR-0003 M2.
-version = "0.4.7"
+workspace = true
 # path = "../smbcloud-cli/crates/smbcloud-gresiq-sdk"
 
 [build-dependencies]
@@ -104,7 +116,7 @@ version = "0.4.7"
 cc = "1"
 dotenvy = "0.15"
 # Required for UniFFI scaffolding code generation at build time.
-uniffi = { version = "=0.31.0", features = ["build"] }
+uniffi = { workspace = true, features = ["build"] }
 
 # The target-conditional mistralrs deps above resolve to the published
 # onde-mistralrs{,-core} 0.9.3 crates (setoelkahfi/mistral.rs fork,
