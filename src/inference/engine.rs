@@ -1576,6 +1576,82 @@ impl ChatEngine {
         })
     }
 
+    /// Run the loaded model on the caller's conversation, with `tools` offered.
+    /// Non-streaming.
+    ///
+    /// Unlike [`send_message_with_tools`](Self::send_message_with_tools), this
+    /// neither reads nor changes the engine's history, and the engine's system
+    /// prompt is not added: `turns` is the whole conversation, system message
+    /// included. Hosts that keep their own conversation (an ACP agent persisting
+    /// sessions, for example) call this every turn with the full list, assistant
+    /// tool calls and tool results included.
+    ///
+    /// `sampling` overrides the engine's sampling for this call only.
+    pub async fn complete(
+        &self,
+        turns: Vec<ChatTurn>,
+        tools: &[ToolDefinition],
+        sampling: Option<SamplingConfig>,
+    ) -> Result<CompletionResult, InferenceError> {
+        let (model, request) = {
+            let guard = self.inner.lock().await;
+            let loaded = guard.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+            let sampling = sampling.as_ref().unwrap_or(&loaded.sampling);
+            (
+                loaded.model.clone(),
+                build_turns_request(&turns, tools, sampling),
+            )
+        };
+
+        log::info!(
+            "ChatEngine: complete START — {} turns, {} tools",
+            turns.len(),
+            tools.len()
+        );
+        let start = std::time::Instant::now();
+        let response =
+            model
+                .send_chat_request(request)
+                .await
+                .map_err(|e| InferenceError::Inference {
+                    reason: e.to_string(),
+                })?;
+        let elapsed = start.elapsed();
+
+        let choice = response
+            .choices
+            .first()
+            .ok_or_else(|| InferenceError::Inference {
+                reason: "the model returned no choices".into(),
+            })?;
+        let content = choice.message.content.clone().unwrap_or_default();
+        let (text, inline_reasoning) = split_think(&content);
+        let reasoning = choice
+            .message
+            .reasoning_content
+            .clone()
+            .filter(|r| !r.trim().is_empty())
+            .or(inline_reasoning);
+        let tool_calls = parse_tool_calls(choice);
+
+        log::info!(
+            "ChatEngine: complete END — {} — tool_calls: {} — reply: \"{}\"",
+            format_duration(elapsed),
+            tool_calls.len(),
+            truncate_for_log(&text, 100)
+        );
+
+        Ok(CompletionResult {
+            text,
+            reasoning,
+            tool_calls,
+            finish_reason: choice.finish_reason.clone(),
+            prompt_tokens: response.usage.prompt_tokens,
+            completion_tokens: response.usage.completion_tokens,
+            duration_secs: elapsed.as_secs_f64(),
+        })
+    }
+
     /// Append tool results to history without starting another inference round.
     ///
     /// Agent hosts use this when a turn is cancelled after the assistant has
@@ -1948,6 +2024,85 @@ fn replay_history_with_tools(mut req: RequestBuilder, history: &[HistoryEntry]) 
     req
 }
 
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+/// Build a request from a caller-supplied conversation for [`ChatEngine::complete`].
+fn build_turns_request(
+    turns: &[ChatTurn],
+    tools: &[ToolDefinition],
+    sampling: &SamplingConfig,
+) -> RequestBuilder {
+    let req = apply_sampling(RequestBuilder::new(), sampling);
+    let history: Vec<HistoryEntry> = turns.iter().cloned().map(HistoryEntry::from).collect();
+    let req = replay_history_with_tools(req, &history);
+    attach_tools(req, tools)
+}
+
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "visionos",
+    target_os = "watchos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "android"
+))]
+impl From<ChatTurn> for HistoryEntry {
+    fn from(turn: ChatTurn) -> Self {
+        match turn {
+            ChatTurn::System(content) => HistoryEntry::Text(ChatMessage::system(content)),
+            ChatTurn::User(content) => HistoryEntry::Text(ChatMessage::user(content)),
+            ChatTurn::Assistant {
+                content,
+                tool_calls,
+            } if tool_calls.is_empty() => HistoryEntry::Text(ChatMessage::assistant(content)),
+            ChatTurn::Assistant {
+                content,
+                tool_calls,
+            } => HistoryEntry::AssistantToolCall {
+                content,
+                tool_calls,
+            },
+            ChatTurn::Tool {
+                tool_call_id,
+                content,
+            } => HistoryEntry::ToolResult {
+                tool_call_id,
+                content,
+            },
+        }
+    }
+}
+
+/// Split a leading `<think>…</think>` block (Qwen3 thinking models) off a
+/// reply: `(reply, reasoning)`. A reply without one comes back trimmed, with
+/// no reasoning. An unclosed block is all reasoning: the model ran out of
+/// tokens while thinking.
+fn split_think(content: &str) -> (String, Option<String>) {
+    let trimmed = content.trim_start();
+    let Some(rest) = trimmed.strip_prefix("<think>") else {
+        return (content.trim().to_string(), None);
+    };
+    let (reasoning, reply) = match rest.split_once("</think>") {
+        Some((reasoning, reply)) => (reasoning, reply),
+        None => (rest, ""),
+    };
+    let reasoning = reasoning.trim();
+    (
+        reply.trim().to_string(),
+        (!reasoning.is_empty()).then(|| reasoning.to_string()),
+    )
+}
+
 /// Attach [`ToolDefinition`] slices as mistralrs [`Tool`] values and set
 /// [`ToolChoice::Auto`].
 #[cfg(any(
@@ -2260,6 +2415,17 @@ impl ChatEngine {
             reason: "LLM inference is not supported on this platform.".into(),
         })
     }
+
+    pub async fn complete(
+        &self,
+        _turns: Vec<ChatTurn>,
+        _tools: &[ToolDefinition],
+        _sampling: Option<SamplingConfig>,
+    ) -> Result<CompletionResult, InferenceError> {
+        Err(InferenceError::Other {
+            reason: "LLM inference is not supported on this platform.".into(),
+        })
+    }
 }
 
 #[cfg(not(any(
@@ -2310,10 +2476,13 @@ impl GgufModelConfig {
         )
     }
 
-    /// Resolve a model-management ID to the same configuration used by the
-    /// inference engine. Keeping this mapping in one place prevents download
-    /// and load support from drifting apart.
-    pub(crate) fn from_supported_model_id(model_id: &str) -> Option<Self> {
+    /// Resolve a model-management ID (a Hugging Face repository from
+    /// [`SUPPORTED_MODELS`](super::models::SUPPORTED_MODELS), such as
+    /// `bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF`) to the same configuration
+    /// used by the inference engine. Keeping this mapping in one place prevents
+    /// download and load support from drifting apart. `None` for an ID Onde
+    /// doesn't support.
+    pub fn from_supported_model_id(model_id: &str) -> Option<Self> {
         match model_id {
             super::models::BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF => Some(Self::qwen25_0_5b()),
             super::models::BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF => Some(Self::qwen25_1_5b()),
@@ -2845,5 +3014,87 @@ mod tests {
     async fn engine_unload_when_none() {
         let engine = ChatEngine::new();
         assert!(engine.unload_model().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn complete_without_a_model() {
+        let engine = ChatEngine::new();
+        let err = engine
+            .complete(vec![ChatTurn::User("hi".into())], &[], None)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, InferenceError::NoModelLoaded), "{err:?}");
+    }
+
+    #[test]
+    fn split_think_separates_reasoning() {
+        assert_eq!(
+            split_think("<think>\nC major has no sharps.\n</think>\n\nIt has none."),
+            (
+                "It has none.".to_string(),
+                Some("C major has no sharps.".to_string())
+            )
+        );
+        assert_eq!(
+            split_think("  Plain reply.  "),
+            ("Plain reply.".to_string(), None)
+        );
+        assert_eq!(
+            split_think("<think>\n\n</think>Reply"),
+            ("Reply".to_string(), None)
+        );
+        // Out of tokens mid-thought: no reply yet.
+        assert_eq!(
+            split_think("<think>still going"),
+            (String::new(), Some("still going".to_string()))
+        );
+        // Only a leading block counts.
+        assert_eq!(
+            split_think("Use <think> tags."),
+            ("Use <think> tags.".to_string(), None)
+        );
+    }
+
+    #[test]
+    fn chat_turns_become_history_entries() {
+        let call = ToolCallRequest {
+            id: "call_1".into(),
+            function_name: "theory_chord".into(),
+            arguments: r#"{"symbol":"Cmaj7"}"#.into(),
+        };
+        let entries: Vec<HistoryEntry> = vec![
+            ChatTurn::System("You are helpful.".into()),
+            ChatTurn::User("Spell Cmaj7".into()),
+            ChatTurn::Assistant {
+                content: String::new(),
+                tool_calls: vec![call.clone()],
+            },
+            ChatTurn::Tool {
+                tool_call_id: "call_1".into(),
+                content: "C E G B".into(),
+            },
+            ChatTurn::Assistant {
+                content: "C, E, G, B.".into(),
+                tool_calls: vec![],
+            },
+        ]
+        .into_iter()
+        .map(HistoryEntry::from)
+        .collect();
+
+        assert!(
+            matches!(&entries[0], HistoryEntry::Text(m) if m.role == ChatRole::System && m.content == "You are helpful.")
+        );
+        assert!(matches!(&entries[1], HistoryEntry::Text(m) if m.role == ChatRole::User));
+        assert!(
+            matches!(&entries[2], HistoryEntry::AssistantToolCall { tool_calls, .. } if tool_calls == &vec![call])
+        );
+        assert!(
+            matches!(&entries[3], HistoryEntry::ToolResult { tool_call_id, content } if tool_call_id == "call_1" && content == "C E G B")
+        );
+        // A plain assistant reply stays a text message, as the engine records it.
+        assert!(
+            matches!(&entries[4], HistoryEntry::Text(m) if m.role == ChatRole::Assistant && m.content == "C, E, G, B.")
+        );
     }
 }

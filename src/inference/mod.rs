@@ -69,6 +69,9 @@ pub use ffi::{OndeChatEngine, StreamChunkListener};
 pub use types::{
     ChatMessage,
     ChatRole,
+    // Tool calling
+    ChatTurn,
+    CompletionResult,
     EngineInfo,
     EngineStatus,
     GgufModelConfig,
@@ -77,7 +80,6 @@ pub use types::{
     IsqModelConfig,
     SamplingConfig,
     StreamChunk,
-    // Tool calling
     ToolAwareResult,
     ToolCallInfo,
     ToolCallRequest,

@@ -480,7 +480,7 @@ pub fn format_duration(d: std::time::Duration) -> String {
 // with UniFFI derives and shared across both layers.)
 
 /// A tool call requested by the model.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolCallRequest {
     /// Unique identifier for this tool call (used to correlate results).
     pub id: String,
@@ -505,6 +505,43 @@ pub struct ToolAwareResult {
     pub duration_display: String,
     /// Finish reason reported by the model (e.g. `"stop"`, `"tool_calls"`).
     pub finish_reason: String,
+}
+
+/// One message of a conversation passed to
+/// [`ChatEngine::complete`](super::ChatEngine::complete), which runs on the
+/// caller's conversation instead of the engine's history (Rust-only).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChatTurn {
+    System(String),
+    User(String),
+    /// An assistant reply, with the tool calls it made (empty for plain text).
+    Assistant {
+        content: String,
+        tool_calls: Vec<ToolCallRequest>,
+    },
+    /// The result of one tool call, answering the assistant turn before it.
+    Tool {
+        tool_call_id: String,
+        content: String,
+    },
+}
+
+/// Result of [`ChatEngine::complete`](super::ChatEngine::complete) (Rust-only).
+#[derive(Debug, Clone)]
+pub struct CompletionResult {
+    /// The reply text, with any `<think>` block moved to [`reasoning`](Self::reasoning).
+    /// May be empty when the model only calls tools.
+    pub text: String,
+    /// The model's reasoning, for thinking models; `None` otherwise.
+    pub reasoning: Option<String>,
+    /// Tool calls requested by the model. Empty for a plain text reply.
+    pub tool_calls: Vec<ToolCallRequest>,
+    /// Finish reason reported by the model (e.g. `"stop"`, `"tool_calls"`, `"length"`).
+    pub finish_reason: String,
+    pub prompt_tokens: usize,
+    pub completion_tokens: usize,
+    /// Wall-clock inference duration in seconds.
+    pub duration_secs: f64,
 }
 
 #[cfg(test)]

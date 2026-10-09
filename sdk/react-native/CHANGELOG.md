@@ -1,3 +1,10 @@
+## 1.3.2
+
+- Version aligned with the Rust core. The new Rust-native
+  `ChatEngine::complete()` stateless completion API — which runs a tool turn
+  over a caller-owned conversation without touching the engine's history — is
+  not exposed through React Native. No React Native API changes.
+
 ## 1.3.1
 
 - Fixed a crash in the Rust core when a chat message or reply longer than 100
