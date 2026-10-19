@@ -1,3 +1,8 @@
+## 1.3.3
+
+- Version aligned with the Rust core. No Dart API changes.
+- The Rust bridge crate (`sdk/dart/rust`) is now a member of the `onde` Cargo workspace and inherits `tokio`, `thiserror`, `log`, and `smbcloud-gresiq-sdk` from the new `[workspace.dependencies]` table. Resolved versions are unchanged.
+
 ## 1.3.2
 
 - Version aligned with the Rust core. No Dart API changes. The core adds
