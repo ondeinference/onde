@@ -1,3 +1,15 @@
+## 1.3.3
+
+### Cargo workspace
+
+* `onde` is now a hybrid root-package Cargo workspace. Members are the root `onde` crate, the `uniffi-bindgen` helper, `sdk/dart/rust`, and `sdk/react-native/rust`; the React Native example app is excluded. No files moved, and the root package is still the publishable crate.
+* Shared dependency versions (`log`, `serde`, `serde_json`, `thiserror`, `tokio`, `uniffi`, `smbcloud-gresiq-sdk`) are hoisted into `[workspace.dependencies]`. Each member opts in with `workspace = true` and keeps its own feature list, so only the version requirement is shared. Resolved versions are unchanged.
+
+### Packaging
+
+* No public API changes: the published `onde` crate surface is identical to `1.3.2`.
+* Completes the `1.3.2` version propagation that release commit `f45253b` missed and that never reached the tagged commit — `sdk/react-native/rust/Cargo.toml`, the React Native changelog, and the `onde-react-native` entry in the root lockfile were still on `1.3.1` at tag `1.3.2`. All version sources are aligned on `1.3.3` here.
+
 ## 1.3.2
 
 ### Stateless tool calling (Rust-native only)

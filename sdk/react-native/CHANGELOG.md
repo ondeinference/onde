@@ -1,3 +1,8 @@
+## 1.3.3
+
+- Version aligned with the Rust core. No React Native API changes.
+- The Rust bridge crate (`sdk/react-native/rust`) is now a member of the `onde` Cargo workspace and inherits `tokio`, `serde`, `serde_json`, and `log` from the new `[workspace.dependencies]` table. Resolved versions are unchanged.
+
 ## 1.3.2
 
 - Version aligned with the Rust core. The new Rust-native
