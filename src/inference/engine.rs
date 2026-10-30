@@ -472,17 +472,23 @@ impl ChatEngine {
         // so the auto device mapper allocates far less memory.
         #[cfg(target_os = "tvos")]
         {
-            use mistralrs::DeviceMapSetting;
-            use mistralrs_core::AutoDeviceMapParams;
-
             builder = builder
                 .with_max_num_seqs(1)
                 .with_prefix_cache_n(None)
                 .with_no_kv_cache()
-                .with_device_mapping(DeviceMapSetting::Auto(AutoDeviceMapParams::Text {
-                    max_seq_len: 512,
-                    max_batch_size: 1,
-                }));
+                .with_max_model_len(512);
+        }
+
+        // Upstream #2493 made Metal paged attention the default; its KV block
+        // pool is too large for the memory budget of Apple's mobile targets.
+        #[cfg(any(
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos"
+        ))]
+        {
+            builder = builder.without_paged_attn();
         }
 
         // On Android the GGUF embedded tokenizer is not supported by the
@@ -638,17 +644,23 @@ impl ChatEngine {
 
         #[cfg(target_os = "tvos")]
         {
-            use mistralrs::DeviceMapSetting;
-            use mistralrs_core::AutoDeviceMapParams;
-
             builder = builder
                 .with_max_num_seqs(1)
                 .with_prefix_cache_n(None)
                 .with_no_kv_cache()
-                .with_device_mapping(DeviceMapSetting::Auto(AutoDeviceMapParams::Text {
-                    max_seq_len: 512,
-                    max_batch_size: 1,
-                }));
+                .with_max_model_len(512);
+        }
+
+        // Upstream #2493 made Metal paged attention the default; its KV block
+        // pool is too large for the memory budget of Apple's mobile targets.
+        #[cfg(any(
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos"
+        ))]
+        {
+            builder = builder.without_paged_attn();
         }
 
         if let Some(ref template) = config.chat_template {

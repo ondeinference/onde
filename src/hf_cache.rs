@@ -1084,6 +1084,18 @@ where
         builder = builder.with_chat_template(chat_template);
     }
 
+    // Upstream #2493 made Metal paged attention the default; skip it on mobile
+    // so the validation load does not reserve the KV block pool.
+    #[cfg(any(
+        target_os = "ios",
+        target_os = "tvos",
+        target_os = "visionos",
+        target_os = "watchos"
+    ))]
+    {
+        builder = builder.without_paged_attn();
+    }
+
     // Shared flag so the monitor task knows when to stop.
     let finished = Arc::new(AtomicBool::new(false));
     let finished_clone = Arc::clone(&finished);
