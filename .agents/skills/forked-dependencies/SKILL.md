@@ -69,8 +69,8 @@ tqdm and mio entries.
 
 | Crate | Fork / source | Ref | Purpose | Consumed where |
 |-------|---------------|-----|---------|----------------|
-| mistral.rs (12 crates) | `setoelkahfi/mistral.rs` | branch `fix/all-platform-fixes` | All-platform fixes; **published** as `onde-mistralrs-*` | onde deps (registry) |
-| candle-core, candle-nn | `setoelkahfi/candle` | branch `onde/candle-0.11.0-27f20fea` (rev `27f20fea`) | Post-0.11.0 candle APIs; **published** as `onde-candle-{core,nn}` | mistral.rs fork deps (registry) |
+| mistral.rs (12 crates) | `setoelkahfi/mistral.rs` | branch `fix/all-platform-fixes` | All-platform fixes; **published** as `onde-mistralrs-*` (0.9.3 on crates.io; 0.9.5 synced with upstream, not yet published) | onde deps (git until 0.9.5 is published, then registry) |
+| candle-core, candle-nn | `setoelkahfi/candle` | branch `onde/candle-0.11.0-27f20fea` (rev `27f20fea`) | Post-0.11.0 candle APIs; **published** as `onde-candle-{core,nn}`. Upstream mistral.rs is now on candle rev `66a8cf18`, but the fork still compiles against this snapshot (host, iOS); `reduce.metal` changed in between, so watch Metal runtime behavior | mistral.rs fork deps (registry) |
 | tqdm | *none — upstream* | crates.io `tqdm 0.8.1` | Crossterm 0.29 (→ mio 1.x) is upstream as of 0.8.1 | mistral.rs fork dep (registry) |
 | sysctl | `setoelkahfi/sysctl-rs` | branch `feature/watchos` | watchOS (`target_os = "watchos"`) support | `[patch.crates-io]` in onde **and** mistral.rs fork |
 | mio | `setoelkahfi/mio` | branch `feature/visionos` | visionOS support for the `mio 0.8.11` line | **RETIRED** — patch removed from onde once it consumed onde-mistralrs 0.9.3 (crossterm 0.29 → mio 1.x). Fork kept for history/upstream PR. |
@@ -98,6 +98,13 @@ tqdm and mio entries.
   `-flash-attn`, `-metal-compile`, `-code-exec`, `-sandbox`, `-macros`,
   `-vision`, `-audio`, `-mcp`. The rename is a `package = "onde-..."` override on
   each workspace dep entry, so Rust source still `use`s `mistralrs_*` unchanged.
+- **Paged attention:** upstream #2493 made Metal paged attention the default.
+  onde turns it off on iOS, tvOS, visionOS and watchOS with
+  `.without_paged_attn()` (GGUF and UQFF builders in `engine.rs`, and the
+  validation load in `hf_cache.rs`); macOS keeps the default. Android is CPU
+  and unchanged.
+- **0.9.5 API change:** `with_device_mapping` now takes `DeviceMapMetadata`,
+  so the tvOS memory cap uses `.with_max_model_len(512)` instead.
 - **Publishing + bump flow:** see [[sdk-regressions]] (the 12-crate publish
   order, the candle Step 0, and the tqdm/core2 publish-verification snags).
 

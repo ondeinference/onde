@@ -1,3 +1,8 @@
+## 1.3.4
+
+- Version aligned with the Rust core. No React Native API changes.
+- The core now builds on `onde-mistralrs` `0.9.5`. Paged attention is turned off on iOS, tvOS, visionOS and watchOS to stay inside the memory budget there.
+
 ## 1.3.3
 
 - Version aligned with the Rust core. No React Native API changes.

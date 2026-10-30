@@ -1,3 +1,16 @@
+## 1.3.4
+
+### Inference engine
+
+* Moves `onde-mistralrs` and `onde-mistralrs-core` from `0.9.3` to `0.9.5` on every target. The new crates merge upstream mistral.rs `0.9.5` into the fork and add visionOS and watchOS arms to the Metal `embedded_library!` macro, so `--features metal` builds for tvOS, visionOS and watchOS again.
+* Upstream made Metal paged attention the default. Its KV block pool does not fit in memory on iOS, tvOS, visionOS or watchOS, so model loading (and the validation load in `hf_cache`) now calls `without_paged_attn()` on those targets. Desktop and Android are unchanged.
+* On tvOS the auto device map override is replaced by `with_max_model_len(512)`.
+
+### Packaging
+
+* No public API changes: the published `onde` crate surface is identical to `1.3.3`.
+* All version sources (root, Kotlin, Dart, React Native, and the root and per-SDK lockfiles) are aligned on `1.3.4`.
+
 ## 1.3.3
 
 ### Cargo workspace
