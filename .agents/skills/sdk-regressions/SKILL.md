@@ -422,7 +422,7 @@ target first.
 ### Step 0 — check if the candle snapshot needs an `onde-candle-*` publish
 
 Since 0.9.x, upstream mistral.rs pins `candle` to a git rev past the latest
-released candle (e.g. rev `27f20fea`, 19 commits past `0.11.0`, adding
+released candle (e.g. rev `27f20fea`; upstream has since moved to `66a8cf18`, which 0.9.5 does not need to compile, 19 commits past `0.11.0`, adding
 `QTensor::indexed_gemv`, `gemv_fused_shared_lhs`, `BarrierPool::execute_chunked`).
 `cargo publish` strips git pins, so publish verification resolves candle from
 crates.io and fails with E0599 "method not found" if the pinned rev has APIs the
@@ -455,6 +455,18 @@ candle-metal-kernels = { version = "0.11.0" }   # unchanged at rev -> official
 ```
 
 ### Step 1 — check if `onde-mistralrs` needs a new publish
+
+> Testing before publish: keep onde on the registry form
+> (`version = "0.9.5", package = "onde-mistralrs{,-core}"`) and patch by the real
+> package name from the command line, e.g. `cargo check --config
+> 'patch.crates-io.onde-mistralrs.git="https://github.com/setoelkahfi/mistral.rs"'
+> --config 'patch.crates-io.onde-mistralrs.branch="fix/all-platform-fixes"'`
+> (repeat for `onde-mistralrs-core`). A `[patch.crates-io]` rename of `mistralrs`
+> is silently ignored. `cargo package -p <the 12 crates>` in the fork verifies
+> the packaged crates against an overlay of their unpublished siblings. Don't
+> commit the Cargo.lock these produce. Since 0.9.5, Metal
+> paged attention is upstream's default (#2493), so onde calls
+> `.without_paged_attn()` on iOS/tvOS/visionOS/watchOS.
 
 First, see how far the fork has drifted from upstream:
 

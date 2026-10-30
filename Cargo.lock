@@ -1319,17 +1319,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive-new"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cdc8d50f426189eef89dac62fabfa0abb27d5cc008f25bf4156a0203325becc"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "derive_builder"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3319,6 +3308,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.24.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89550ee9f79e88fef3119de263694973a8adb26c21d75322164fb8c493039fe2"
+dependencies = [
+ "portable-atomic",
+ "rapidhash",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3340,6 +3339,7 @@ version = "2.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86886cf6dbf4e614b19c9a1eec9775f021869d7eadde0fc73921a81b90c9b4c9"
 dependencies = [
+ "indexmap 2.14.2",
  "memo-map",
  "serde",
  "serde_json",
@@ -3799,9 +3799,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "689f038ebc5d6d11e4880a24e50d62f91bbf21358b92c9b5cf7bf5e65af232bd"
+checksum = "0d9f41269feaffb3e452022f04a9cfb95859ed950889b6c1d010391531847260"
 dependencies = [
  "anyhow",
  "clap 4.6.6",
@@ -3827,9 +3827,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-audio"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71b9a72504697c5b91e1d0448d67883e8d3046ad060200610c0484aef5dfaee5"
+checksum = "787f40176eda80bdef527227ba43a7d4dac3287a3d7e28af5b4072b92abee042"
 dependencies = [
  "anyhow",
  "apodize",
@@ -3839,9 +3839,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-code-exec"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4016265a19fa51ad973e99a6746904e432d3140b5c2ca14a41077edc6b8648c2"
+checksum = "b3851924d7b5dfceaa8309ada9d04d983a4b6cf8761117145e1a035011e4078f"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3859,9 +3859,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-core"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e9266eb62ceb5a9cf8fb5342e6a9b78e286f47b670762559ee800a5a2db5132"
+checksum = "95d792d7cb5a4b78f4a448aa246bb6fbb8ea84a7958ce256173c12a83adbafb1"
 dependencies = [
  "ahash",
  "akin",
@@ -3878,9 +3878,9 @@ dependencies = [
  "chrono",
  "clap 4.6.6",
  "csv",
- "derive-new",
  "derive_more",
  "dirs",
+ "dispatch2",
  "either",
  "float8",
  "futures",
@@ -3899,6 +3899,7 @@ dependencies = [
  "libc",
  "llguidance",
  "lrtable",
+ "metrics",
  "mime_guess",
  "minijinja",
  "minijinja-contrib",
@@ -3910,11 +3911,11 @@ dependencies = [
  "onde-mistralrs-audio",
  "onde-mistralrs-code-exec",
  "onde-mistralrs-mcp",
+ "onde-mistralrs-metal-compile",
  "onde-mistralrs-paged-attn",
  "onde-mistralrs-quant",
  "onde-mistralrs-sandbox",
  "onde-mistralrs-vision",
- "onde-tqdm",
  "openai-harmony",
  "ordered-float",
  "parking_lot",
@@ -3938,10 +3939,12 @@ dependencies = [
  "serde-saphyr",
  "serde_json",
  "serde_plain",
+ "sha2",
  "statrs",
  "strum 0.27.2",
  "symphonia",
  "sysinfo",
+ "tempfile",
  "thiserror 2.0.20",
  "tokenizers 0.21.4",
  "tokio",
@@ -3950,6 +3953,7 @@ dependencies = [
  "toktrie",
  "toktrie_hf_tokenizers",
  "toml",
+ "tqdm",
  "tracing",
  "tracing-subscriber",
  "urlencoding",
@@ -3960,9 +3964,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-macros"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e624ab1f0896a07ff437f4c49050c891918c0f01a008113c788b64e5f76c1d9"
+checksum = "8dd60c4cb0dc37105b335451643d075af0d293b8203df9bb038e88d83df8e475"
 dependencies = [
  "darling 0.23.0",
  "proc-macro2",
@@ -3972,9 +3976,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-mcp"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8bcb140ed84c4dd2683f1533fc58905f959e7394843bc02a315bfdd3ffcbc25"
+checksum = "f5b5bf129c896c975a98575b9752291bb47b38a5bd3170944a8c171cc491af1b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3994,9 +3998,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-metal-compile"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44109415be2971d311b403095d3c278443210d0ccc1c383a84ad44da5f5b1abf"
+checksum = "02e15b1154394bc9750f69c52b55de0295e6f7d3a3f3151f9ad8d88e066629af"
 dependencies = [
  "candle-metal-kernels",
  "objc2-metal",
@@ -4004,9 +4008,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-paged-attn"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f93c8c04d15ebce014e80675387d269bcead85be063bf9afce8b353d64e61b8"
+checksum = "9ba6ae15cc8ce43c949fd038a8df0858e41dca38e4b4b77925aa04e6dc4aee84"
 dependencies = [
  "anyhow",
  "candle-metal-kernels",
@@ -4022,17 +4026,20 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-quant"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d4ed48af14e3e5ff318a6ea6cefbc1e50ee753f143bd1ae6c0f188c33033d5a"
+checksum = "a25f0259f21cf04d86f18b3b0f48b072bcc4a989cadae513ca142ab1ccb0c60a"
 dependencies = [
+ "bytemuck",
  "byteorder",
  "candle-metal-kernels",
  "dispatch2",
+ "fancy-regex 0.14.0",
  "float8",
  "futures",
  "half",
  "hf-hub",
+ "indexmap 2.14.2",
  "indicatif 0.18.6",
  "lazy_static",
  "libc",
@@ -4057,9 +4064,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-sandbox"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77845cc6e16e3b1eebed11d3ba6a3a56785f0031421bf46d1deefbe281aaa19e"
+checksum = "93b8ba017e502f2b7f2da67ced422ae73a7ea2494759b8c7a8e5fa38b341b3f5"
 dependencies = [
  "anyhow",
  "itoa",
@@ -4075,9 +4082,9 @@ dependencies = [
 
 [[package]]
 name = "onde-mistralrs-vision"
-version = "0.9.3"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cdc7ae244c416860838e9cb3ff5cd8ae8acf474f48f2fe15d45bc5491215760"
+checksum = "f231953141403eb6a825d6c247dffd7aa2e99b01b7a70d075bb72533c8dc10e8"
 dependencies = [
  "image",
  "onde-candle-core",
@@ -4094,17 +4101,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "onde-tqdm"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d96f4fcb4af06959bf9c9b81ace0502e2be2d11d7e037c94f3f7851bde720ea"
-dependencies = [
- "anyhow",
- "crossterm",
- "once_cell",
 ]
 
 [[package]]
@@ -4708,6 +4704,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caa0f4137e1c0a72f4c651489402276c8e8e1cf081f3b0ba156d2cbeef09e86a"
 dependencies = [
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "rapidhash"
+version = "4.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da7e78a036ce858e8d55b7e7dc8ba3a88b78350fd2155d3591bbd966b58589e"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]
@@ -6665,6 +6670,17 @@ name = "tower-service"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
+
+[[package]]
+name = "tqdm"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a882329b482cea1d2762e9b9ff1ed0f0327a1ec3a9ba7b8e8c4e3635908a4ae5"
+dependencies = [
+ "anyhow",
+ "crossterm",
+ "once_cell",
+]
 
 [[package]]
 name = "tracing"
