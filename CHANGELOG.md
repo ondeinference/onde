@@ -5,6 +5,7 @@
 * Moves `onde-mistralrs-core` to `0.9.6`. `0.9.5` did not compile for 32-bit targets: `MAX_UNIFIED_RESERVE` in `memory_plan.rs` is `16 * GIB`, which overflows a 32-bit `usize`, so `armv7-linux-androideabi` failed with E0080. `0.9.6` saturates the constant and parses the memory plan in `u64`.
 * `.github/scripts/build-swift-xcframework.sh` and `sdk/kotlin/scripts/generate-bindings.sh` looked for `uniffi-bindgen` in `uniffi-bindgen/target/release/`. Since onde became a Cargo workspace the binary lands in the root `target/release/`, so the Swift script failed at the first `generate` call. Both now use the workspace path.
 * CI now also runs `cargo check` for `armv7-linux-androideabi`, so 32-bit breakage shows up on pull requests.
+* `sdk/react-native/scripts/build-rust.sh`, the Dart iOS and macOS podspec script phases, and the Dart Linux and Windows `CMakeLists.txt` assumed `rust/target/`. Since the SDK bridge crates became workspace members their output is in the root `target/`, so the copy and link steps missed it. Each now asks `cargo metadata` for `target_directory`. The two per-SDK `Cargo.lock` files were dead (cargo only reads the root lock) and are removed; `sync-release-version.py` and `make relock` now touch just the root lock.
 
 ### Packaging
 

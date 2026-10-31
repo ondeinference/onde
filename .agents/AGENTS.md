@@ -34,13 +34,11 @@ onde/
 │       ├── token.rs              # HF token resolution: build-time literal vs cache file
 │       └── types.rs              # Shared types: ChatMessage, SamplingConfig, InferenceResult, ToolCallInfo, etc.
 ├── sdk/
-│   ├── dart/                     # Flutter/Dart package + example app + FRB Rust bridge
-│   ├── gem/                      # Ruby native extension (Magnus)
+│   ├── dart/                     # Flutter/Dart package + example app + FRB Rust bridge (rust/ is a workspace member)
 │   ├── kotlin/                   # Kotlin Multiplatform package (Android + JVM)
-│   ├── react-native/             # Expo module wrapping the Rust core for iOS/Android
-│   └── python/                   # Python bindings (maturin + uniffi)
+│   └── react-native/             # Expo module wrapping the Rust core for iOS/Android (rust/ is a workspace member)
 ├── generated/                    # UniFFI-generated headers and Swift glue (git-ignored)
-├── uniffi-bindgen/               # Standalone bindgen binary crate (pinned uniffi =0.31.0)
+├── uniffi-bindgen/               # Bindgen binary crate, workspace member (pinned uniffi =0.31.0)
 ├── .github/
 │   ├── workflows/
 │   │   ├── release-sdk-swift.yml         # CI: tag push → build XCFramework → GitHub Release → update onde-swift
@@ -51,7 +49,8 @@ onde/
 │   └── scripts/
 │       └── build-swift-xcframework.sh    # Local/CI XCFramework assembly script
 ├── .cargo/config.toml            # Target-specific rustflags (fp16, linker overrides)
-├── Cargo.toml                    # Platform-conditional mistralrs deps
+├── Cargo.toml                    # Workspace root (members: ., uniffi-bindgen, sdk/dart/rust, sdk/react-native/rust) + platform-conditional mistralrs deps
+├── Cargo.lock                    # The only lockfile; one target/ at the repo root serves every member
 ├── build.rs                      # tvOS ___chkstk_darwin assembly stub
 ├── scripts/
 │   └── tvos_chkstk.s             # No-op arm64 stub for missing tvOS symbol
