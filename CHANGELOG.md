@@ -1,3 +1,16 @@
+## 1.3.5
+
+### Build fixes
+
+* Moves `onde-mistralrs-core` to `0.9.6`. `0.9.5` did not compile for 32-bit targets: `MAX_UNIFIED_RESERVE` in `memory_plan.rs` is `16 * GIB`, which overflows a 32-bit `usize`, so `armv7-linux-androideabi` failed with E0080. `0.9.6` saturates the constant and parses the memory plan in `u64`.
+* `.github/scripts/build-swift-xcframework.sh` and `sdk/kotlin/scripts/generate-bindings.sh` looked for `uniffi-bindgen` in `uniffi-bindgen/target/release/`. Since onde became a Cargo workspace the binary lands in the root `target/release/`, so the Swift script failed at the first `generate` call. Both now use the workspace path.
+* CI now also runs `cargo check` for `armv7-linux-androideabi`, so 32-bit breakage shows up on pull requests.
+
+### Packaging
+
+* No public API changes.
+* `1.3.3` and `1.3.4` never reached Maven Central or `onde-swift` (the `1.3.4` Kotlin build failed on armv7 and the Swift script failed on the bindgen path), so `onde-swift` is still on `1.3.2`. `1.3.5` is the first release since `1.3.2` to ship to every registry.
+
 ## 1.3.4
 
 ### Inference engine
