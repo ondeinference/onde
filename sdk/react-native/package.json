@@ -54,7 +54,6 @@
     "ios/rust/OndeReactNative.xcframework",
     "android/",
     "rust/Cargo.toml",
-    "rust/Cargo.lock",
     "rust/build.rs",
     "rust/src/",
     "scripts/",
