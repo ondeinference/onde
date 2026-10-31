@@ -259,7 +259,7 @@ Outputs land in `sdk/kotlin/lib/src/jvmMain/resources/native/<os-arch>/libonde.<
 
 ```bash
 cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
-# Binary: uniffi-bindgen/target/release/uniffi-bindgen
+# Binary: target/release/uniffi-bindgen (workspace target dir)
 ```
 
 ### 5. Generate Kotlin UniFFI bindings

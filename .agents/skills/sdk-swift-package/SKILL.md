@@ -70,7 +70,7 @@ onde/
 
 ```bash
 cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
-BINDGEN=uniffi-bindgen/target/release/uniffi-bindgen   # or workspace target/
+BINDGEN=target/release/uniffi-bindgen
 ```
 
 ### 2. Compile Rust staticlibs per Apple target

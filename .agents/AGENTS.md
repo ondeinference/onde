@@ -271,7 +271,7 @@ Output lands in `dist/swift/`:
 ```bash
 # 1. Build the uniffi-bindgen binary (pinned to uniffi =0.31.0)
 cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
-BINDGEN=uniffi-bindgen/target/release/uniffi-bindgen
+BINDGEN=target/release/uniffi-bindgen
 
 # 2. Compile staticlibs per target (use +1.92.0 or current stable)
 cargo +stable rustc --target aarch64-apple-ios          --release --lib --crate-type staticlib
