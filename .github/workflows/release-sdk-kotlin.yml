@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # Release notes diff against earlier tags and read their git history.
+          fetch-depth: 0
 
       # ── Java ──────────────────────────────────────────────────────────────────
       - name: Set up JDK 17
@@ -187,49 +190,19 @@ jobs:
           retention-days: 90
 
       # ── GitHub Release ────────────────────────────────────────────────────────
+      - name: Render release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release-notes.py "$GITHUB_REF_NAME" --output dist/release-notes.md
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          name: Kotlin SDK ${{ github.ref_name }}
-          body: |
-            ## Onde Inference Kotlin SDK ${{ github.ref_name }}
-
-            On-device LLM inference for **Android** and **JVM (macOS Apple Silicon)**.
-
-            ### Add to your project
-
-            ```kotlin
-            // build.gradle.kts
-            dependencies {
-                implementation("com.ondeinference:onde-inference:${{ github.ref_name }}")
-            }
-            ```
-
-            ### What's included
-
-            | Target | Backend | Default model |
-            |--------|---------|---------------|
-            | Android (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) | CPU (Candle) | Qwen 2.5 1.5B (~941 MB) |
-            | JVM (macOS Apple Silicon) | Metal | Qwen 2.5 3B (~1.93 GB) |
-
-            ### Usage
-
-            ```kotlin
-            // Android
-            val onde = OndeInference(applicationContext)
-
-            // JVM (macOS)
-            val onde = OndeInference()
-
-            // Shared API
-            val elapsed = onde.loadDefaultModel(systemPrompt = "You are helpful.")
-            val result  = onde.chat("Hello!")
-            onde.stream("Tell me a story.").collect { chunk -> print(chunk.delta) }
-            ```
-
-            See the [README](https://github.com/ondeinference/onde/tree/main/sdk/kotlin/README.md) for full API docs.
+          name: Onde Inference ${{ github.ref_name }}
+          body_path: dist/release-notes.md
           files: dist/kotlin/*
           draft: false
           prerelease: false

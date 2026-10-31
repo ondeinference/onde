@@ -1,4 +1,4 @@
-.PHONY: help patch minor major custom release release-commit tag sync-version relock verify lint-publish
+.PHONY: help patch minor major custom release release-commit tag sync-version relock verify lint-publish release-notes
 
 SYNC := python3 scripts/sync-release-version.py
 VERSION = $(shell $(SYNC) --print)
@@ -23,6 +23,7 @@ help:
 	@echo "  make verify                 # check every version source agrees"
 	@echo "  make lint-publish           # check Cargo.toml has no git deps"
 	@echo "  make sync-version           # re-propagate the current version"
+	@echo "  make release-notes TAG=1.3.5 # preview the GitHub Release body"
 	@echo "  make relock                 # re-resolve Cargo.lock (only when deps change)"
 
 release:
@@ -91,6 +92,12 @@ verify:
 
 lint-publish:
 	@$(SYNC) --lint-publish
+
+# Preview the GitHub Release body the Kotlin and Swift workflows publish.
+# PREV=<tag> overrides the range start; by default it is the last release.
+release-notes:
+	@test -n "$(TAG)" || (echo "TAG is required, e.g. make release-notes TAG=$(VERSION)" && exit 1)
+	@python3 scripts/release-notes.py "$(TAG)" $(if $(PREV),--previous "$(PREV)")
 
 # A version bump patches the lockfile version strings in-process, so it needs
 # no cargo and no network. Use this only when dependencies actually changed:
