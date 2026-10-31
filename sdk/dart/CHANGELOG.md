@@ -1,3 +1,9 @@
+## 1.3.5
+
+- Version aligned with the Rust core. No Dart API changes.
+- Fixes the 32-bit Android (`armv7`) build by moving to `onde-mistralrs-core` `0.9.6`, and fixes the Swift XCFramework and Kotlin binding scripts that looked for `uniffi-bindgen` in the wrong directory.
+- Fixes the in-repo iOS, macOS, Linux and Windows builds of the Rust bridge, which looked for `rust/target/`. The build files now ask `cargo metadata` for the target directory. Removes the unused `rust/Cargo.lock`.
+
 ## 1.3.4
 
 - Version aligned with the Rust core. No Dart API changes.

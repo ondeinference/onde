@@ -1,4 +1,4 @@
-.PHONY: help patch minor major custom release release-commit tag sync-version relock verify lint-publish
+.PHONY: help patch minor major custom release release-commit tag sync-version relock verify lint-publish release-notes
 
 SYNC := python3 scripts/sync-release-version.py
 VERSION = $(shell $(SYNC) --print)
@@ -23,7 +23,8 @@ help:
 	@echo "  make verify                 # check every version source agrees"
 	@echo "  make lint-publish           # check Cargo.toml has no git deps"
 	@echo "  make sync-version           # re-propagate the current version"
-	@echo "  make relock                 # re-resolve lockfiles (only when deps change)"
+	@echo "  make release-notes TAG=1.3.5 # preview the GitHub Release body"
+	@echo "  make relock                 # re-resolve Cargo.lock (only when deps change)"
 
 release:
 	@test -n "$(BUMP)" || (echo "BUMP is required" && exit 1)
@@ -92,16 +93,19 @@ verify:
 lint-publish:
 	@$(SYNC) --lint-publish
 
+# Preview the GitHub Release body the Kotlin and Swift workflows publish.
+# PREV=<tag> overrides the range start; by default it is the last release.
+release-notes:
+	@test -n "$(TAG)" || (echo "TAG is required, e.g. make release-notes TAG=$(VERSION)" && exit 1)
+	@python3 scripts/release-notes.py "$(TAG)" $(if $(PREV),--previous "$(PREV)")
+
 # A version bump patches the lockfile version strings in-process, so it needs
 # no cargo and no network. Use this only when dependencies actually changed:
 # cargo metadata re-resolves (no compile, unlike `cargo check`), but each
-# manifest costs ~72s of network because the [patch.crates-io] sysctl git
-# dependency is refetched on every resolve.
+# resolve costs ~72s of network because the [patch.crates-io] sysctl git
+# dependency is refetched on every resolve. The SDK bridge crates are workspace
+# members, so the root Cargo.lock covers them.
 relock:
-	@echo "Re-resolving lockfiles (network-bound, ~3min)..."
+	@echo "Re-resolving Cargo.lock (network-bound, ~72s)..."
 	@cargo metadata --format-version 1 --quiet >/dev/null
-	@cargo metadata --format-version 1 --quiet \
-		--manifest-path sdk/dart/rust/Cargo.toml >/dev/null
-	@cargo metadata --format-version 1 --quiet \
-		--manifest-path sdk/react-native/rust/Cargo.toml >/dev/null
-	@echo "  Cargo.lock, sdk/dart/rust/Cargo.lock, sdk/react-native/rust/Cargo.lock"
+	@echo "  Cargo.lock"

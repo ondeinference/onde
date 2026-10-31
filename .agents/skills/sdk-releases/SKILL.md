@@ -37,10 +37,8 @@ in a single commit before tagging.**
 | 5 | `sdk/react-native/rust/Cargo.toml` | `version` | `version = "0.1.3"` |
 | 6 | `sdk/react-native/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file |
 | 7 | `sdk/kotlin/gradle.properties` | `VERSION_NAME` | `VERSION_NAME=0.1.3` |
-| 8 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
-| 9 | `sdk/react-native/rust/Cargo.lock` | `onde` package version | Run `cd sdk/react-native/rust && cargo update -p onde` |
-| 10 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
-| 11 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
+| 8 | `Cargo.lock` (root) | `onde` and `onde-react-native` package versions | The only lockfile: the SDK bridge crates are workspace members. `sync-release-version.py` patches it; `make relock` re-resolves when dependencies change |
+| 9 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
 
 ### Files you do NOT manually edit
 
@@ -61,10 +59,8 @@ in a single commit before tagging.**
 # 7. Edit sdk/kotlin/gradle.properties VERSION_NAME (manual)
 # 8. Prepend new section to CHANGELOG.md at the repo root (manual)
 
-# 9. Sync lockfiles
+# 9. Sync the lockfile (one workspace-wide Cargo.lock covers the Dart and RN bridge crates)
 cargo check                              # updates root Cargo.lock
-cd sdk/dart/rust && cargo update -p onde  # updates Dart SDK's Cargo.lock
-cd sdk/react-native/rust && cargo update -p onde   # updates React Native SDK's Cargo.lock
 
 # 10. Verify
 grep '^version' Cargo.toml                          # "0.1.3"
@@ -73,8 +69,7 @@ grep '"version"' sdk/react-native/package.json                # "0.1.3"
 grep '^version' sdk/react-native/rust/Cargo.toml              # "0.1.3"
 grep 'VERSION_NAME' sdk/kotlin/gradle.properties              # 1.0.0
 grep 'name = "onde"' -A1 Cargo.lock                  # version = "0.1.3"
-grep 'name = "onde"' -A1 sdk/dart/rust/Cargo.lock    # version = "0.1.3"
-grep 'name = "onde"' -A1 sdk/react-native/rust/Cargo.lock     # version = "0.1.3"
+grep 'name = "onde-react-native"' -A1 Cargo.lock     # version = "0.1.3"
 
 # 11. Commit and tag
 git add -A
@@ -317,13 +312,49 @@ from a machine that has run `dart pub login`. Add as a repository secret on `ond
 
 | Repo | Created by | Contains |
 |------|-----------|----------|
-| `onde` | `release-sdk-swift.yml` (step 5) | XCFramework zip + checksum, auto-generated release notes |
+| `onde` | `release-sdk-swift.yml` and `release-sdk-kotlin.yml` | XCFramework zip + checksum, Kotlin AAR/JAR, per-SDK release notes |
 | `onde-swift` | `onde-swift` `release.yml` | Installation snippet, platform table, link to upstream changelog |
 
 Both repos need GitHub Releases because they serve different audiences:
 
 - **`onde`** — Rust consumers, asset hosting for the XCFramework binary
 - **`onde-swift`** — Swift developers, Swift Package Index surfaces these as version notes
+
+---
+
+## GitHub Release notes
+
+Both `release-sdk-swift.yml` and `release-sdk-kotlin.yml` run
+`python3 scripts/release-notes.py <tag> --output dist/release-notes.md` and
+publish the result with `body_path`, under the title `Onde Inference <tag>`.
+The two bodies are identical, so whichever workflow finishes last changes
+nothing. Checkout uses `fetch-depth: 0` because the script reads tag history.
+Preview locally with `make release-notes TAG=1.3.5` (add `PREV=<tag>` to pin
+the range start).
+
+The body is an intro, one section per SDK (install line, changes, changelog
+link), a pull request list from GitHub, a full-changelog link, and a footer
+linking https://ondeinference.com/sdk.
+
+**Range.** `(previous release, tag]`. The previous release is the newest semver
+GitHub Release older than the tag, so tagged-but-unpublished versions (1.3.3 and
+1.3.4 before 1.3.5) are folded in, each under a `#### <version>` heading.
+
+**Where each SDK's text comes from.**
+
+| Section | Source |
+|---|---|
+| Rust | `CHANGELOG.md`, as written. A missing section prints "No changelog entry. See the pull requests below." |
+| Flutter | `sdk/dart/CHANGELOG.md`, minus the "Version aligned with the Rust core. No ... API changes." sentence |
+| React Native | `sdk/react-native/CHANGELOG.md`, same filter |
+| Swift | commit subjects touching `.github/scripts/build-swift-xcframework.sh`, `.github/workflows/release-sdk-swift.yml`, `src/inference/ffi.rs`, `uniffi.toml` |
+| Kotlin | commit subjects touching `sdk/kotlin/` (not `gradle.properties`), `.github/workflows/release-sdk-kotlin.yml`, `src/inference/ffi.rs`, `uniffi.toml` |
+
+An SDK with nothing left prints "No changes in this release." Swift and Kotlin
+have no changelog file, so changing what counts for them means editing the path
+lists at the top of the script. A section only appears if the SDK existed at the
+tag. If the script cannot reach `gh`, the pull request list is left out and the
+rest still renders. Em dashes in changelog prose are replaced with commas.
 
 ---
 
@@ -366,9 +397,8 @@ All four must match. If any pair diverges, the relevant CI job fails.
 |---------|---------|-----|
 | Forgot to bump `pubspec.yaml` | Dart CI fails: "Tag '0.1.3' does not match pubspec.yaml version '0.1.2'" | Bump `sdk/dart/pubspec.yaml`, amend commit, re-tag |
 | Forgot to bump `sdk/react-native/package.json` | npm CI fails: "Tag '0.1.3' does not match package.json version '0.1.2'" | Bump `sdk/react-native/package.json`, amend commit, re-tag |
-| Forgot to bump `sdk/react-native/rust/Cargo.toml` | npm SDK's Rust bridge crate version drifts from the main crate | Bump `sdk/react-native/rust/Cargo.toml`, run `cd sdk/react-native/rust && cargo update -p onde` |
-| Forgot to update `sdk/dart/rust/Cargo.lock` | Dart SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/dart/rust && cargo update -p onde` |
-| Forgot to update `sdk/react-native/rust/Cargo.lock` | npm SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/react-native/rust && cargo update -p onde` |
+| Forgot to bump `sdk/react-native/rust/Cargo.toml` | npm SDK's Rust bridge crate version drifts from the main crate | Bump `sdk/react-native/rust/Cargo.toml`, then `cargo check` at the repo root to refresh `Cargo.lock` |
+| Forgot to update the root `Cargo.lock` | `cargo publish --locked` fails, or the bridge crates report a stale version | Run `cargo check` at the repo root. Do not create per-SDK lockfiles: members resolve against the root lock only |
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to bump `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to update the root `CHANGELOG.md` | Preflight fails: "CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging |

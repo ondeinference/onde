@@ -14,6 +14,12 @@ IOS_XCFRAMEWORK_OUT="$SCRIPT_DIR/../ios/rust/OndeReactNative.xcframework"
 ANDROID_OUT="$SCRIPT_DIR/../android/src/main/jniLibs"
 IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-16.0}"
 
+# The crate is a member of the repo's Cargo workspace, so artifacts land in the
+# workspace's target/, not rust/target/. Ask cargo instead of assuming.
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps \
+    --manifest-path "$RUST_DIR/Cargo.toml" \
+    | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
+
 build_ios() {
     echo "=== Building Rust for iOS ==="
 
@@ -35,8 +41,8 @@ build_ios() {
     rm -rf "$IOS_XCFRAMEWORK_OUT"
     mkdir -p "$(dirname "$IOS_XCFRAMEWORK_OUT")"
     xcodebuild -create-xcframework \
-        -library "$RUST_DIR/target/aarch64-apple-ios/release/libonde_react_native.a" \
-        -library "$RUST_DIR/target/aarch64-apple-ios-sim/release/libonde_react_native.a" \
+        -library "$TARGET_DIR/aarch64-apple-ios/release/libonde_react_native.a" \
+        -library "$TARGET_DIR/aarch64-apple-ios-sim/release/libonde_react_native.a" \
         -output "$IOS_XCFRAMEWORK_OUT"
 
     echo "  ✓ iOS XCFramework created at ios/rust/OndeReactNative.xcframework"
@@ -70,7 +76,7 @@ build_android() {
             --target "$RUST_TARGET" --release
 
         mkdir -p "$ANDROID_OUT/$ABI"
-        cp "$RUST_DIR/target/$RUST_TARGET/release/libonde_react_native.so" \
+        cp "$TARGET_DIR/$RUST_TARGET/release/libonde_react_native.so" \
            "$ANDROID_OUT/$ABI/libonde_react_native.so"
     done
 

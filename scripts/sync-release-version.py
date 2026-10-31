@@ -43,15 +43,14 @@ KOTLIN_PROPS = REPO_ROOT / "sdk/kotlin/gradle.properties"
 CHANGELOGS = (ROOT_CHANGELOG, DART_CHANGELOG, RN_CHANGELOG)
 
 # Cargo.lock entries carrying a release version, and the packages to patch in
-# each. A version bump only changes these strings, so they are rewritten
+# each. The repo is one Cargo workspace (the SDK bridge crates are members), so
+# the root Cargo.lock is the only lockfile. A version bump only changes these strings, so they are rewritten
 # directly instead of shelling out to cargo: `cargo metadata` re-resolves over
 # the network (~72s per manifest here, because the [patch.crates-io] sysctl git
 # dependency is refetched on every resolve), which made the bump both slow and
 # dependent on the network. Run `make relock` when dependencies actually change.
 LOCKFILES = (
-    (REPO_ROOT / "Cargo.lock", ("onde",)),
-    (REPO_ROOT / "sdk/dart/rust/Cargo.lock", ("onde",)),
-    (REPO_ROOT / "sdk/react-native/rust/Cargo.lock", ("onde", "onde-react-native")),
+    (REPO_ROOT / "Cargo.lock", ("onde", "onde-react-native")),
 )
 
 # A freshly bumped changelog section carries this placeholder. `--check` refuses

@@ -34,13 +34,11 @@ onde/
 │       ├── token.rs              # HF token resolution: build-time literal vs cache file
 │       └── types.rs              # Shared types: ChatMessage, SamplingConfig, InferenceResult, ToolCallInfo, etc.
 ├── sdk/
-│   ├── dart/                     # Flutter/Dart package + example app + FRB Rust bridge
-│   ├── gem/                      # Ruby native extension (Magnus)
+│   ├── dart/                     # Flutter/Dart package + example app + FRB Rust bridge (rust/ is a workspace member)
 │   ├── kotlin/                   # Kotlin Multiplatform package (Android + JVM)
-│   ├── react-native/             # Expo module wrapping the Rust core for iOS/Android
-│   └── python/                   # Python bindings (maturin + uniffi)
+│   └── react-native/             # Expo module wrapping the Rust core for iOS/Android (rust/ is a workspace member)
 ├── generated/                    # UniFFI-generated headers and Swift glue (git-ignored)
-├── uniffi-bindgen/               # Standalone bindgen binary crate (pinned uniffi =0.31.0)
+├── uniffi-bindgen/               # Bindgen binary crate, workspace member (pinned uniffi =0.31.0)
 ├── .github/
 │   ├── workflows/
 │   │   ├── release-sdk-swift.yml         # CI: tag push → build XCFramework → GitHub Release → update onde-swift
@@ -51,7 +49,8 @@ onde/
 │   └── scripts/
 │       └── build-swift-xcframework.sh    # Local/CI XCFramework assembly script
 ├── .cargo/config.toml            # Target-specific rustflags (fp16, linker overrides)
-├── Cargo.toml                    # Platform-conditional mistralrs deps
+├── Cargo.toml                    # Workspace root (members: ., uniffi-bindgen, sdk/dart/rust, sdk/react-native/rust) + platform-conditional mistralrs deps
+├── Cargo.lock                    # The only lockfile; one target/ at the repo root serves every member
 ├── build.rs                      # tvOS ___chkstk_darwin assembly stub
 ├── scripts/
 │   └── tvos_chkstk.s             # No-op arm64 stub for missing tvOS symbol
@@ -271,7 +270,7 @@ Output lands in `dist/swift/`:
 ```bash
 # 1. Build the uniffi-bindgen binary (pinned to uniffi =0.31.0)
 cargo build --manifest-path uniffi-bindgen/Cargo.toml --release
-BINDGEN=uniffi-bindgen/target/release/uniffi-bindgen
+BINDGEN=target/release/uniffi-bindgen
 
 # 2. Compile staticlibs per target (use +1.92.0 or current stable)
 cargo +stable rustc --target aarch64-apple-ios          --release --lib --crate-type staticlib
@@ -525,7 +524,7 @@ Steps:
 4. Read `version.txt` and `OndeFramework.checksum.txt` into step outputs.
 5. Validate that the tag matches `Cargo.toml`.
 6. Upload CI artifacts: zip, checksum, version, generated `onde.swift`.
-7. On tag push, create a GitHub Release with the zip and checksum attached.
+7. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference <tag>`) with the zip and checksum attached.
 8. On tag push, check out `ondeinference/onde-swift` using `ONDE_SWIFT_PAT`.
 9. On tag push, rewrite the `.binaryTarget` in `onde-swift/Package.swift` with the release URL and checksum.
 10. On tag push, copy the generated `onde.swift` into `onde-swift/Sources/Onde/`.
@@ -547,6 +546,7 @@ Steps:
 5. Run Gradle publication tasks for the Kotlin Multiplatform package.
 6. Validate that the tag matches `sdk/kotlin/gradle.properties` `VERSION_NAME`.
 7. On tag push, publish `com.ondeinference:onde-inference` to Maven Central.
+8. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference <tag>`) with the AAR and JAR attached. The body is identical to the Swift workflow's, so it does not matter which finishes last.
 
 #### Required secrets
 

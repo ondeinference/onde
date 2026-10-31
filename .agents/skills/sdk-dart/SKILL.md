@@ -751,13 +751,13 @@ Common pub.dev score deductions to avoid:
 can be **7+ GB**.  A `.pubignore` file is mandatory.
 
 **Files that MUST be included** (consumers build from source):
-- `rust/src/`, `rust/Cargo.toml`, `rust/Cargo.lock`
+- `rust/src/`, `rust/Cargo.toml` (no per-package `Cargo.lock`: inside the repo the root workspace lockfile is used)
 - `ios/`, `macos/`, `android/`, `linux/`, `windows/` (build scripts, podspecs, CMakeLists)
 - `ios/Classes/`, `macos/Classes/` (dummy plugin Swift files)
 - `lib/` (all Dart code)
 
 **Files that MUST be excluded** (`.pubignore`):
-- `rust/target/` — multi-GB build artifacts
+- `rust/target/` — multi-GB build artifacts (inside the repo cargo writes to the root `target/`, so the build scripts ask `cargo metadata` for it)
 - `**/*.a`, `**/*.so`, `**/*.dylib`, `**/*.dll` — precompiled binaries
 - `.dart_tool/`, `pubspec.lock`
 - `example/build/`, `example/.dart_tool/`
