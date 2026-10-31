@@ -326,7 +326,7 @@ Both repos need GitHub Releases because they serve different audiences:
 
 Both `release-sdk-swift.yml` and `release-sdk-kotlin.yml` run
 `python3 scripts/release-notes.py <tag> --output dist/release-notes.md` and
-publish the result with `body_path`, under the title `Onde Inference <tag>`.
+publish the result with `body_path`, under the title `Onde Inference SDK v<tag>`.
 The two bodies are identical, so whichever workflow finishes last changes
 nothing. Checkout uses `fetch-depth: 0` because the script reads tag history.
 Preview locally with `make release-notes TAG=1.3.5` (add `PREV=<tag>` to pin

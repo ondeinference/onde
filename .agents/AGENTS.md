@@ -524,7 +524,7 @@ Steps:
 4. Read `version.txt` and `OndeFramework.checksum.txt` into step outputs.
 5. Validate that the tag matches `Cargo.toml`.
 6. Upload CI artifacts: zip, checksum, version, generated `onde.swift`.
-7. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference <tag>`) with the zip and checksum attached.
+7. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference SDK v<tag>`) with the zip and checksum attached.
 8. On tag push, check out `ondeinference/onde-swift` using `ONDE_SWIFT_PAT`.
 9. On tag push, rewrite the `.binaryTarget` in `onde-swift/Package.swift` with the release URL and checksum.
 10. On tag push, copy the generated `onde.swift` into `onde-swift/Sources/Onde/`.
@@ -546,7 +546,7 @@ Steps:
 5. Run Gradle publication tasks for the Kotlin Multiplatform package.
 6. Validate that the tag matches `sdk/kotlin/gradle.properties` `VERSION_NAME`.
 7. On tag push, publish `com.ondeinference:onde-inference` to Maven Central.
-8. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference <tag>`) with the AAR and JAR attached. The body is identical to the Swift workflow's, so it does not matter which finishes last.
+8. On tag push, render the release notes with `scripts/release-notes.py` and create the GitHub Release (`Onde Inference SDK v<tag>`) with the AAR and JAR attached. The body is identical to the Swift workflow's, so it does not matter which finishes last.
 
 #### Required secrets
 

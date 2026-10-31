@@ -48,6 +48,7 @@ SDK_URL = "https://ondeinference.com/sdk"
 
 NO_CHANGES = "No changes in this release."
 NO_ENTRY = "No changelog entry. See the pull requests below."
+NO_ENTRY_BARE = "No changelog entry."
 
 INTRO = (
     "Onde Inference runs LLMs on-device on iOS, macOS, tvOS, Android, Windows and Linux.\n"
@@ -181,12 +182,12 @@ def sdk_changelog_text(path, previous, tag):
     return render_versions(entries) or NO_CHANGES
 
 
-def root_changelog_text(previous, tag):
+def root_changelog_text(previous, tag, has_prs):
     """Root changelog sections as written, with their headings pushed down."""
     sections = changelog_sections(ROOT_CHANGELOG)
     versions = versions_in_range(sections, previous, tag)
     if not versions:
-        return NO_ENTRY
+        return NO_ENTRY if has_prs else NO_ENTRY_BARE
     sub = "####" if len(versions) == 1 else "#####"
     entries = []
     for version in versions:
@@ -269,9 +270,9 @@ def render(tag, previous):
             "sdk/react-native/CHANGELOG.md",
             sdk_changelog_text(RN_CHANGELOG, previous, tag),
         ))
-    parts.append(section("Rust", "`cargo add onde`", "CHANGELOG.md", root_changelog_text(previous, tag)))
-
     prs = pull_requests(tag, previous)
+    parts.append(section("Rust", "`cargo add onde`", "CHANGELOG.md", root_changelog_text(previous, tag, bool(prs))))
+
     if prs:
         parts.append("### Pull requests\n" + prs)
 
