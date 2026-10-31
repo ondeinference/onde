@@ -37,10 +37,8 @@ in a single commit before tagging.**
 | 5 | `sdk/react-native/rust/Cargo.toml` | `version` | `version = "0.1.3"` |
 | 6 | `sdk/react-native/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file |
 | 7 | `sdk/kotlin/gradle.properties` | `VERSION_NAME` | `VERSION_NAME=0.1.3` |
-| 8 | `sdk/dart/rust/Cargo.lock` | `onde` package version | Run `cd sdk/dart/rust && cargo update -p onde` |
-| 9 | `sdk/react-native/rust/Cargo.lock` | `onde` package version | Run `cd sdk/react-native/rust && cargo update -p onde` |
-| 10 | `Cargo.lock` (root) | `onde` package version | Run `cargo check` at repo root |
-| 11 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
+| 8 | `Cargo.lock` (root) | `onde` and `onde-react-native` package versions | The only lockfile: the SDK bridge crates are workspace members. `sync-release-version.py` patches it; `make relock` re-resolves when dependencies change |
+| 9 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
 
 ### Files you do NOT manually edit
 
@@ -61,10 +59,8 @@ in a single commit before tagging.**
 # 7. Edit sdk/kotlin/gradle.properties VERSION_NAME (manual)
 # 8. Prepend new section to CHANGELOG.md at the repo root (manual)
 
-# 9. Sync lockfiles
+# 9. Sync the lockfile (one workspace-wide Cargo.lock covers the Dart and RN bridge crates)
 cargo check                              # updates root Cargo.lock
-cd sdk/dart/rust && cargo update -p onde  # updates Dart SDK's Cargo.lock
-cd sdk/react-native/rust && cargo update -p onde   # updates React Native SDK's Cargo.lock
 
 # 10. Verify
 grep '^version' Cargo.toml                          # "0.1.3"
@@ -73,8 +69,7 @@ grep '"version"' sdk/react-native/package.json                # "0.1.3"
 grep '^version' sdk/react-native/rust/Cargo.toml              # "0.1.3"
 grep 'VERSION_NAME' sdk/kotlin/gradle.properties              # 1.0.0
 grep 'name = "onde"' -A1 Cargo.lock                  # version = "0.1.3"
-grep 'name = "onde"' -A1 sdk/dart/rust/Cargo.lock    # version = "0.1.3"
-grep 'name = "onde"' -A1 sdk/react-native/rust/Cargo.lock     # version = "0.1.3"
+grep 'name = "onde-react-native"' -A1 Cargo.lock     # version = "0.1.3"
 
 # 11. Commit and tag
 git add -A
@@ -366,9 +361,8 @@ All four must match. If any pair diverges, the relevant CI job fails.
 |---------|---------|-----|
 | Forgot to bump `pubspec.yaml` | Dart CI fails: "Tag '0.1.3' does not match pubspec.yaml version '0.1.2'" | Bump `sdk/dart/pubspec.yaml`, amend commit, re-tag |
 | Forgot to bump `sdk/react-native/package.json` | npm CI fails: "Tag '0.1.3' does not match package.json version '0.1.2'" | Bump `sdk/react-native/package.json`, amend commit, re-tag |
-| Forgot to bump `sdk/react-native/rust/Cargo.toml` | npm SDK's Rust bridge crate version drifts from the main crate | Bump `sdk/react-native/rust/Cargo.toml`, run `cd sdk/react-native/rust && cargo update -p onde` |
-| Forgot to update `sdk/dart/rust/Cargo.lock` | Dart SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/dart/rust && cargo update -p onde` |
-| Forgot to update `sdk/react-native/rust/Cargo.lock` | npm SDK's Rust bridge builds against stale `onde` version | Run `cd sdk/react-native/rust && cargo update -p onde` |
+| Forgot to bump `sdk/react-native/rust/Cargo.toml` | npm SDK's Rust bridge crate version drifts from the main crate | Bump `sdk/react-native/rust/Cargo.toml`, then `cargo check` at the repo root to refresh `Cargo.lock` |
+| Forgot to update the root `Cargo.lock` | `cargo publish --locked` fails, or the bridge crates report a stale version | Run `cargo check` at the repo root. Do not create per-SDK lockfiles: members resolve against the root lock only |
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to bump `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to update the root `CHANGELOG.md` | Preflight fails: "CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging |

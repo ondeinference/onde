@@ -710,7 +710,7 @@ For a physical device build you need:
 ```gitignore
 node_modules/
 build/                          # tsc output
-rust/target/                    # Rust build artifacts
+rust/target/                    # Only used by a standalone build; inside the repo, cargo writes to the root target/
 ios/build/
 ios/rust/*.a
 ios/rust/*.xcframework

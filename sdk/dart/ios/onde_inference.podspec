@@ -28,6 +28,9 @@ Pod::Spec.new do |s|
               TVOS_DEPLOYMENT_TARGET LDFLAGS LD RUSTFLAGS
         RUST_DIR="${PODS_TARGET_SRCROOT}/../rust"
         cd "$RUST_DIR"
+        # Workspace member: artifacts go to the workspace target/, not rust/target/.
+        TARGET_DIR=$(cargo metadata --format-version 1 --no-deps \
+          | sed -nE 's/.*"target_directory":"([^"]*)".*/\\1/p')
 
         if [[ "$PLATFORM_NAME" == "iphonesimulator" ]]; then
           TARGET="aarch64-apple-ios-sim"
@@ -37,7 +40,7 @@ Pod::Spec.new do |s|
 
         cargo build --release --target "$TARGET"
 
-        cp "target/$TARGET/release/libonde_inference_dart.a" \
+        cp "$TARGET_DIR/$TARGET/release/libonde_inference_dart.a" \
            "${PODS_TARGET_SRCROOT}/libonde_inference_dart.a"
       SHELL
       :execution_position => :before_compile,

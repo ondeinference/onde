@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_DIR="$SCRIPT_DIR/.."
 REPO_ROOT="$(cd "$SDK_DIR/../.." && pwd)"
 OUT_DIR="$SDK_DIR/lib/src/generated/kotlin"
-BINDGEN="$REPO_ROOT/uniffi-bindgen/target/release/uniffi-bindgen"
+BINDGEN="$REPO_ROOT/target/release/uniffi-bindgen"
 LIBRARY="$REPO_ROOT/target/aarch64-linux-android/release/libonde.so"
 
 echo "=== Generating Kotlin UniFFI bindings ==="

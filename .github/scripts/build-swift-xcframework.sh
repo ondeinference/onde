@@ -11,7 +11,7 @@ FRAMEWORK_DIR="$DIST_DIR/OndeFramework.xcframework"
 ZIP_PATH="$DIST_DIR/OndeFramework.xcframework.zip"
 CHECKSUM_PATH="$DIST_DIR/OndeFramework.checksum.txt"
 VERSION_PATH="$DIST_DIR/version.txt"
-BINDGEN="$ROOT_DIR/uniffi-bindgen/target/release/uniffi-bindgen"
+BINDGEN="$ROOT_DIR/target/release/uniffi-bindgen"
 
 IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-16.0}"
 MACOS_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET:-14.0}"

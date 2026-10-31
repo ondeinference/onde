@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "1.3.4"
+version = "1.3.5"
 edition = "2021"
 description = "On-device inference engine for Apple silicon."
 license = "MIT OR Apache-2.0"
@@ -46,14 +46,14 @@ crate-type = ["lib", "cdylib", "staticlib"]
 [target.'cfg(target_os = "android")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = [] }
-mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features = [] }
+mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features = [] }
 
 # iOS: Metal-accelerated inference; hf-hub + mistralrs-core needed for
 # GLOBAL_HF_CACHE sandbox workaround (~/.cache is outside the container).
 [target.'cfg(target_os = "ios")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = ["metal"] }
-mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features = ["metal"] }
+mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features = ["metal"] }
 
 # Linux: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
@@ -69,14 +69,14 @@ mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = ["metal"
 [target.'cfg(target_os = "tvos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = ["metal"] }
-mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features = ["metal"] }
+mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features = ["metal"] }
 
 # visionOS: Metal-accelerated inference (Apple Vision Pro has M2 GPU);
 # hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
 [target.'cfg(target_os = "visionos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = ["metal"] }
-mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features = ["metal"] }
+mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features = ["metal"] }
 
 # watchOS: Metal-accelerated inference (Apple Watch Series 4+ has Apple GPU);
 # hf-hub + mistralrs-core needed for GLOBAL_HF_CACHE sandbox workaround.
@@ -84,7 +84,7 @@ mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features 
 [target.'cfg(target_os = "watchos")'.dependencies]
 hf-hub = { version = "0.4", features = ["tokio", "rustls-tls"], default-features = false }
 mistralrs = { version = "0.9.5", package = "onde-mistralrs", features = ["metal"] }
-mistralrs-core = { version = "0.9.5", package = "onde-mistralrs-core", features = ["metal"] }
+mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features = ["metal"] }
 
 # Windows: CPU-only baseline (no GPU features).
 # For NVIDIA GPU builds, patch this to features = ["cuda"] in CI before building.
@@ -119,7 +119,7 @@ dotenvy = "0.15"
 uniffi = { workspace = true, features = ["build"] }
 
 # The target-conditional mistralrs deps above resolve to the published
-# onde-mistralrs{,-core} 0.9.5 crates (setoelkahfi/mistral.rs fork,
+# onde-mistralrs{,-core} 0.9.5 and 0.9.6 crates (setoelkahfi/mistral.rs fork,
 # fix/all-platform-fixes, synced with upstream 0.9.5). Those in turn pull
 # onde-candle-{core,nn} 0.11.0 (candle rev 27f20fea published under new names;
 # upstream mistral.rs needs post-0.11.0 candle APIs no released candle has).

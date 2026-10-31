@@ -33,7 +33,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # Every version source (5 manifests, 2 npm JSON files, 3 Cargo.lock files)
+      # Every version source (5 manifests, 2 npm JSON files, the root Cargo.lock)
       # must agree with Cargo.toml, and both CHANGELOGs must have a real section.
       - name: Version sources agree
         run: make verify
