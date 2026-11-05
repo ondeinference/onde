@@ -147,7 +147,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release.outputs.release_tag }}
-          name: Onde Inference ${{ steps.release.outputs.release_tag }}
+          name: Onde Inference SDK v${{ steps.release.outputs.release_tag }}
           body_path: dist/release-notes.md
           files: |
             dist/swift/OndeFramework.xcframework.zip
