@@ -74,16 +74,7 @@ uniffi::setup_scaffolding!();
 
 // Re-export mistralrs for every platform that onde supports.
 // Apps use `onde::mistralrs::Model` etc. instead of declaring a direct dep.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 pub use mistralrs;
 
 // Re-exports needed for the GLOBAL_HF_CACHE workaround on sandboxed platforms.

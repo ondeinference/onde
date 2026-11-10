@@ -33,16 +33,7 @@
 //! 2. `TokenSource::CacheToken`    — otherwise (reads `~/.cache/huggingface/token`;
 //!    works on macOS after `mistralrs login`).
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use mistralrs::TokenSource;
 
 /// Token baked in at compile time (if the `HF_TOKEN` env var was set).
@@ -57,16 +48,7 @@ const BUILD_TIME_HF_TOKEN: Option<&str> = option_env!("HF_TOKEN");
 /// Prefer the compile-time literal when available (required on iOS), otherwise
 /// fall back to the on-disk cache token (the default on macOS where
 /// `mistralrs login` has been run).
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 pub fn hf_token_source() -> TokenSource {
     match BUILD_TIME_HF_TOKEN {
         Some(token) if !token.is_empty() => {
@@ -94,16 +76,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(any(
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "tvos",
-        target_os = "visionos",
-        target_os = "watchos",
-        target_os = "windows",
-        target_os = "linux",
-        target_os = "android"
-    ))]
+    #[cfg(onde_native)]
     fn token_source_returns_valid_variant() {
         let source = hf_token_source();
         // We can't know at test time whether HF_TOKEN was set, but we can

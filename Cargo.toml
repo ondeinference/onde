@@ -39,6 +39,8 @@ name = "onde"
 #                linking is not allowed.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+# NOTE: the per-OS tables below must match the `onde_native` OS list in
+# build.rs (the single source). Cargo cannot evaluate custom cfgs here.
 
 # Android: CPU-only GGUF inference via candle; also needs hf-hub and
 # mistralrs-core for explicit cache path seeding (dirs::home_dir() panics
