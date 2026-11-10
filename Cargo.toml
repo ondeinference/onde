@@ -120,9 +120,8 @@ workspace = true
 # Used by build.rs to compile the tvOS ___chkstk_darwin assembly stub.
 cc = "1"
 dotenvy = "0.15"
-
-[target.'cfg(not(target_arch = "wasm32"))'.build-dependencies]
-# Required for UniFFI scaffolding code generation at build time.
+# Required for UniFFI scaffolding code generation at build time. Build
+# dependencies are matched against the host, so this cannot be gated off wasm32.
 uniffi = { workspace = true, features = ["build"] }
 
 # The target-conditional mistralrs deps above resolve to the published
