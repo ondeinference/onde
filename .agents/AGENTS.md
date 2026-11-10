@@ -615,3 +615,4 @@ Triggered on **semver tag push** or `workflow_dispatch`.
 
 *This file is for AI agent and human developer reference. Update it when the architecture, API surface, supported models, or toolchain requirements change.*
 ```
+<!-- routing test -->
