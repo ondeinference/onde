@@ -94,10 +94,10 @@ jobs:
       # ── Android NDK ───────────────────────────────────────────────────────────
       - name: Install Android NDK 29
         run: |
-          echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+          echo "y" | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
             "ndk;29.0.13113456" || true
           # Fall back to whatever 29.x is already installed
-          NDK_PATH=$(ls -d $ANDROID_SDK_ROOT/ndk/29.* 2>/dev/null | sort -V | tail -1)
+          NDK_PATH=$(find "$ANDROID_SDK_ROOT/ndk" -maxdepth 1 -name '29.*' 2>/dev/null | sort -V | tail -1)
           if [ -z "$NDK_PATH" ]; then
             echo "Error: No NDK 29.x found"
             exit 1
