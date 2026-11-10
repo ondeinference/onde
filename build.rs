@@ -3,14 +3,14 @@ fn main() {
     // links there). Everything else gets the stub engine. This list is the
     // single source of truth; the per-OS `[target.'cfg(...)'.dependencies]`
     // tables in Cargo.toml cannot see custom cfgs and must be kept in step.
-    println!("cargo::rustc-check-cfg=cfg(onde_native)");
+    println!("cargo:rustc-check-cfg=cfg(onde_native)");
     let cfg_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if [
         "macos", "ios", "tvos", "visionos", "watchos", "windows", "linux", "android",
     ]
     .contains(&cfg_os.as_str())
     {
-        println!("cargo::rustc-cfg=onde_native");
+        println!("cargo:rustc-cfg=onde_native");
     }
 
     // SDK credentials
