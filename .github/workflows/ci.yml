@@ -1,34 +1,94 @@
 name: CI
 
+# One run per commit: PRs run on pull_request, and push only fires on the
+# integration branches (development, main) so every merged commit gets a
+# result. `pull_request` has no `branches:` filter, so stacked PRs still run.
+#
+# Jobs are routed by the `changes` job, so a change only runs the checks it
+# can break. Editing this file re-runs everything once.
+
 on:
-  # Branches only — a tag push must NOT fire CI. Release tags point at a commit
-  # that main already validated, so re-running CI on the tag adds 13 macos jobs
-  # that compete with the release workflows for the shared macOS runner pool.
   push:
-    branches:
-      - "**"
+    branches: [main, development]
+    paths-ignore: &ignored
+      - ".agents/**"
+      - ".claude/**"
+      - "assets/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "LICENSE-*"
   pull_request:
+    paths-ignore: *ignored
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/development' }}
 
 permissions:
   contents: read
 
+# Read by build.rs through option_env!() and baked in when present. Empty on
+# fork PRs, which still type-check without them.
+env:
+  CARGO_TERM_COLOR: always
+  GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+  GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+  GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+  GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
 jobs:
-  # ── Toolchain pin ─────────────────────────────────────────────────────────
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      dart: ${{ steps.filter.outputs.dart }}
+      release: ${{ steps.filter.outputs.release }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            rust:
+              - "src/**"
+              - "build.rs"
+              - "Cargo.toml"
+              - "Cargo.lock"
+              - "rust-toolchain.toml"
+              - "scripts/**"
+              - "uniffi-bindgen/**"
+              - "sdk/dart/rust/**"
+              - "sdk/react-native/rust/**"
+              - ".github/workflows/ci.yml"
+            dart:
+              - "sdk/dart/**"
+              - ".github/workflows/ci.yml"
+            release:
+              - "Cargo.toml"
+              - "Cargo.lock"
+              - "**/CHANGELOG.md"
+              - "Makefile"
+              - "scripts/**"
+              - "sdk/**"
+              - ".github/workflows/release-preflight.yml"
+              - ".github/workflows/ci.yml"
+            workflows:
+              - ".github/workflows/**"
+
   # rust-toolchain.toml is the single source of truth for the Rust version, but
   # dtolnay/rust-toolchain takes `toolchain` as a required input and will not
-  # read that file. Left implicit, the action installs plain `stable` and adds
-  # the requested components/targets to *it*, while bare `cargo` in this repo
-  # resolves to the pinned channel instead — a different toolchain that has
-  # none of them ("cargo-fmt is not installed for 1.94.0", "can't find crate
-  # for `core`"). Resolve the pin once here and feed it to every Rust job so
-  # the two halves agree, without restating the version in this file.
+  # read that file. Left implicit, the action installs plain `stable` while bare
+  # `cargo` resolves to the pinned channel, a different toolchain with none of
+  # the requested components or targets. Resolve the pin once and feed it to
+  # every Rust job. The Rust jobs need this one, so they skip when it skips.
   toolchain:
     name: Toolchain
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     outputs:
       channel: ${{ steps.read.outputs.channel }}
@@ -43,16 +103,27 @@ jobs:
           fi
           echo "channel=${channel}" >> "$GITHUB_OUTPUT"
 
-  # ── Release metadata ─────────────────────────────────────────────────────
-  # Same gate the release workflows use, minus the tag check. Running it on
-  # ordinary pushes means version drift surfaces while you are still on a
-  # branch, instead of on release day.
+  # Same gate the release workflows use, minus the tag check, so version drift
+  # surfaces on a branch instead of on release day.
   preflight:
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
     uses: ./.github/workflows/release-preflight.yml
 
-  # ── Dart / Flutter SDK validation ────────────────────────────────────────
+  actionlint:
+    name: Lint workflows
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+      - run: ./actionlint -color
+
   dart-sdk:
     name: Dart SDK (Flutter)
+    needs: changes
+    if: needs.changes.outputs.dart == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -90,11 +161,10 @@ jobs:
         working-directory: sdk/dart
         run: flutter pub publish --dry-run
 
-  # ── Formatting ────────────────────────────────────────────────────────────
   fmt:
     name: Format
-    runs-on: macos-26
     needs: toolchain
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -103,17 +173,10 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  # ── Lint ──────────────────────────────────────────────────────────────────
-  clippy:
-    name: Clippy (macOS)
-    runs-on: macos-26
+  lint-test:
+    name: Clippy + test (macOS)
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -123,62 +186,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-bin: false
+          key: macos-host
       - run: cargo clippy --all-targets -- -D warnings
-
-  # ── Tests (macOS — the only platform where tests run natively) ────────────
-  test:
-    name: Test (macOS)
-    runs-on: macos-26
-    needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ needs.toolchain.outputs.channel }}
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-bin: false
       - run: cargo test --lib
-
-  # ── Cross-compile checks for Darwin platforms (highest priority) ─────────
-  check-macos-arm64:
-    name: Check (macOS arm64)
-    runs-on: macos-26
-    needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ needs.toolchain.outputs.channel }}
-          targets: aarch64-apple-darwin
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-bin: false
-          key: macos-arm64
-      - run: cargo check --target aarch64-apple-darwin
 
   check-macos-intel:
     name: Check (macOS x86_64)
-    runs-on: macos-26
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -193,14 +208,8 @@ jobs:
 
   check-ios:
     name: Check (iOS device)
-    runs-on: macos-26
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -215,14 +224,8 @@ jobs:
 
   check-ios-sim:
     name: Check (iOS simulator)
-    runs-on: macos-26
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -237,13 +240,8 @@ jobs:
 
   check-tvos:
     name: Check (tvOS device)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -257,13 +255,8 @@ jobs:
 
   check-tvos-sim:
     name: Check (tvOS simulator)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -277,13 +270,8 @@ jobs:
 
   check-visionos:
     name: Check (visionOS device)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -297,13 +285,8 @@ jobs:
 
   check-visionos-sim:
     name: Check (visionOS simulator)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -317,13 +300,8 @@ jobs:
 
   check-watchos:
     name: Check (watchOS device)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -337,13 +315,8 @@ jobs:
 
   check-watchos-sim:
     name: Check (watchOS simulator)
+    needs: toolchain
     runs-on: macos-26
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
@@ -355,17 +328,10 @@ jobs:
           key: watchos-sim
       - run: cargo +nightly check -Z build-std --target aarch64-apple-watchos-sim
 
-  # ── Cross-compile checks for Unix-family platforms ────────────────────────
   check-linux:
     name: Check (Linux x86_64)
-    runs-on: ubuntu-latest
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -378,26 +344,19 @@ jobs:
           key: linux-x86_64
       - run: cargo check --target x86_64-unknown-linux-gnu
 
-  # ── wasm32 check ──────────────────────────────────────────────────────────
-  # Compiles the crate against the stub engine so its signatures cannot drift
-  # from the real ChatEngine again (ed-agent builds against both).
+  # Compiles against the stub engine so its signatures cannot drift from the
+  # real ChatEngine (ed-agent builds against both).
   check-wasm32:
     name: Check (wasm32)
-    runs-on: ubuntu-latest
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ needs.toolchain.outputs.channel }}
-          components: clippy
           targets: wasm32-unknown-unknown
+          components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
           cache-bin: false
@@ -410,11 +369,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: toolchain
     env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
       CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android34-clang
       CC_aarch64_linux_android: aarch64-linux-android34-clang
       AR_aarch64_linux_android: llvm-ar
@@ -446,17 +400,10 @@ jobs:
       - name: Check Dart FFI crate
         run: cargo check --target aarch64-linux-android --manifest-path sdk/dart/rust/Cargo.toml
 
-  # ── Cross-compile checks for Windows (lowest priority) ────────────────────
   check-windows:
     name: Check (Windows x86_64)
-    runs-on: windows-latest
     needs: toolchain
-    env:
-      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
-      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
-      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
-      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -468,3 +415,15 @@ jobs:
           cache-bin: false
           key: windows-x86_64
       - run: cargo check --target x86_64-pc-windows-msvc
+
+  ci:
+    name: CI status
+    if: always()
+    needs: [changes, toolchain, preflight, actionlint, dart-sdk, fmt, lint-test, check-macos-intel, check-ios, check-ios-sim, check-tvos, check-tvos-sim, check-visionos, check-visionos-sim, check-watchos, check-watchos-sim, check-linux, check-wasm32, check-android, check-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every needed job succeeded or was skipped
+        run: |
+          for result in ${{ join(needs.*.result, ' ') }}; do
+            case "$result" in success|skipped) ;; *) echo "::error::job result: $result"; exit 1;; esac
+          done
