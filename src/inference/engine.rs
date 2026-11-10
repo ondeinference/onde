@@ -60,71 +60,26 @@
 //! println!("{}", result.text);
 //! ```
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use std::sync::Arc;
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use tokio::sync::Mutex;
 
 use super::types::*;
 
 // ── Platform-gated mistralrs imports ─────────────────────────────────────────
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use mistralrs::{
     CalledFunction, Function, GgufModelBuilder, Model, RequestBuilder, TextMessageRole,
     Tool as MistralTool, ToolCallResponse, ToolCallType, ToolChoice, ToolType,
     UqffTextModelBuilder,
 };
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use std::collections::{HashMap, HashSet};
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 use std::path::PathBuf;
 
 // ISQ types are only used by load_isq_model, which is macOS-only.
@@ -134,16 +89,7 @@ use mistralrs::{IsqBits, TextModelBuilder};
 // ── Internals ────────────────────────────────────────────────────────────────
 
 /// How a model was loaded — carries the data needed for status reporting.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 enum LoadedModelConfig {
     Gguf(GgufModelConfig),
     Uqff(UqffModelConfig),
@@ -151,16 +97,7 @@ enum LoadedModelConfig {
     Isq(IsqModelConfig),
 }
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 impl LoadedModelConfig {
     fn display_name(&self) -> &str {
         match self {
@@ -182,16 +119,7 @@ impl LoadedModelConfig {
 }
 
 /// State of a loaded model held inside the engine's mutex.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 struct LoadedModel {
     /// The mistral.rs model handle. `Model` wraps `Arc<MistralRs>` so
     /// cloning is a cheap pointer copy — safe to snapshot before inference
@@ -209,16 +137,7 @@ struct LoadedModel {
 
 /// An entry in the conversation history (internal only).
 /// Supports tool-related messages alongside regular text.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 #[derive(Debug, Clone)]
 enum HistoryEntry {
     /// A regular text message (user, assistant, system).
@@ -248,16 +167,7 @@ enum HistoryEntry {
 /// mutex is released *before* the actual (potentially slow) model inference
 /// runs, so other tasks can still query status or history while generation
 /// is in progress.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 pub struct ChatEngine {
     inner: Mutex<Option<LoadedModel>>,
     pulse: std::sync::OnceLock<Option<crate::pulse::PulseClient>>,
@@ -270,16 +180,7 @@ pub struct ChatEngine {
     pulse_country: Option<String>,
 }
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 impl ChatEngine {
     // ── Construction ─────────────────────────────────────────────────────
 
@@ -1848,16 +1749,7 @@ impl ChatEngine {
 // Default impl
 // ═════════════════════════════════════════════════════════════════════════════
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 impl Default for ChatEngine {
     fn default() -> Self {
         Self::new()
@@ -1869,16 +1761,7 @@ impl Default for ChatEngine {
 // ═════════════════════════════════════════════════════════════════════════════
 
 /// Build a `RequestBuilder` from the current engine state and a new user message.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn build_request(loaded: &LoadedModel, user_message: &str) -> RequestBuilder {
     let mut req = RequestBuilder::new();
 
@@ -1913,16 +1796,7 @@ fn build_request(loaded: &LoadedModel, user_message: &str) -> RequestBuilder {
 }
 
 /// Build a request with tool support, properly replaying tool-related history.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn build_request_with_tools(
     loaded: &LoadedModel,
     user_message: &str,
@@ -1946,16 +1820,7 @@ fn build_request_with_tools(
 }
 
 /// Build a request for sending tool results back to the model.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn build_tool_results_request(
     loaded: &LoadedModel,
     results: &[ToolResult],
@@ -1986,16 +1851,7 @@ fn build_tool_results_request(
 
 /// Replay conversation history entries onto a [`RequestBuilder`], preserving
 /// tool call and tool result messages.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn replay_history_with_tools(mut req: RequestBuilder, history: &[HistoryEntry]) -> RequestBuilder {
     for entry in history {
         match entry {
@@ -2036,16 +1892,7 @@ fn replay_history_with_tools(mut req: RequestBuilder, history: &[HistoryEntry]) 
     req
 }
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 /// Build a request from a caller-supplied conversation for [`ChatEngine::complete`].
 fn build_turns_request(
     turns: &[ChatTurn],
@@ -2058,16 +1905,7 @@ fn build_turns_request(
     attach_tools(req, tools)
 }
 
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 impl From<ChatTurn> for HistoryEntry {
     fn from(turn: ChatTurn) -> Self {
         match turn {
@@ -2117,16 +1955,7 @@ fn split_think(content: &str) -> (String, Option<String>) {
 
 /// Attach [`ToolDefinition`] slices as mistralrs [`Tool`] values and set
 /// [`ToolChoice::Auto`].
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn attach_tools(mut req: RequestBuilder, tools: &[ToolDefinition]) -> RequestBuilder {
     if !tools.is_empty() {
         let mistral_tools: Vec<MistralTool> = tools
@@ -2162,16 +1991,7 @@ fn attach_tools(mut req: RequestBuilder, tools: &[ToolDefinition]) -> RequestBui
 }
 
 /// Parse tool calls from a mistralrs response choice.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn parse_tool_calls(choice: &mistralrs::Choice) -> Vec<ToolCallRequest> {
     choice
         .message
@@ -2206,16 +2026,7 @@ fn parse_tool_calls(choice: &mistralrs::Choice) -> Vec<ToolCallRequest> {
 }
 
 /// Apply a [`SamplingConfig`] to a [`RequestBuilder`].
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn apply_sampling(mut req: RequestBuilder, sampling: &SamplingConfig) -> RequestBuilder {
     if let Some(temp) = sampling.temperature {
         req = req.set_sampler_temperature(temp);
@@ -2242,16 +2053,7 @@ fn apply_sampling(mut req: RequestBuilder, sampling: &SamplingConfig) -> Request
 }
 
 /// Convert a [`ChatRole`] to a [`TextMessageRole`].
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 fn chat_role_to_mistral(role: &ChatRole) -> TextMessageRole {
     match role {
         ChatRole::System => TextMessageRole::System,
@@ -2277,28 +2079,10 @@ fn truncate_for_log(s: &str, max_len: usize) -> String {
 ///
 /// All methods return errors or empty values so that code using the engine
 /// can compile on any target without `#[cfg]` at every call site.
-#[cfg(not(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-)))]
+#[cfg(not(onde_native))]
 pub struct ChatEngine;
 
-#[cfg(not(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-)))]
+#[cfg(not(onde_native))]
 impl ChatEngine {
     pub fn new() -> Self {
         Self
@@ -2440,16 +2224,7 @@ impl ChatEngine {
     }
 }
 
-#[cfg(not(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-)))]
+#[cfg(not(onde_native))]
 impl Default for ChatEngine {
     fn default() -> Self {
         Self::new()
