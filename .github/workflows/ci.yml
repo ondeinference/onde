@@ -378,6 +378,33 @@ jobs:
           key: linux-x86_64
       - run: cargo check --target x86_64-unknown-linux-gnu
 
+  # ── wasm32 check ──────────────────────────────────────────────────────────
+  # Compiles the crate against the stub engine so its signatures cannot drift
+  # from the real ChatEngine again (ed-agent builds against both).
+  check-wasm32:
+    name: Check (wasm32)
+    runs-on: ubuntu-latest
+    needs: toolchain
+    env:
+      GRESIQ_API_KEY_DEV: ${{ secrets.GRESIQ_API_KEY_DEV }}
+      GRESIQ_API_SECRET_DEV: ${{ secrets.GRESIQ_API_SECRET_DEV }}
+      GRESIQ_API_KEY_PRODUCTION: ${{ secrets.GRESIQ_API_KEY_PRODUCTION }}
+      GRESIQ_API_SECRET_PRODUCTION: ${{ secrets.GRESIQ_API_SECRET_PRODUCTION }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ needs.toolchain.outputs.channel }}
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-bin: false
+          key: wasm32
+      - run: cargo check --target wasm32-unknown-unknown --lib
+      - run: cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
+
   check-android:
     name: Check (Android arm64)
     runs-on: ubuntu-latest
