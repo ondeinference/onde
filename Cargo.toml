@@ -95,7 +95,6 @@ mistralrs = { version = "0.9.5", package = "onde-mistralrs" }
 
 [dependencies]
 anyhow = "1"
-home = "0.5.4"
 log = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { workspace = true, features = ["derive"] }
@@ -105,6 +104,10 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync"] }
 tsync = "2"
 
+# UniFFI, `home` and the filesystem-backed modules are native-only; see the
+# "wasm32" section of the crate docs in src/lib.rs.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+home = "0.5.4"
 uniffi = { workspace = true, features = ["tokio"] }
 
 [dependencies.smbcloud-gresiq-sdk]
@@ -117,7 +120,8 @@ workspace = true
 # Used by build.rs to compile the tvOS ___chkstk_darwin assembly stub.
 cc = "1"
 dotenvy = "0.15"
-# Required for UniFFI scaffolding code generation at build time.
+# Required for UniFFI scaffolding code generation at build time. Build
+# dependencies are matched against the host, so this cannot be gated off wasm32.
 uniffi = { workspace = true, features = ["build"] }
 
 # The target-conditional mistralrs deps above resolve to the published

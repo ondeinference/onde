@@ -23,7 +23,8 @@ use serde::{Deserialize, Serialize};
 /// Mirrors the standard OpenAI / mistral.rs role taxonomy but is decoupled
 /// from `mistralrs::TextMessageRole` so that callers don't need a direct
 /// dependency on mistral.rs.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum ChatRole {
     System,
@@ -44,7 +45,8 @@ impl std::fmt::Display for ChatRole {
 // ── Chat message ─────────────────────────────────────────────────────────────
 
 /// A single message in a conversation.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct ChatMessage {
     pub role: ChatRole,
     pub content: String,
@@ -80,7 +82,8 @@ impl ChatMessage {
 /// All fields are optional — `None` means "use the engine default".
 ///
 /// Note: `usize` is replaced with `u64` for UniFFI compatibility.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct SamplingConfig {
     /// Sampling temperature (higher = more random).  Typical range: 0.0–2.0.
     pub temperature: Option<f64>,
@@ -202,7 +205,8 @@ impl SamplingConfig {
 /// This is the primary model format for on-device mobile/desktop inference
 /// because GGUF files are pre-quantized and load at their compressed size,
 /// avoiding the large memory spike of in-situ quantization.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct GgufModelConfig {
     /// HuggingFace model repository ID, e.g. `"bartowski/Qwen2.5-1.5B-Instruct-GGUF"`.
     pub model_id: String,
@@ -236,7 +240,8 @@ pub struct GgufModelConfig {
 /// mistral.rs resolves the shards, the residual weights, and the JSON assets by
 /// sibling lookup next to `model_id`, so pointing it at the source repo fails
 /// with a missing-file error. A UQFF export is self-contained by design.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct UqffModelConfig {
     /// HuggingFace repository ID or local directory of the UQFF export, e.g.
     /// `"mistralrs-community/gemma-4-E4B-it-UQFF"`.
@@ -269,7 +274,8 @@ pub struct UqffModelConfig {
 /// feature on mistral.rs.  The struct is still defined on all platforms so
 /// that types.rs compiles everywhere without `cfg` gates on the record
 /// (UniFFI requires all record types to be reachable without feature flags).
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct IsqModelConfig {
     /// HuggingFace model repository ID, e.g. `"Qwen/Qwen2.5-Coder-7B-Instruct"`.
     pub model_id: String,
@@ -313,7 +319,8 @@ impl IsqModelConfig {
 // ── Inference result ─────────────────────────────────────────────────────────
 
 /// The result of a chat inference request.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct InferenceResult {
     /// The generated assistant reply text.
     pub text: String,
@@ -330,7 +337,8 @@ pub struct InferenceResult {
 // ── Tool calling ─────────────────────────────────────────────────────────────
 
 /// A tool definition passed to the model so it knows which tools are available.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct ToolDefinition {
     /// Tool name (e.g. `"read_file"`).
     pub name: String,
@@ -341,7 +349,8 @@ pub struct ToolDefinition {
 }
 
 /// Information about a single tool call requested by the model.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct ToolCallInfo {
     /// Unique identifier for this tool call (used to correlate results).
     pub id: String,
@@ -352,7 +361,8 @@ pub struct ToolCallInfo {
 }
 
 /// The result of executing a tool, sent back to the model.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct ToolResult {
     /// The tool call ID this result corresponds to.
     pub tool_call_id: String,
@@ -365,7 +375,8 @@ pub struct ToolResult {
 /// `Unknown` is used for custom model repositories that Onde does not ship in
 /// its built-in catalogue. Callers may choose to try those models, but should
 /// surface that the capability has not been verified.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
 pub enum ToolCallingSupport {
     Supported,
     Unsupported,
@@ -375,7 +386,8 @@ pub enum ToolCallingSupport {
 // ── Streaming chunk ──────────────────────────────────────────────────────────
 
 /// A single streaming token chunk from the inference engine.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct StreamChunk {
     /// The token text delta (may be empty for the final chunk).
     pub delta: String,
@@ -388,7 +400,8 @@ pub struct StreamChunk {
 // ── Engine status ────────────────────────────────────────────────────────────
 
 /// Lifecycle status of the inference engine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Enum))]
 #[serde(rename_all = "snake_case")]
 pub enum EngineStatus {
     /// No model loaded.
@@ -420,7 +433,8 @@ impl std::fmt::Display for EngineStatus {
 /// A point-in-time snapshot of the engine's state, suitable for status UIs.
 ///
 /// Note: `history_length` is `u64` (not `usize`) for UniFFI compatibility.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Record))]
 pub struct EngineInfo {
     pub status: EngineStatus,
     /// Display name of the currently loaded model, if any.
@@ -436,7 +450,8 @@ pub struct EngineInfo {
 /// Errors that can occur during inference engine operations.
 ///
 /// Exposed to Swift / Kotlin as a sealed class / enum via `uniffi::Error`.
-#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[derive(Debug, thiserror::Error)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(uniffi::Error))]
 pub enum InferenceError {
     #[error("No model loaded — call `load_model` first")]
     NoModelLoaded,

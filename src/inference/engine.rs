@@ -1937,6 +1937,7 @@ impl From<ChatTurn> for HistoryEntry {
 /// reply: `(reply, reasoning)`. A reply without one comes back trimmed, with
 /// no reasoning. An unclosed block is all reasoning: the model ran out of
 /// tokens while thinking.
+#[cfg_attr(not(onde_native), allow(dead_code))]
 fn split_think(content: &str) -> (String, Option<String>) {
     let trimmed = content.trim_start();
     let Some(rest) = trimmed.strip_prefix("<think>") else {
@@ -2063,6 +2064,7 @@ fn chat_role_to_mistral(role: &ChatRole) -> TextMessageRole {
 }
 
 /// Truncate a string for log output, appending `"..."` if truncated.
+#[cfg_attr(not(onde_native), allow(dead_code))]
 fn truncate_for_log(s: &str, max_len: usize) -> String {
     if s.len() > max_len {
         format!("{}...", &s[..s.floor_char_boundary(max_len)])
@@ -2074,6 +2076,13 @@ fn truncate_for_log(s: &str, max_len: usize) -> String {
 // ═════════════════════════════════════════════════════════════════════════════
 // Unsupported-platform stub
 // ═════════════════════════════════════════════════════════════════════════════
+
+#[cfg(not(onde_native))]
+fn unsupported() -> InferenceError {
+    InferenceError::Other {
+        reason: "LLM inference is not supported on this platform.".into(),
+    }
+}
 
 /// Stub `ChatEngine` for platforms where mistral.rs is not available.
 ///
@@ -2105,9 +2114,7 @@ impl ChatEngine {
         _system_prompt: Option<String>,
         _sampling: Option<SamplingConfig>,
     ) -> Result<std::time::Duration, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 
     pub async fn load_uqff_model(
@@ -2116,9 +2123,7 @@ impl ChatEngine {
         _system_prompt: Option<String>,
         _sampling: Option<SamplingConfig>,
     ) -> Result<std::time::Duration, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 
     pub async fn unload_model(&self) -> Option<String> {
@@ -2168,9 +2173,7 @@ impl ChatEngine {
         &self,
         _user_message: impl Into<String>,
     ) -> Result<InferenceResult, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 
     pub async fn generate(
@@ -2178,38 +2181,52 @@ impl ChatEngine {
         _messages: Vec<ChatMessage>,
         _sampling: Option<SamplingConfig>,
     ) -> Result<InferenceResult, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 
     pub async fn stream_message(
         &self,
         _user_message: impl Into<String>,
     ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 
     pub async fn send_message_with_tools(
         &self,
-        _user_message: &str,
+        _user_message: impl Into<String>,
         _tools: &[ToolDefinition],
-    ) -> Result<InferenceResult, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+    ) -> Result<ToolAwareResult, InferenceError> {
+        Err(unsupported())
     }
 
     pub async fn send_tool_results(
         &self,
         _results: Vec<ToolResult>,
         _next_tools: Option<&[ToolDefinition]>,
-    ) -> Result<InferenceResult, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+    ) -> Result<ToolAwareResult, InferenceError> {
+        Err(unsupported())
+    }
+
+    pub async fn stream_tool_results(
+        &self,
+        _results: Vec<ToolResult>,
+        _tools: Option<Vec<ToolDefinition>>,
+    ) -> Result<tokio::sync::mpsc::Receiver<StreamChunk>, InferenceError> {
+        Err(unsupported())
+    }
+
+    /// Mirror of the real `load_assigned_model`. Not available on wasm32: the
+    /// browser engine will take a publishable key instead of an app secret.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn load_assigned_model(
+        &self,
+        _environment: smbcloud_gresiq_sdk::Environment,
+        _onde_app_id: &str,
+        _onde_app_secret: &str,
+        _system_prompt: Option<String>,
+        _sampling: Option<SamplingConfig>,
+    ) -> Result<std::time::Duration, InferenceError> {
+        Err(unsupported())
     }
 
     pub async fn complete(
@@ -2218,9 +2235,7 @@ impl ChatEngine {
         _tools: &[ToolDefinition],
         _sampling: Option<SamplingConfig>,
     ) -> Result<CompletionResult, InferenceError> {
-        Err(InferenceError::Other {
-            reason: "LLM inference is not supported on this platform.".into(),
-        })
+        Err(unsupported())
     }
 }
 
@@ -2250,6 +2265,7 @@ const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_tem
 impl GgufModelConfig {
     /// Whether the model's default chat template emits an extended reasoning
     /// block that needs a larger output budget than the general presets.
+    #[cfg_attr(not(onde_native), allow(dead_code))]
     fn uses_extended_thinking(&self) -> bool {
         matches!(
             self.model_id.as_str(),

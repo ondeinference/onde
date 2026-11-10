@@ -41,6 +41,7 @@ use mistralrs::TokenSource;
 /// `option_env!` is evaluated by `rustc` during compilation — the resulting
 /// value is a `Option<&'static str>` embedded directly in the binary.
 /// This means the token never needs to exist on the device's filesystem.
+#[cfg_attr(not(onde_native), allow(dead_code))]
 const BUILD_TIME_HF_TOKEN: Option<&str> = option_env!("HF_TOKEN");
 
 /// Resolve the best available [`TokenSource`] for Hugging Face Hub requests.
