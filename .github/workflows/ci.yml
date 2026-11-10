@@ -2,7 +2,9 @@ name: CI
 
 # One run per commit: PRs run on pull_request, and push only fires on the
 # integration branches (development, main) so every merged commit gets a
-# result. `pull_request` has no `branches:` filter, so stacked PRs still run.
+# result. `pull_request` has no branch filter, so stacked PRs still run, and no
+# path filter, so `CI status` reports on every PR and can be a required check.
+# Pushes to the integration branches skip agent config and licences.
 #
 # Jobs are routed by the `changes` job, so a change only runs the checks it
 # can break. Editing this file re-runs everything once.
@@ -10,7 +12,7 @@ name: CI
 on:
   push:
     branches: [main, development]
-    paths-ignore: &ignored
+    paths-ignore:
       - ".agents/**"
       - ".claude/**"
       - "assets/**"
@@ -18,7 +20,6 @@ on:
       - "CLAUDE.md"
       - "LICENSE-*"
   pull_request:
-    paths-ignore: *ignored
   workflow_dispatch:
 
 concurrency:
@@ -117,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+      - run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/914e7df21a07ef503a81201c76d2b11c789d3fca/scripts/download-actionlint.bash) 1.7.12
       - run: ./actionlint -color
 
   dart-sdk:
