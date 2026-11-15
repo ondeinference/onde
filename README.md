@@ -76,6 +76,7 @@ use onde::mistralrs::{
     DiffusionGenerationParams, DiffusionLoaderType, DiffusionModelBuilder,
     ImageGenerationResponseFormat,
 };
+use std::path::PathBuf;
 
 let model = DiffusionModelBuilder::new(
     "black-forest-labs/FLUX.1-schnell",
@@ -89,7 +90,7 @@ let image = model
         "a lighthouse at dusk, oil painting",
         ImageGenerationResponseFormat::Url,
         DiffusionGenerationParams { width: 1024, height: 1024 },
-        Some("lighthouse.png"),
+        Some(PathBuf::from("lighthouse.png")),
     )
     .await?;
 ```
