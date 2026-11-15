@@ -1,3 +1,7 @@
+## 1.4.0
+
+- No changes to this SDK. The release carries the Rust crate's new opt-in `diffusion` feature, which these bindings do not enable.
+
 ## 1.3.5
 
 - Version aligned with the Rust core. No React Native API changes.

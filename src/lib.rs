@@ -27,6 +27,13 @@
 //! and `SystemTime`; browser equivalents (an OPFS model store and a
 //! `spawn_local` Pulse) arrive with the web engine.
 //!
+//! ## Image generation (feature `diffusion`)
+//!
+//! Off by default. With `features = ["diffusion"]`, FLUX.1 Schnell joins the
+//! model catalogue and [`hf_cache::download_model`] can fetch it. Generation is
+//! plain mistral.rs: build a `DiffusionModelBuilder` from `onde::mistralrs` and
+//! call `Model::generate_image`. See the README for a full example.
+//!
 //! ## Re-exports
 //!
 //! `mistralrs`, `hf_hub`, and `mistralrs_core` are re-exported so that apps

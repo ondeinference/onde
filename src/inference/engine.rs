@@ -2739,6 +2739,11 @@ mod tests {
     #[test]
     fn every_supported_model_resolves_to_download_config() {
         for model_id in super::super::models::SUPPORTED_MODELS {
+            // Diffusion models are built by DiffusionModelBuilder, not from GGUF files.
+            #[cfg(all(feature = "diffusion", onde_native))]
+            if super::super::models::diffusion_loader(model_id).is_some() {
+                continue;
+            }
             let config = GgufModelConfig::from_supported_model_id(model_id)
                 .unwrap_or_else(|| panic!("missing config for {model_id}"));
             assert_eq!(config.model_id, *model_id);

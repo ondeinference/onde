@@ -191,6 +191,8 @@ jobs:
           key: macos-host
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --lib
+      - run: cargo clippy --all-targets --features diffusion -- -D warnings
+      - run: cargo test --lib --features diffusion
 
   check-macos-intel:
     name: Check (macOS x86_64)
@@ -430,6 +432,7 @@ jobs:
           cache-bin: false
           key: wasm32
       - run: cargo check --target wasm32-unknown-unknown --lib
+      - run: cargo check --target wasm32-unknown-unknown --lib --features diffusion
       - run: cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
 
   check-android:
@@ -464,6 +467,7 @@ jobs:
           cache-bin: false
           key: android-arm64
       - run: cargo check --target aarch64-linux-android
+      - run: cargo check --target aarch64-linux-android --features diffusion
       # 32-bit target: catches usize-width overflows in const expressions
       # (onde-mistralrs-core 0.9.5 broke the Kotlin release this way).
       - name: Check armv7
