@@ -11,6 +11,7 @@
 
 * No public API changes without the feature. Chat engine, FFI and every SDK build with default features and are unchanged.
 * The Android-specific `download_model` stays GGUF-only and rejects diffusion ids.
+* Swift and Kotlin now have changelogs (`sdk/swift/CHANGELOG.md`, `sdk/kotlin/CHANGELOG.md`). The GitHub Release body reads them instead of listing commit subjects, and `make verify` fails when either lacks a section for the release.
 
 ## 1.3.5
 

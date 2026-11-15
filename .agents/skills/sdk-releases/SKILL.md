@@ -39,6 +39,8 @@ in a single commit before tagging.**
 | 7 | `sdk/kotlin/gradle.properties` | `VERSION_NAME` | `VERSION_NAME=0.1.3` |
 | 8 | `Cargo.lock` (root) | `onde` and `onde-react-native` package versions | The only lockfile: the SDK bridge crates are workspace members. `sync-release-version.py` patches it; `make relock` re-resolves when dependencies change |
 | 9 | `CHANGELOG.md` (root) | New `## 0.1.3` section | Prepend at top of file. `sync-release-version.py --check` gates on it since 1.2.5; before that nothing did, which is why the file jumps from 1.1.1 to 1.2.5 |
+| 10 | `sdk/swift/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file. The Swift package lives in `onde-swift`; this file exists for the GitHub Release body |
+| 11 | `sdk/kotlin/CHANGELOG.md` | New `## 0.1.3` section | Prepend at top of file |
 
 ### Files you do NOT manually edit
 
@@ -58,6 +60,7 @@ in a single commit before tagging.**
 # 6. Prepend new section to sdk/react-native/CHANGELOG.md (manual)
 # 7. Edit sdk/kotlin/gradle.properties VERSION_NAME (manual)
 # 8. Prepend new section to CHANGELOG.md at the repo root (manual)
+#    and to sdk/swift/CHANGELOG.md and sdk/kotlin/CHANGELOG.md
 
 # 9. Sync the lockfile (one workspace-wide Cargo.lock covers the Dart and RN bridge crates)
 cargo check                              # updates root Cargo.lock
@@ -347,13 +350,15 @@ GitHub Release older than the tag, so tagged-but-unpublished versions (1.3.3 and
 | Rust | `CHANGELOG.md`, as written. A missing section prints "No changelog entry. See the pull requests below." |
 | Flutter | `sdk/dart/CHANGELOG.md`, minus the "Version aligned with the Rust core. No ... API changes." sentence |
 | React Native | `sdk/react-native/CHANGELOG.md`, same filter |
-| Swift | commit subjects touching `.github/scripts/build-swift-xcframework.sh`, `.github/workflows/release-sdk-swift.yml`, `src/inference/ffi.rs`, `uniffi.toml` |
-| Kotlin | commit subjects touching `sdk/kotlin/` (not `gradle.properties`), `.github/workflows/release-sdk-kotlin.yml`, `src/inference/ffi.rs`, `uniffi.toml` |
+| Swift | `sdk/swift/CHANGELOG.md`, same filter |
+| Kotlin | `sdk/kotlin/CHANGELOG.md`, same filter |
 
-An SDK with nothing left prints "No changes in this release." Swift and Kotlin
-have no changelog file, so changing what counts for them means editing the path
-lists at the top of the script. A section only appears if the SDK existed at the
-tag. If the script cannot reach `gh`, the pull request list is left out and the
+An SDK with nothing left prints "No changes in this release." All five
+changelogs are in `CHANGELOGS` in `scripts/sync-release-version.py`, so a
+version bump stubs a section in each and `make verify` fails while one is
+missing or still holds the placeholder. Write what changed for that SDK's
+users; when nothing did, say so in one bullet. A section only appears if the
+SDK existed at the tag. If the script cannot reach `gh`, the pull request list is left out and the
 rest still renders. Em dashes in changelog prose are replaced with commas.
 
 ---
@@ -402,6 +407,7 @@ All four must match. If any pair diverges, the relevant CI job fails.
 | Forgot to update `sdk/dart/CHANGELOG.md` | pub.dev shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to bump `sdk/react-native/CHANGELOG.md` | npm shows stale changelog | Prepend new `## 0.1.3` section before tagging |
 | Forgot to update the root `CHANGELOG.md` | Preflight fails: "CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging |
+| Forgot `sdk/swift/CHANGELOG.md` or `sdk/kotlin/CHANGELOG.md` | Preflight fails: "sdk/swift/CHANGELOG.md: no '## 0.1.3' section" | Prepend the new section before tagging. Before 1.4.0 these two sections of the GitHub Release were built from commit subjects |
 | crates.io publish reports success but nothing is published | `cargo publish` step logs "already on crates.io — skipping" for a version that is not there | Fixed in 1.2.5. The guard used `cargo info`, which resolves against the local workspace. If it recurs, check that `scripts/crates-io-published.py` is still what the workflow calls |
 | Forgot to bump `sdk/kotlin/gradle.properties` `VERSION_NAME` | Kotlin CI fails: tag vs gradle.properties mismatch | Bump `VERSION_NAME`, amend commit, re-tag |
 | Tag has `v` prefix (`v0.1.3`) | CI does not trigger — tag pattern requires bare semver | Delete the tag, re-tag without `v` |
