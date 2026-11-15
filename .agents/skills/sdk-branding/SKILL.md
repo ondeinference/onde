@@ -19,7 +19,7 @@ Every hand-written source file starts with this two-line block. No blank line be
 ### Format
 
 ```
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 ```
@@ -30,7 +30,7 @@ Use `//` comment syntax for all languages that support it: Dart, Swift, Kotlin, 
 
 **Dart**
 ```dart
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import 'dart:async';
@@ -38,7 +38,7 @@ import 'dart:async';
 
 **Swift**
 ```swift
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
@@ -46,7 +46,7 @@ import Foundation
 
 **Kotlin**
 ```kotlin
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 package com.ondeinference
@@ -54,7 +54,7 @@ package com.ondeinference
 
 **Rust**
 ```rust
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use std::sync::Arc;
@@ -62,7 +62,7 @@ use std::sync::Arc;
 
 **TypeScript / JavaScript**
 ```ts
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import OndeInferenceModule from "./OndeInferenceModule";
@@ -70,7 +70,7 @@ import OndeInferenceModule from "./OndeInferenceModule";
 
 **C / C++**
 ```cpp
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #include <flutter/plugin_registrar.h>
@@ -81,7 +81,7 @@ import OndeInferenceModule from "./OndeInferenceModule";
 If the file already has a descriptive comment block below the copyright position (e.g. `// OndeInferencePlugin.swift\n// Native iOS plugin...`), prepend the copyright header above it — do not replace it.
 
 ```swift
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 // OndeInferencePlugin.swift
@@ -244,7 +244,7 @@ Every README ends with this line, inside a centered `<p>`:
 
 ```html
 <p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a> — MIT License</sub>
+  <sub>© 2026 Seto Elkahfi (<a href="https://ondeinference.com">Onde Inference</a>) — MIT License</sub>
 </p>
 ```
 
