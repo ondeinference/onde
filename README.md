@@ -67,6 +67,33 @@ engine
 
 For sharded UQFFs, passing the first shard is enough; mistral.rs discovers sibling shards with the same prefix.
 
+## Image generation (feature `diffusion`)
+
+Off by default, so LLM-only hosts never see image models. Enable it with `onde = { version = "1.4", features = ["diffusion"] }`. The feature adds FLUX.1 Schnell to the model catalogue (`list_supported_hf_models`) and teaches `hf_cache::download_model` to fetch it with progress callbacks. Generation itself is plain mistral.rs, re-exported as `onde::mistralrs`; Onde adds no engine or wrapper type on top.
+
+```rust
+use onde::mistralrs::{
+    DiffusionGenerationParams, DiffusionLoaderType, DiffusionModelBuilder,
+    ImageGenerationResponseFormat,
+};
+
+let model = DiffusionModelBuilder::new(
+    "black-forest-labs/FLUX.1-schnell",
+    DiffusionLoaderType::FluxOffloaded,
+)
+.build()
+.await?;
+
+let image = model
+    .generate_image(
+        "a lighthouse at dusk, oil painting",
+        ImageGenerationResponseFormat::Url,
+        DiffusionGenerationParams { width: 1024, height: 1024 },
+        Some("lighthouse.png"),
+    )
+    .await?;
+```
+
 ---
 
 ## License

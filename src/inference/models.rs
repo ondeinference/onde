@@ -211,10 +211,40 @@ pub const DEEPSEEK_CODER_6_7B_GGUF_FILE: &str = "deepseek-coder-6.7b-instruct.Q4
 /// Base model repo used for the HF tokenizer on Android.
 pub const DEEPSEEK_CODER_6_7B_TOK_MODEL_ID: &str = "deepseek-ai/deepseek-coder-6.7b-instruct";
 
+/// FLUX.1 Schnell, Black Forest Labs' fast image-generation model.
+///
+/// Only catalogued with the `diffusion` feature. Images come from mistral.rs'
+/// own `DiffusionModelBuilder` / `Model::generate_image`; Onde only knows how to
+/// list and download it.
+#[cfg(feature = "diffusion")]
+pub const BFL_FLUX_1_SCHNELL: &str = "black-forest-labs/FLUX.1-schnell";
+
+/// Diffusion models Onde can download, with the mistral.rs loader each needs.
+///
+/// Adding a diffusion model is one row here plus its entries in
+/// [`SUPPORTED_MODELS`] and [`SUPPORTED_MODEL_INFO`].
+#[cfg(all(feature = "diffusion", onde_native))]
+pub const DIFFUSION_MODELS: &[(&str, mistralrs::DiffusionLoaderType)] = &[(
+    BFL_FLUX_1_SCHNELL,
+    mistralrs::DiffusionLoaderType::FluxOffloaded,
+)];
+
+/// The mistral.rs diffusion loader for `model_id`, or `None` when it is not a
+/// diffusion model.
+#[cfg(all(feature = "diffusion", onde_native))]
+pub fn diffusion_loader(model_id: &str) -> Option<mistralrs::DiffusionLoaderType> {
+    DIFFUSION_MODELS
+        .iter()
+        .find(|(id, _)| *id == model_id)
+        .map(|(_, loader)| loader.clone())
+}
+
 /// All model IDs that the Onde inference engine supports.
 /// Used by `list_local_hf_models` to filter the HuggingFace cache
 /// to only show models that can actually be used for generation.
 pub const SUPPORTED_MODELS: &[&str] = &[
+    #[cfg(feature = "diffusion")]
+    BFL_FLUX_1_SCHNELL,
     BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF,
     BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF,
@@ -302,6 +332,16 @@ pub struct SupportedModelInfo {
 /// When adding a new model, add its constant ID to [`SUPPORTED_MODELS`] **and**
 /// a corresponding entry here so the frontend can show it in the model list UI.
 pub const SUPPORTED_MODEL_INFO: &[SupportedModelInfo] = &[
+    #[cfg(feature = "diffusion")]
+    SupportedModelInfo {
+        id: BFL_FLUX_1_SCHNELL,
+        name: "FLUX.1 Schnell",
+        org: "Black Forest Labs",
+        description: "Fast, high-quality image generation model optimised for speed.",
+        // Only flux1-schnell.safetensors (23.78 GB): the single weight file
+        // mistral.rs downloads for FluxOffloaded.
+        expected_size_bytes: 23_782_506_688,
+    },
     SupportedModelInfo {
         id: BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF,
         name: "Qwen 2.5 0.5B (GGUF)",
@@ -538,6 +578,37 @@ mod tests {
             assert!(
                 tok_model_id_for_repo(id).is_some(),
                 "{id} has no Android tokenizer mapping"
+            );
+        }
+    }
+
+    #[cfg(feature = "diffusion")]
+    #[test]
+    fn flux_is_catalogued_only_with_the_diffusion_feature() {
+        assert!(SUPPORTED_MODELS.contains(&BFL_FLUX_1_SCHNELL));
+        assert!(SUPPORTED_MODEL_INFO
+            .iter()
+            .any(|info| info.id == BFL_FLUX_1_SCHNELL));
+    }
+
+    #[cfg(not(feature = "diffusion"))]
+    #[test]
+    fn default_catalogue_has_no_diffusion_models() {
+        assert!(!SUPPORTED_MODELS.contains(&"black-forest-labs/FLUX.1-schnell"));
+    }
+
+    #[cfg(all(feature = "diffusion", onde_native))]
+    #[test]
+    fn diffusion_loader_maps_flux_and_nothing_else() {
+        assert!(matches!(
+            diffusion_loader(BFL_FLUX_1_SCHNELL),
+            Some(mistralrs::DiffusionLoaderType::FluxOffloaded)
+        ));
+        assert!(diffusion_loader(BARTOWSKI_QWEN3_4B_GGUF).is_none());
+        for (id, _) in DIFFUSION_MODELS {
+            assert!(
+                SUPPORTED_MODELS.contains(id),
+                "{id} not in SUPPORTED_MODELS"
             );
         }
     }

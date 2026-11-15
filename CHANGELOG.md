@@ -1,3 +1,17 @@
+## 1.4.0
+
+### Image generation
+
+* New opt-in cargo feature `diffusion` (off by default). It adds FLUX.1 Schnell (`black-forest-labs/FLUX.1-schnell`, `BFL_FLUX_1_SCHNELL`) to `SUPPORTED_MODELS` and `SUPPORTED_MODEL_INFO`, and `hf_cache::download_model` builds it through mistral.rs' `DiffusionModelBuilder`, with the same progress callbacks as chat models.
+* Generation stays plain mistral.rs (`onde::mistralrs::DiffusionModelBuilder` and `Model::generate_image`). Onde adds no engine, wrapper type or FFI for it.
+* `inference::models::DIFFUSION_MODELS` maps a model id to its mistral.rs loader, and `diffusion_loader(id)` looks it up, so a future diffusion model is one table row.
+* CI checks `--features diffusion` on macOS, Android and wasm32.
+
+### Packaging
+
+* No public API changes without the feature. Chat engine, FFI and every SDK build with default features and are unchanged.
+* The Android-specific `download_model` stays GGUF-only and rejects diffusion ids.
+
 ## 1.3.5
 
 ### Build fixes

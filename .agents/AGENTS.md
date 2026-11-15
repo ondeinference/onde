@@ -137,6 +137,8 @@ All model constants live in `src/inference/models.rs`. When adding a new model:
 5. Export a free function in `ffi.rs` for UniFFI consumers when the model should be reachable from Swift and Kotlin.
 6. If the GGUF does not ship with a built-in chat template, set `chat_template` explicitly. DeepSeek Coder is the current example.
 
+> **Feature `diffusion` (off by default):** adds FLUX.1 Schnell to the catalogue and to `download_model`. One row in `DIFFUSION_MODELS` (`src/inference/models.rs`) plus its `SUPPORTED_MODELS` / `SUPPORTED_MODEL_INFO` entries adds another diffusion model. Generation is plain `onde::mistralrs`; never add a diffusion type to `ChatEngine` or the FFI.
+
 ### Current Models
 
 | Model | Repo | File | Size | Platforms |

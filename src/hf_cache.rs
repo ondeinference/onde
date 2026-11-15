@@ -1031,8 +1031,24 @@ where
         return Err(format!("Model {} is not supported.", model_id));
     }
 
-    let config = GgufModelConfig::from_supported_model_id(&model_id)
-        .ok_or_else(|| format!("Model {model_id} has no download configuration."))?;
+    // Diffusion models (feature `diffusion`) are built through mistral.rs'
+    // DiffusionModelBuilder and have no GGUF file list.
+    #[cfg(feature = "diffusion")]
+    let diffusion_loader = crate::inference::models::diffusion_loader(&model_id);
+    #[cfg(feature = "diffusion")]
+    let gguf_config = if diffusion_loader.is_some() {
+        None
+    } else {
+        Some(
+            GgufModelConfig::from_supported_model_id(&model_id)
+                .ok_or_else(|| format!("Model {model_id} has no download configuration."))?,
+        )
+    };
+    #[cfg(not(feature = "diffusion"))]
+    let gguf_config = Some(
+        GgufModelConfig::from_supported_model_id(&model_id)
+            .ok_or_else(|| format!("Model {model_id} has no download configuration."))?,
+    );
 
     let expected_size = SUPPORTED_MODEL_INFO
         .iter()
@@ -1053,8 +1069,10 @@ where
     // Recover from interrupted downloads where the blob exists but the
     // snapshot entry was never created (process killed after download,
     // before hf-hub finalised the cache structure).
-    let expected_files: Vec<&str> = config.files.iter().map(String::as_str).collect();
-    ensure_snapshot_entries(&model_id, &expected_files);
+    if let Some(config) = &gguf_config {
+        let expected_files: Vec<&str> = config.files.iter().map(String::as_str).collect();
+        ensure_snapshot_entries(&model_id, &expected_files);
+    }
 
     // Emit an initial progress event based on the actual cache size so that
     // resumed downloads don't visually restart from 0%.
@@ -1069,23 +1087,26 @@ where
         false,
     ));
 
-    let mut builder =
-        GgufModelBuilder::new(&model_id, config.files.clone()).with_token_source(hf_token_source());
-    if let Some(chat_template) = config.chat_template {
-        builder = builder.with_chat_template(chat_template);
-    }
+    let gguf_builder = gguf_config.as_ref().map(|config| {
+        let mut builder = GgufModelBuilder::new(&model_id, config.files.clone())
+            .with_token_source(hf_token_source());
+        if let Some(chat_template) = config.chat_template.clone() {
+            builder = builder.with_chat_template(chat_template);
+        }
 
-    // Upstream #2493 made Metal paged attention the default; skip it on mobile
-    // so the validation load does not reserve the KV block pool.
-    #[cfg(any(
-        target_os = "ios",
-        target_os = "tvos",
-        target_os = "visionos",
-        target_os = "watchos"
-    ))]
-    {
-        builder = builder.without_paged_attn();
-    }
+        // Upstream #2493 made Metal paged attention the default; skip it on
+        // mobile so the validation load does not reserve the KV block pool.
+        #[cfg(any(
+            target_os = "ios",
+            target_os = "tvos",
+            target_os = "visionos",
+            target_os = "watchos"
+        ))]
+        {
+            builder = builder.without_paged_attn();
+        }
+        builder
+    });
 
     // Shared flag so the monitor task knows when to stop.
     let finished = Arc::new(AtomicBool::new(false));
@@ -1121,7 +1142,25 @@ where
 
     // Building triggers the HuggingFace download and also validates that the
     // downloaded GGUF can be opened by the same backend used for inference.
-    let result = builder.build().await;
+    let result: Result<mistralrs::Model, anyhow::Error> = match gguf_builder {
+        Some(builder) => builder.build().await,
+        #[cfg(feature = "diffusion")]
+        None => match diffusion_loader {
+            Some(loader) => {
+                mistralrs::DiffusionModelBuilder::new(&model_id, loader)
+                    .with_token_source(hf_token_source())
+                    .build()
+                    .await
+            }
+            None => Err(anyhow::anyhow!(
+                "Model {model_id} has no download configuration."
+            )),
+        },
+        #[cfg(not(feature = "diffusion"))]
+        None => Err(anyhow::anyhow!(
+            "Model {model_id} has no download configuration."
+        )),
+    };
 
     finished.store(true, Ordering::Relaxed);
     if monitor_handle.join().is_err() {
