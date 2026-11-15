@@ -8,10 +8,10 @@ and its own changes, and links the SDK page on ondeinference.com.
 
 Where each SDK's text comes from:
     Rust          CHANGELOG.md, used as written
+    Swift         sdk/swift/CHANGELOG.md
+    Kotlin        sdk/kotlin/CHANGELOG.md
     Flutter       sdk/dart/CHANGELOG.md
     React Native  sdk/react-native/CHANGELOG.md
-    Swift         commit subjects touching the Swift paths below (no changelog)
-    Kotlin        commit subjects touching the Kotlin paths below (no changelog)
 
 The range is (previous release, tag]. The previous release is the newest semver
 release older than the tag, so versions that were tagged but never published
@@ -39,6 +39,8 @@ _spec.loader.exec_module(_sync)
 REPO_ROOT = _sync.REPO_ROOT
 SEMVER = _sync.SEMVER
 ROOT_CHANGELOG = _sync.ROOT_CHANGELOG
+SWIFT_CHANGELOG = _sync.SWIFT_CHANGELOG
+KOTLIN_CHANGELOG = _sync.KOTLIN_CHANGELOG
 DART_CHANGELOG = _sync.DART_CHANGELOG
 RN_CHANGELOG = _sync.RN_CHANGELOG
 
@@ -59,26 +61,11 @@ FOOTER = (
     "[Onde Inference SDKs for Swift, Kotlin, Flutter, React Native and Rust]({})".format(SDK_URL)
 )
 
+# The Swift section appears once this script exists at the tag.
 SWIFT_SCRIPT = ".github/scripts/build-swift-xcframework.sh"
-SWIFT_PATHS = (
-    SWIFT_SCRIPT,
-    ".github/workflows/release-sdk-swift.yml",
-    "src/inference/ffi.rs",
-    "uniffi.toml",
-)
-KOTLIN_PATHS = (
-    "sdk/kotlin/",
-    ".github/workflows/release-sdk-kotlin.yml",
-    "src/inference/ffi.rs",
-    "uniffi.toml",
-)
-KOTLIN_EXCLUDES = ("sdk/kotlin/gradle.properties",)
 
-# The Dart and React Native changelogs open every release with this sentence.
+# The Dart and React Native changelogs open most releases with this sentence.
 BOILERPLATE = re.compile(r"Version aligned with the Rust core\.\s*No [\w ]+? API changes\.\s*")
-
-# "1.3.5", "Bump version to 1.3.5", "Release 1.3.5": commits that only bump.
-VERSION_BUMP = re.compile(r"^(?:(?:bump|release|version)\b[^\n]*?)?v?\d+\.\d+\.\d+$", re.IGNORECASE)
 
 SECTION = re.compile(r"^##\s+(\S+)\s*$", re.MULTILINE)
 
@@ -169,7 +156,7 @@ def render_versions(entries):
 
 
 def sdk_changelog_text(path, previous, tag):
-    """Bullets from a Dart or React Native changelog, boilerplate removed."""
+    """Bullets from an SDK changelog, boilerplate removed."""
     sections = changelog_sections(path)
     entries = []
     for version in versions_in_range(sections, previous, tag):
@@ -194,23 +181,6 @@ def root_changelog_text(previous, tag, has_prs):
         body = re.sub(r"^#{3,6}\s+", sub + " ", sections[version], flags=re.MULTILINE)
         entries.append((version, body.splitlines()))
     return render_versions(entries)
-
-
-def commit_text(previous, tag, to_ref, paths, excludes=()):
-    """Commit subjects in the range that touch an SDK's own paths."""
-    spec = ["{}..{}".format(previous, to_ref)] if previous else [to_ref]
-    pathspec = list(paths) + [":(exclude){}".format(p) for p in excludes]
-    log = git("log", "--no-merges", "--format=%s", *spec, "--", *pathspec)
-    lines = []
-    for subject in log.splitlines():
-        subject = subject.strip()
-        if not subject or VERSION_BUMP.match(subject):
-            continue
-        subject = re.sub(r"\(#(\d+)\)", r"([#\1]({}/pull/\1))".format(REPO_URL), subject)
-        line = "- " + subject
-        if line not in lines:
-            lines.append(line)
-    return "\n".join(lines) or NO_CHANGES
 
 
 def pull_requests(tag, previous):
@@ -251,13 +221,15 @@ def render(tag, previous):
         parts.append(section(
             "Swift (iOS, macOS, tvOS)",
             '`.package(url: "https://github.com/ondeinference/onde-swift", from: "{}")`'.format(tag),
-            None, commit_text(previous, tag, to_ref, SWIFT_PATHS),
+            "sdk/swift/CHANGELOG.md",
+            sdk_changelog_text(SWIFT_CHANGELOG, previous, tag),
         ))
     if path_exists(to_ref, "sdk/kotlin"):
         parts.append(section(
             "Kotlin Multiplatform (Android, JVM)",
             '`implementation("com.ondeinference:onde-inference:{}")`'.format(tag),
-            None, commit_text(previous, tag, to_ref, KOTLIN_PATHS, KOTLIN_EXCLUDES),
+            "sdk/kotlin/CHANGELOG.md",
+            sdk_changelog_text(KOTLIN_CHANGELOG, previous, tag),
         ))
     if path_exists(to_ref, "sdk/dart"):
         parts.append(section(
