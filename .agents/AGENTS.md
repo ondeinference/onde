@@ -7,7 +7,7 @@
 
 ## What Is Onde?
 
-Onde is an **on-device LLM inference SDK family** built around a shared Rust core. It targets Apple silicon (iOS, tvOS, macOS) plus Android, Windows, and Linux, and ships SDKs for Rust, Swift, Kotlin Multiplatform, Flutter, and React Native. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) behind platform-friendly APIs with automatic model selection, HuggingFace Hub downloads, cache management, and Metal acceleration where available.
+Onde is an **on-device AI inference SDK family** (LLM chat and, in Rust behind `diffusion`, image generation) built around a shared Rust core. It targets Apple silicon (iOS, tvOS, macOS) plus Android, Windows, and Linux, and ships SDKs for Rust, Swift, Kotlin Multiplatform, Flutter, and React Native. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) behind platform-friendly APIs with automatic model selection, HuggingFace Hub downloads, cache management, and Metal acceleration where available.
 
 - **Website:** https://ondeinference.com
 - **Rust crate:** https://crates.io/crates/onde
@@ -136,6 +136,8 @@ All model constants live in `src/inference/models.rs`. When adding a new model:
 4. Add a constructor to `GgufModelConfig` in `engine.rs`.
 5. Export a free function in `ffi.rs` for UniFFI consumers when the model should be reachable from Swift and Kotlin.
 6. If the GGUF does not ship with a built-in chat template, set `chat_template` explicitly. DeepSeek Coder is the current example.
+
+> **Feature `diffusion` (off by default):** adds FLUX.1 Schnell to the catalogue and to `download_model`. One row in `DIFFUSION_MODELS` (`src/inference/models.rs`) plus its `SUPPORTED_MODELS` / `SUPPORTED_MODEL_INFO` entries adds another diffusion model. Generation is plain `onde::mistralrs`; never add a diffusion type to `ChatEngine` or the FFI.
 
 ### Current Models
 

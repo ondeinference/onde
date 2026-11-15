@@ -1,8 +1,8 @@
 name: onde_inference
 description: >-
-  On-device LLM inference for Flutter & Dart. Run Qwen 2.5 models locally
-  with Metal on iOS and macOS, CPU on Android and desktop. No cloud, no API key.
-version: 1.3.5
+  On-device LLM inference for Flutter & Dart. Run open-weight models such as
+  Qwen locally with Metal on iOS and macOS, CPU elsewhere. No cloud, no API key.
+version: 1.4.0
 repository: https://github.com/ondeinference/onde
 homepage: https://ondeinference.com
 documentation: https://ondeinference.com/sdk/dart

@@ -20,7 +20,7 @@
 
 ---
 
-Run Qwen 2.5 models directly inside your Flutter app. The model downloads from Hugging Face on first launch, then everything runs locally. No server, no API key, and no user data leaves the device. On an iPhone 15 Pro, Metal reaches around 15 tok/s. Android, Linux, and Windows run on CPU, so they are slower but still useful for fully local inference.
+Run open-weight models such as Qwen directly inside your Flutter app. The model downloads from Hugging Face on first launch, then everything runs locally. No server, no API key, and no user data leaves the device. On an iPhone 15 Pro, Metal reaches around 15 tok/s. Android, Linux, and Windows run on CPU, so they are slower but still useful for fully local inference.
 
 You get multi-turn chat, streaming, one-shot generation, configurable sampling, and structured tool call metadata in one package.
 
@@ -321,4 +321,4 @@ Onde is dual-licensed under **MIT** and **Apache 2.0**. You can use either one.
 
 ## Copyright
 
-© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).
+© 2026 Seto Elkahfi ([Onde Inference](https://ondeinference.com)).

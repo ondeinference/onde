@@ -36,11 +36,24 @@ RN_PACKAGE_LOCK = REPO_ROOT / "sdk/react-native/package-lock.json"
 RN_RUST_CARGO = REPO_ROOT / "sdk/react-native/rust/Cargo.toml"
 RN_CHANGELOG = REPO_ROOT / "sdk/react-native/CHANGELOG.md"
 KOTLIN_PROPS = REPO_ROOT / "sdk/kotlin/gradle.properties"
+KOTLIN_CHANGELOG = REPO_ROOT / "sdk/kotlin/CHANGELOG.md"
+SWIFT_CHANGELOG = REPO_ROOT / "sdk/swift/CHANGELOG.md"
 
-# The root changelog is in here so `--check` gates on it like the other two.
+# The root changelog is in here so `--check` gates on it like the SDK ones.
 # It is the only version source nothing validated, which is how it went from
 # 1.1.1 straight to 1.2.5 with five releases unwritten in between.
-CHANGELOGS = (ROOT_CHANGELOG, DART_CHANGELOG, RN_CHANGELOG)
+#
+# Swift and Kotlin have no manifest that needs a changelog, but the GitHub
+# Release body reads theirs, so a release without an entry is blocked here too.
+# The Swift package lives in the onde-swift repo; sdk/swift/ holds only its
+# changelog.
+CHANGELOGS = (
+    ROOT_CHANGELOG,
+    SWIFT_CHANGELOG,
+    KOTLIN_CHANGELOG,
+    DART_CHANGELOG,
+    RN_CHANGELOG,
+)
 
 # Cargo.lock entries carrying a release version, and the packages to patch in
 # each. The repo is one Cargo workspace (the SDK bridge crates are members), so

@@ -1,8 +1,8 @@
 //! # Onde
 //!
-//! **On-device chat inference for cross-platform apps.**
+//! **On-device AI inference for cross-platform apps.**
 //!
-//! Run LLM chat locally — no cloud, no latency, no data leaving the device.
+//! Run LLM chat and image generation locally. No cloud, no per-call cost, no data leaving the device.
 //!
 //! Onde wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) with a
 //! unified API for model discovery, HuggingFace Hub downloads, cache
@@ -12,10 +12,29 @@
 //!
 //! ## Modules
 //!
-//! - [`hf_cache`] — HuggingFace Hub cache inspection, repair, and model
+//! - `hf_cache` — HuggingFace Hub cache inspection, repair, and model
 //!   download with a framework-agnostic progress-callback API.
-//! - [`inference`] — Chat inference engine, UniFFI FFI wrapper, model metadata,
-//!   and HuggingFace token resolution.
+//! - `pulse` — usage telemetry.
+//! - [`inference`] — Text: the chat inference engine, UniFFI FFI wrapper, model
+//!   metadata, and HuggingFace token resolution.
+//! - Image generation — FLUX.1 Schnell behind the `diffusion` feature, run
+//!   through `onde::mistralrs` (see below).
+//!
+//! ## wasm32
+//!
+//! On `wasm32` the crate compiles against the stub [`inference::ChatEngine`]
+//! (every call returns an "unsupported" error), without UniFFI, `hf_cache` or
+//! `pulse`. The UniFFI FFI wrapper is native-only because no SDK reaches wasm
+//! through UniFFI. `hf_cache` and `pulse` depend on the filesystem, OS threads
+//! and `SystemTime`; browser equivalents (an OPFS model store and a
+//! `spawn_local` Pulse) arrive with the web engine.
+//!
+//! ## Image generation (feature `diffusion`)
+//!
+//! Off by default. With `features = ["diffusion"]`, FLUX.1 Schnell joins the
+//! model catalogue and [`hf_cache::download_model`] can fetch it. Generation is
+//! plain mistral.rs: build a `DiffusionModelBuilder` from `onde::mistralrs` and
+//! call `Model::generate_image`. See the README for a full example.
 //!
 //! ## Re-exports
 //!
@@ -42,13 +61,17 @@
 //! println!("{}", result.text);
 //! ```
 
+#[cfg(not(target_arch = "wasm32"))]
 pub mod hf_cache;
 
 pub mod inference;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod pulse;
 
+#[cfg_attr(not(onde_native), allow(dead_code))]
 static PANIC_HOOK_ONCE: std::sync::Once = std::sync::Once::new();
 
+#[cfg_attr(not(onde_native), allow(dead_code))]
 pub(crate) fn install_panic_hook_once() {
     PANIC_HOOK_ONCE.call_once(|| {
         std::panic::set_hook(Box::new(|panic_info| {
@@ -70,20 +93,12 @@ pub(crate) fn install_panic_hook_once() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 uniffi::setup_scaffolding!();
 
 // Re-export mistralrs for every platform that onde supports.
 // Apps use `onde::mistralrs::Model` etc. instead of declaring a direct dep.
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "visionos",
-    target_os = "watchos",
-    target_os = "windows",
-    target_os = "linux",
-    target_os = "android"
-))]
+#[cfg(onde_native)]
 pub use mistralrs;
 
 // Re-exports needed for the GLOBAL_HF_CACHE workaround on sandboxed platforms.

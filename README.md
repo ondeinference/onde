@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device with <a href="https://ondeinference.com/">Onde Inference</a>, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
+  <strong>Run LLMs and image models on-device with <a href="https://ondeinference.com/">Onde Inference</a>, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
 </p>
 
 <p align="center">
@@ -24,6 +24,19 @@
 
 ---
 
+## What Onde runs
+
+| | What you get |
+|---|---|
+| **Text** | Chat, streaming, tool calling. GGUF and UQFF models, plus in-situ quantization (ISQ). |
+| **Images** | FLUX.1 Schnell, through `features = ["diffusion"]` in Rust. Needs desktop-class memory. |
+
+No cloud, no per-call cost, and no user data leaving the device. Metal on Apple platforms, CPU everywhere else.
+
+Onde runs the models. [Ed](https://github.com/ondeinference/ed), the agent layer above it, turns them into an agent your app can embed.
+
+The Swift, Kotlin, Flutter and React Native SDKs cover text. Image generation is Rust only for now.
+
 ## In production
 
 Onde is already shipping in real apps on the App Store and Google Play. Chat runs fully on-device, so there is no server round trip and no user data leaving the device. For SDK docs, platform notes, and setup details, see <https://ondeinference.com/sdk>. If you want to test downloads, model selection, or GGUF export before wiring the engine into app code, use [Onde CLI](https://github.com/ondeinference/onde-cli).
@@ -38,6 +51,17 @@ Onde is already shipping in real apps on the App Store and Google Play. Chat run
   <a href="https://play.google.com/store/apps/details?id=ai.siti.Siti" target="_blank">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get Siti AI on Google Play" height="52">
   </a>
+</p>
+
+Onde ships in apps by Seto Elkahfi, distributed by Splitfire AB.
+
+<p align="center">
+  <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="./assets/badges/app-store.svg" alt="Download on the App Store" height="40"></a>
+  <a href="https://play.google.com/store/apps/dev?id=9116586035310009096"><img src="./assets/badges/google-play.png" alt="Get it on Google Play" height="40"></a>
+  <a href="https://apps.microsoft.com/search/publisher?name=Splitfire%20AB%20Developer&hl=en-US&gl=SE"><img src="./assets/badges/microsoft-store.svg" alt="Get it from Microsoft" height="40"></a>
+  <a href="https://snapcraft.io/publisher/setoelkahfi"><img src="./assets/badges/snap-store.svg" alt="Get it from the Snap Store" height="40"></a>
+  <a href="https://appgallery.huawei.com/app/C119541969"><img src="./assets/badges/appgallery.svg" alt="Explore it on AppGallery" height="40"></a>
+  <a href="https://www.amazon.com/gp/search?index=mobile-apps&field-brandtextbin=Seto+Elkahfi&search-type=ss"><img src="./assets/badges/amazon-appstore.png" alt="Available at Amazon Appstore" height="40"></a>
 </p>
 
 ---
@@ -66,6 +90,34 @@ engine
 ```
 
 For sharded UQFFs, passing the first shard is enough; mistral.rs discovers sibling shards with the same prefix.
+
+## Image generation (feature `diffusion`)
+
+Off by default, so LLM-only hosts never see image models. FLUX.1 Schnell is a desktop-class model: the download is about 24 GB, and it wants a machine with plenty of unified or GPU memory. It is not for phones. Enable it with `onde = { version = "1.4", features = ["diffusion"] }`. The feature adds FLUX.1 Schnell to the model catalogue (`list_supported_hf_models`) and teaches `hf_cache::download_model` to fetch it with progress callbacks. Generation itself is plain mistral.rs, re-exported as `onde::mistralrs`; Onde adds no engine or wrapper type on top.
+
+```rust
+use onde::mistralrs::{
+    DiffusionGenerationParams, DiffusionLoaderType, DiffusionModelBuilder,
+    ImageGenerationResponseFormat,
+};
+use std::path::PathBuf;
+
+let model = DiffusionModelBuilder::new(
+    "black-forest-labs/FLUX.1-schnell",
+    DiffusionLoaderType::FluxOffloaded,
+)
+.build()
+.await?;
+
+let image = model
+    .generate_image(
+        "a lighthouse at dusk, oil painting",
+        ImageGenerationResponseFormat::Url,
+        DiffusionGenerationParams { width: 1024, height: 1024 },
+        Some(PathBuf::from("lighthouse.png")),
+    )
+    .await?;
+```
 
 ---
 
@@ -109,4 +161,4 @@ Onde's own license (MIT OR Apache-2.0) is independent of these model licenses. I
 
 ## Copyright
 
-© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).
+© 2026 Seto Elkahfi ([Onde Inference](https://ondeinference.com)).

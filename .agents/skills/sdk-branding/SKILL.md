@@ -19,7 +19,7 @@ Every hand-written source file starts with this two-line block. No blank line be
 ### Format
 
 ```
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 ```
@@ -30,7 +30,7 @@ Use `//` comment syntax for all languages that support it: Dart, Swift, Kotlin, 
 
 **Dart**
 ```dart
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import 'dart:async';
@@ -38,7 +38,7 @@ import 'dart:async';
 
 **Swift**
 ```swift
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import Foundation
@@ -46,7 +46,7 @@ import Foundation
 
 **Kotlin**
 ```kotlin
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 package com.ondeinference
@@ -54,7 +54,7 @@ package com.ondeinference
 
 **Rust**
 ```rust
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use std::sync::Arc;
@@ -62,7 +62,7 @@ use std::sync::Arc;
 
 **TypeScript / JavaScript**
 ```ts
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 import OndeInferenceModule from "./OndeInferenceModule";
@@ -70,7 +70,7 @@ import OndeInferenceModule from "./OndeInferenceModule";
 
 **C / C++**
 ```cpp
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #include <flutter/plugin_registrar.h>
@@ -81,7 +81,7 @@ import OndeInferenceModule from "./OndeInferenceModule";
 If the file already has a descriptive comment block below the copyright position (e.g. `// OndeInferencePlugin.swift\n// Native iOS plugin...`), prepend the copyright header above it — do not replace it.
 
 ```swift
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 // OndeInferencePlugin.swift
@@ -244,7 +244,7 @@ Every README ends with this line, inside a centered `<p>`:
 
 ```html
 <p align="center">
-  <sub>© 2026 <a href="https://ondeinference.com">Onde Inference</a> — MIT License</sub>
+  <sub>© 2026 Seto Elkahfi (<a href="https://ondeinference.com">Onde Inference</a>) — MIT License</sub>
 </p>
 ```
 
@@ -286,13 +286,24 @@ Use `— MIT License` on sub-pages (example apps, package-level docs). Omit it o
 10. `## Learn more` — links to the package page, ondeinference.com, and GitHub
 11. Footer
 
+### Message house
+
+This is the source of truth. Everything else derives from it.
+
+- **Core line (crate description):** `On-device AI inference: LLM chat, tool calling and image generation, on every platform.`
+- **Hero / tagline (README, website):** `Run LLMs and image models on-device, with first-class support for Apple silicon.`
+- **Proof points:** no cloud, no per-call cost, no user data leaving the device. Metal on Apple, CPU everywhere else. Shipping in App Store and Play apps today.
+- **Stack line:** `Onde runs the models. Ed, the agent layer above it, turns them into an agent your app can embed.`
+- **SDKs (Swift, Kotlin, Flutter, React Native):** stay "Run LLMs on-device from X", because image generation is Rust only (`diffusion` feature). Say "open-weight models such as Qwen", not "Qwen 2.5 models".
+- Ed stays "the agent layer above Onde": LLM-only and agentic.
+
 ### Taglines
 
 Use these as the default direction, but keep them natural if the page needs slightly different wording. Avoid stiff marketing language and avoid em dashes in prose.
 
 | Context | Tagline |
 |---|---|
-| Rust crate | `Run LLMs on-device, with first-class support for Apple silicon.` |
+| Rust crate | `Run LLMs and image models on-device, with first-class support for Apple silicon.` |
 | Flutter SDK | `Run LLMs on-device from Flutter and Dart. Metal on iOS and macOS, CPU everywhere else.` |
 | Kotlin SDK | `Run LLMs on-device from Kotlin. No cloud, no API key, and no user data leaving the device.` |
 | React Native SDK | `Run LLMs on-device from React Native. Metal on iOS, CPU on Android, and no user data leaving the device.` |
@@ -307,8 +318,8 @@ Use these as the default direction, but keep them natural if the page needs slig
 
 ```yaml
 description: >-
-  On-device LLM inference for Flutter & Dart. Run Qwen 2.5 models locally
-  with Metal on iOS and macOS, CPU on Android and desktop. No cloud, no API key.
+  On-device LLM inference for Flutter & Dart. Run open-weight models such as
+  Qwen locally with Metal on iOS and macOS, CPU elsewhere. No cloud, no API key.
 repository: https://github.com/ondeinference/onde/
 homepage: https://ondeinference.com
 issue_tracker: https://github.com/ondeinference/onde/issues
@@ -317,13 +328,14 @@ issue_tracker: https://github.com/ondeinference/onde/issues
 ### `Cargo.toml`
 
 ```toml
-description = "On-device inference engine for Apple silicon."
-license = "MIT"
+description = "On-device AI inference: LLM chat, tool calling and image generation, on every platform."
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
-keywords = ["inference", "on-device", "chat", "llm", "mistral"]
-categories = ["science::ml", "api-bindings"]
+readme = "README.md"
+keywords = ["inference", "on-device", "llm", "diffusion", "image-generation"]
+categories = ["artificial-intelligence", "multimedia::images", "api-bindings"]
 ```
 
 ---
