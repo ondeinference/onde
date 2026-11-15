@@ -28,7 +28,7 @@
 
 | | What you get |
 |---|---|
-| **Text** | Chat, streaming, tool calling. GGUF, UQFF and ISQ models. |
+| **Text** | Chat, streaming, tool calling. GGUF and UQFF models, plus in-situ quantization (ISQ). |
 | **Images** | FLUX.1 Schnell, through `features = ["diffusion"]` in Rust. Needs desktop-class memory. |
 
 No cloud, no per-call cost, and no user data leaving the device. Metal on Apple platforms, CPU everywhere else.

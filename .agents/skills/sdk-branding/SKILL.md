@@ -329,10 +329,11 @@ issue_tracker: https://github.com/ondeinference/onde/issues
 
 ```toml
 description = "On-device AI inference: LLM chat, tool calling and image generation, on every platform."
-license = "MIT"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
+readme = "README.md"
 keywords = ["inference", "on-device", "llm", "diffusion", "image-generation"]
 categories = ["artificial-intelligence", "multimedia::images", "api-bindings"]
 ```
