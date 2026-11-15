@@ -1,4 +1,4 @@
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 /// Pre-quantized Qwen 2.5 1.5B Instruct (GGUF Q4_K_M) — lightest mobile option (~941 MB).

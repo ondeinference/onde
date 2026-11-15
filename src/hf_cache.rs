@@ -1,4 +1,4 @@
-// Copyright 2026 Splitfire AB (Onde Inference). All rights reserved.
+// Copyright 2026 Seto Elkahfi (Onde Inference). All rights reserved.
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! HuggingFace hub cache inspection, repair, and model download.

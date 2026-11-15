@@ -31,7 +31,7 @@ SPDX-License-Identifier: MIT OR Apache-2.0
 
 | File | Contents |
 |---|---|
-| `LICENSE-MIT` | MIT License, copyright Onde Inference (Splitfire AB) |
+| `LICENSE-MIT` | MIT License, copyright Seto Elkahfi (Onde Inference) |
 | `LICENSE-APACHE` | Apache License 2.0 |
 
 Never use a single `LICENSE` file for dual-licensed projects. Always maintain both files separately.
@@ -51,11 +51,16 @@ Use `OR` (uppercase, SPDX standard), not `AND` or `/`. `AND` would mean the user
 The canonical copyright notice for all Onde Inference files is:
 
 ```
-Copyright (c) 2026 Onde Inference (Splitfire AB)
+Copyright (c) 2026 Seto Elkahfi (Onde Inference)
 ```
 
-- **Onde Inference** — the product/brand name
-- **Splitfire AB** — the Swedish legal entity (org. nr. on file)
+- **Seto Elkahfi** — the copyright owner. Onde Inference is held by the founder
+  personally until the Indonesian entity is ready to hold it (smbcloud
+  `.agents/specs/ownerships/spec.md`, §5.4).
+- **Onde Inference** — the product/brand name, not a legal entity
+- **Splitfire AB** — the exclusive distributor and publisher. It does not own
+  this code, so it goes in "distributed by" lines, never in the copyright line.
+- README footers use `© 2026 Seto Elkahfi ([Onde Inference](https://ondeinference.com)).`
 - Use the year of first publication; do not update the year annually in LICENSE files
 
 This notice must appear in:
@@ -138,7 +143,7 @@ When a new model is added to `src/inference/models.rs`, the model license table 
 
 ### Onde Inference brand
 
-**"Onde Inference"** and the Onde logo (`assets/onde-inference-logo.svg`) are trademarks of Splitfire AB.
+**"Onde Inference"** and the Onde logo (`assets/onde-inference-logo.svg`) are trademarks of Seto Elkahfi, distributed by Splitfire AB.
 
 MIT and Apache 2.0 grant code rights only — **neither license grants trademark rights**. This is intentional and protective.
 
@@ -152,7 +157,7 @@ MIT and Apache 2.0 grant code rights only — **neither license grants trademark
 #### Prohibited uses
 
 - Using "Onde Inference" or the logo as the name of a fork, competing product, or derived SDK
-- Implying official endorsement or affiliation without written permission from Splitfire AB
+- Implying official endorsement or affiliation without written permission from Seto Elkahfi
 - Using the logo in a way that could cause confusion about the origin of a product
 
 #### Forks
@@ -231,14 +236,14 @@ When adding a new model to `src/inference/models.rs`:
 - [ ] Run `cargo license --all-features` and confirm no GPL appears
 - [ ] If MPL-2.0: confirm you are not modifying the MPL files
 - [ ] If Apache-2.0 only (not MIT): compatible, no action needed
-- [ ] If custom/proprietary license: stop and escalate to Splitfire AB legal
+- [ ] If custom/proprietary license: stop and escalate to Seto Elkahfi
 
 ## Checklist — New SDK Release
 
 - [ ] Both `LICENSE-MIT` and `LICENSE-APACHE` are present
 - [ ] `Cargo.toml` / `pubspec.yaml` / `package.json` declare `MIT OR Apache-2.0`
 - [ ] README contains `## Model Licenses` section
-- [ ] Copyright year and entity (`Onde Inference (Splitfire AB)`) is correct
+- [ ] Copyright year and entity (`Seto Elkahfi (Onde Inference)`) is correct
 - [ ] mistral.rs fork dependency is pinned to a commit SHA
 - [ ] mistral.rs `LICENSE` (Eric Buehler) is intact and unmodified
 
@@ -249,7 +254,7 @@ When adding a new model to `src/inference/models.rs`:
 | Question | Answer |
 |---|---|
 | What license is Onde? | MIT OR Apache-2.0 (user's choice) |
-| Who holds the copyright? | Onde Inference (Splitfire AB) |
+| Who holds the copyright? | Seto Elkahfi (Onde Inference). Splitfire AB distributes. |
 | Can someone fork Onde and sell it? | Yes, under MIT or Apache 2.0, but they cannot use the "Onde Inference" name or logo |
 | Are Qwen models MIT? | No — Qwen Community License. Disclose to users. |
 | Can enterprises use Onde commercially? | Yes. Apache 2.0 + Qwen Community License both permit commercial use. |

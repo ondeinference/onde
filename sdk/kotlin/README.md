@@ -328,4 +328,4 @@ MIT OR Apache-2.0. See [LICENSE](../../LICENSE).
 
 ## Copyright
 
-© 2026 [Splitfire AB](https://5mb.app) ([Onde Inference](https://ondeinference.com)).
+© 2026 Seto Elkahfi ([Onde Inference](https://ondeinference.com)).
