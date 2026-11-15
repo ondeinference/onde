@@ -40,6 +40,17 @@ Onde is already shipping in real apps on the App Store and Google Play. Chat run
   </a>
 </p>
 
+Onde ships in apps by Seto Elkahfi, distributed by Splitfire AB.
+
+<p align="center">
+  <a href="https://apps.apple.com/se/developer/splitfire-ab/id1831430993"><img src="./assets/badges/app-store.svg" alt="Download on the App Store" height="40"></a>
+  <a href="https://play.google.com/store/apps/dev?id=9116586035310009096"><img src="./assets/badges/google-play.png" alt="Get it on Google Play" height="40"></a>
+  <a href="https://apps.microsoft.com/search/publisher?name=Splitfire%20AB%20Developer&hl=en-US&gl=SE"><img src="./assets/badges/microsoft-store.svg" alt="Get it from Microsoft" height="40"></a>
+  <a href="https://snapcraft.io/publisher/setoelkahfi"><img src="./assets/badges/snap-store.svg" alt="Get it from the Snap Store" height="40"></a>
+  <a href="https://appgallery.huawei.com/app/C119541969"><img src="./assets/badges/appgallery.svg" alt="Explore it on AppGallery" height="40"></a>
+  <a href="https://www.amazon.com/gp/search?index=mobile-apps&field-brandtextbin=Seto+Elkahfi&search-type=ss"><img src="./assets/badges/amazon-appstore.png" alt="Available at Amazon Appstore" height="40"></a>
+</p>
+
 ---
 
 ## Model formats
