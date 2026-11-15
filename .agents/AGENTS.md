@@ -7,7 +7,7 @@
 
 ## What Is Onde?
 
-Onde is an **on-device LLM inference SDK family** built around a shared Rust core. It targets Apple silicon (iOS, tvOS, macOS) plus Android, Windows, and Linux, and ships SDKs for Rust, Swift, Kotlin Multiplatform, Flutter, and React Native. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) behind platform-friendly APIs with automatic model selection, HuggingFace Hub downloads, cache management, and Metal acceleration where available.
+Onde is an **on-device AI inference SDK family** (LLM chat and, in Rust behind `diffusion`, image generation) built around a shared Rust core. It targets Apple silicon (iOS, tvOS, macOS) plus Android, Windows, and Linux, and ships SDKs for Rust, Swift, Kotlin Multiplatform, Flutter, and React Native. It wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) behind platform-friendly APIs with automatic model selection, HuggingFace Hub downloads, cache management, and Metal acceleration where available.
 
 - **Website:** https://ondeinference.com
 - **Rust crate:** https://crates.io/crates/onde

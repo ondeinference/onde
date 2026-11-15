@@ -5,7 +5,7 @@
 <h1 align="center">Onde Inference</h1>
 
 <p align="center">
-  <strong>Run LLMs on-device with <a href="https://ondeinference.com/">Onde Inference</a>, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
+  <strong>Run LLMs and image models on-device with <a href="https://ondeinference.com/">Onde Inference</a>, with first-class support for <a href="https://en.wikipedia.org/wiki/Apple_silicon">Apple silicon</a>.</strong>
 </p>
 
 <p align="center">
@@ -23,6 +23,19 @@
 </p>
 
 ---
+
+## What Onde runs
+
+| | What you get |
+|---|---|
+| **Text** | Chat, streaming, tool calling. GGUF and UQFF models, plus in-situ quantization (ISQ). |
+| **Images** | FLUX.1 Schnell, through `features = ["diffusion"]` in Rust. Needs desktop-class memory. |
+
+No cloud, no per-call cost, and no user data leaving the device. Metal on Apple platforms, CPU everywhere else.
+
+Onde runs the models. [Ed](https://github.com/ondeinference/ed), the agent layer above it, turns them into an agent your app can embed.
+
+The Swift, Kotlin, Flutter and React Native SDKs cover text. Image generation is Rust only for now.
 
 ## In production
 
@@ -80,7 +93,7 @@ For sharded UQFFs, passing the first shard is enough; mistral.rs discovers sibli
 
 ## Image generation (feature `diffusion`)
 
-Off by default, so LLM-only hosts never see image models. Enable it with `onde = { version = "1.4", features = ["diffusion"] }`. The feature adds FLUX.1 Schnell to the model catalogue (`list_supported_hf_models`) and teaches `hf_cache::download_model` to fetch it with progress callbacks. Generation itself is plain mistral.rs, re-exported as `onde::mistralrs`; Onde adds no engine or wrapper type on top.
+Off by default, so LLM-only hosts never see image models. FLUX.1 Schnell is a desktop-class model: the download is about 24 GB, and it wants a machine with plenty of unified or GPU memory. It is not for phones. Enable it with `onde = { version = "1.4", features = ["diffusion"] }`. The feature adds FLUX.1 Schnell to the model catalogue (`list_supported_hf_models`) and teaches `hf_cache::download_model` to fetch it with progress callbacks. Generation itself is plain mistral.rs, re-exported as `onde::mistralrs`; Onde adds no engine or wrapper type on top.
 
 ```rust
 use onde::mistralrs::{

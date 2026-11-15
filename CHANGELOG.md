@@ -1,5 +1,7 @@
 ## 1.4.0
 
+Onde now generates images as well as text. FLUX.1 Schnell joins the catalogue behind an opt-in `diffusion` feature, and the crate, README and docs now describe Onde as on-device AI for text and images.
+
 ### Image generation
 
 * New opt-in cargo feature `diffusion` (off by default). It adds FLUX.1 Schnell (`black-forest-labs/FLUX.1-schnell`, `BFL_FLUX_1_SCHNELL`) to `SUPPORTED_MODELS` and `SUPPORTED_MODEL_INFO`, and `hf_cache::download_model` builds it through mistral.rs' `DiffusionModelBuilder`, with the same progress callbacks as chat models.

@@ -1,8 +1,8 @@
 //! # Onde
 //!
-//! **On-device chat inference for cross-platform apps.**
+//! **On-device AI inference for cross-platform apps.**
 //!
-//! Run LLM chat locally — no cloud, no latency, no data leaving the device.
+//! Run LLM chat and image generation locally. No cloud, no per-call cost, no data leaving the device.
 //!
 //! Onde wraps [mistral.rs](https://github.com/EricLBuehler/mistral.rs) with a
 //! unified API for model discovery, HuggingFace Hub downloads, cache
@@ -15,8 +15,10 @@
 //! - `hf_cache` — HuggingFace Hub cache inspection, repair, and model
 //!   download with a framework-agnostic progress-callback API.
 //! - `pulse` — usage telemetry.
-//! - [`inference`] — Chat inference engine, UniFFI FFI wrapper, model metadata,
-//!   and HuggingFace token resolution.
+//! - [`inference`] — Text: the chat inference engine, UniFFI FFI wrapper, model
+//!   metadata, and HuggingFace token resolution.
+//! - Image generation — FLUX.1 Schnell behind the `diffusion` feature, run
+//!   through `onde::mistralrs` (see below).
 //!
 //! ## wasm32
 //!

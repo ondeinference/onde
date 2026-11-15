@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name             = 'onde_inference'
   s.version          = '1.0.2'
   s.summary          = 'On-device LLM inference SDK for Flutter (macOS).'
-  s.description      = 'Runs Qwen 2.5 models locally on macOS with Metal acceleration.'
+  s.description      = 'Runs open-weight models such as Qwen locally on macOS with Metal acceleration.'
   s.homepage         = 'https://ondeinference.com'
   s.license          = { :type => 'MIT', :file => '../LICENSE' }
   s.author           = { 'Onde Inference' => 'hello@ondeinference.com' }

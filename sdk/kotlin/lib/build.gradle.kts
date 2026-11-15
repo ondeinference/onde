@@ -131,7 +131,7 @@ mavenPublishing {
         name.set("Onde Inference")
         description.set(
             "On-device LLM inference for Android and JVM (macOS Apple Silicon). " +
-            "Run Qwen 2.5 models locally — no cloud, no API key, no data leaving the device."
+            "Run open-weight models such as Qwen locally, with no cloud, no API key and no data leaving the device."
         )
         url.set("https://ondeinference.com")
         inceptionYear.set("2025")
