@@ -2,14 +2,14 @@
 name = "onde"
 version = "1.4.0"
 edition = "2021"
-description = "On-device inference engine for Apple silicon."
+description = "On-device AI inference: LLM chat, tool calling and image generation, on every platform."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ondeinference/onde"
 homepage = "https://ondeinference.com"
 documentation = "https://docs.rs/onde"
 readme = "README.md"
-keywords = ["inference", "on-device", "llm", "mistral", "diffusion"]
-categories = ["artificial-intelligence", "api-bindings"]
+keywords = ["inference", "on-device", "llm", "diffusion", "image-generation"]
+categories = ["artificial-intelligence", "multimedia::images", "api-bindings"]
 
 [features]
 default = []
