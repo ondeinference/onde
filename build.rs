@@ -4,6 +4,9 @@ fn main() {
     // single source of truth; the per-OS `[target.'cfg(...)'.dependencies]`
     // tables in Cargo.toml cannot see custom cfgs and must be kept in step.
     println!("cargo:rustc-check-cfg=cfg(onde_native)");
+    // `onde_web` is the browser engine: wasm32-unknown-unknown only. Other wasm
+    // and unknown targets (wasi, emscripten, bare metal) keep the stub engine.
+    println!("cargo:rustc-check-cfg=cfg(onde_web)");
     let cfg_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if [
         "macos", "ios", "tvos", "visionos", "watchos", "windows", "linux", "android",
@@ -11,6 +14,10 @@ fn main() {
     .contains(&cfg_os.as_str())
     {
         println!("cargo:rustc-cfg=onde_native");
+    }
+    let cfg_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    if cfg_arch == "wasm32" && cfg_os == "unknown" {
+        println!("cargo:rustc-cfg=onde_web");
     }
 
     // SDK credentials

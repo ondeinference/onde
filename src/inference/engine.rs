@@ -1937,8 +1937,8 @@ impl From<ChatTurn> for HistoryEntry {
 /// reply: `(reply, reasoning)`. A reply without one comes back trimmed, with
 /// no reasoning. An unclosed block is all reasoning: the model ran out of
 /// tokens while thinking.
-#[cfg_attr(not(onde_native), allow(dead_code))]
-fn split_think(content: &str) -> (String, Option<String>) {
+#[cfg_attr(not(any(onde_native, onde_web)), allow(dead_code))]
+pub(crate) fn split_think(content: &str) -> (String, Option<String>) {
     let trimmed = content.trim_start();
     let Some(rest) = trimmed.strip_prefix("<think>") else {
         return (content.trim().to_string(), None);
@@ -2074,10 +2074,17 @@ fn truncate_for_log(s: &str, max_len: usize) -> String {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// Browser engine (wasm32-unknown-unknown)
+// ═════════════════════════════════════════════════════════════════════════════
+
+#[cfg(onde_web)]
+pub use super::web::ChatEngine;
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Unsupported-platform stub
 // ═════════════════════════════════════════════════════════════════════════════
 
-#[cfg(not(onde_native))]
+#[cfg(not(any(onde_native, onde_web)))]
 fn unsupported() -> InferenceError {
     InferenceError::Other {
         reason: "LLM inference is not supported on this platform.".into(),
@@ -2088,10 +2095,10 @@ fn unsupported() -> InferenceError {
 ///
 /// All methods return errors or empty values so that code using the engine
 /// can compile on any target without `#[cfg]` at every call site.
-#[cfg(not(onde_native))]
+#[cfg(not(any(onde_native, onde_web)))]
 pub struct ChatEngine;
 
-#[cfg(not(onde_native))]
+#[cfg(not(any(onde_native, onde_web)))]
 impl ChatEngine {
     pub fn new() -> Self {
         Self
@@ -2239,7 +2246,7 @@ impl ChatEngine {
     }
 }
 
-#[cfg(not(onde_native))]
+#[cfg(not(any(onde_native, onde_web)))]
 impl Default for ChatEngine {
     fn default() -> Self {
         Self::new()
@@ -2265,8 +2272,8 @@ const DEEPSEEK_CODER_CHAT_TEMPLATE: &str = include_str!("deepseek_coder_chat_tem
 impl GgufModelConfig {
     /// Whether the model's default chat template emits an extended reasoning
     /// block that needs a larger output budget than the general presets.
-    #[cfg_attr(not(onde_native), allow(dead_code))]
-    fn uses_extended_thinking(&self) -> bool {
+    #[cfg_attr(not(any(onde_native, onde_web)), allow(dead_code))]
+    pub(crate) fn uses_extended_thinking(&self) -> bool {
         matches!(
             self.model_id.as_str(),
             super::models::BARTOWSKI_QWEN3_0_6B_GGUF
@@ -2320,7 +2327,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_0_5B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_0_5B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_0_5B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2338,7 +2345,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_1_5B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_1_5B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_1_5B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2357,7 +2364,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_3B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_3B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_3B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2381,7 +2388,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_CODER_1_5B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_CODER_1_5B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_CODER_1_5B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2401,7 +2408,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_CODER_3B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_CODER_3B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_CODER_3B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2420,7 +2427,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN25_CODER_7B_INSTRUCT_GGUF.into(),
             files: vec![super::models::QWEN25_CODER_7B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN25_CODER_7B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2440,7 +2447,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_0_6B_GGUF.into(),
             files: vec![super::models::QWEN3_0_6B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_0_6B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2456,7 +2463,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_1_7B_GGUF.into(),
             files: vec![super::models::QWEN3_1_7B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_1_7B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2476,7 +2483,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_4B_GGUF.into(),
             files: vec![super::models::QWEN3_4B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_4B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2493,7 +2500,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_8B_GGUF.into(),
             files: vec![super::models::QWEN3_8B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_8B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2512,7 +2519,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_14B_GGUF.into(),
             files: vec![super::models::QWEN3_14B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_14B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2531,7 +2538,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_32B_GGUF.into(),
             files: vec![super::models::QWEN3_32B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_32B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2551,7 +2558,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_4B_INSTRUCT_2507_GGUF.into(),
             files: vec![super::models::QWEN3_4B_INSTRUCT_2507_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_4B_INSTRUCT_2507_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2570,7 +2577,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_4B_THINKING_2507_GGUF.into(),
             files: vec![super::models::QWEN3_4B_THINKING_2507_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_4B_THINKING_2507_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2590,7 +2597,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::BARTOWSKI_QWEN3_30B_A3B_INSTRUCT_2507_GGUF.into(),
             files: vec![super::models::QWEN3_30B_A3B_INSTRUCT_2507_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::QWEN3_30B_A3B_INSTRUCT_2507_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2609,7 +2616,7 @@ impl GgufModelConfig {
         Self {
             model_id: super::models::THEBLOKE_DEEPSEEK_CODER_6_7B_INSTRUCT_GGUF.into(),
             files: vec![super::models::DEEPSEEK_CODER_6_7B_GGUF_FILE.into()],
-            tok_model_id: if cfg!(target_os = "android") {
+            tok_model_id: if cfg!(any(target_os = "android", onde_web)) {
                 Some(super::models::DEEPSEEK_CODER_6_7B_TOK_MODEL_ID.into())
             } else {
                 None
@@ -2863,6 +2870,7 @@ mod tests {
         );
     }
 
+    #[cfg(onde_native)]
     #[test]
     fn chat_turns_become_history_entries() {
         let call = ToolCallRequest {
