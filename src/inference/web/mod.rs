@@ -582,8 +582,8 @@ impl ChatEngine {
         0
     }
 
-    /// Prompt and sampling for the next turn. Called before the busy guard so
-    /// an unloaded engine reports `NoModelLoaded`.
+    /// Prompt and sampling for the next turn. Called after the busy guard, which
+    /// itself reports `NoModelLoaded` for an unloaded engine.
     fn prepare_turn(&self, user_message: &str) -> (String, SamplingConfig) {
         let st = self.state.borrow();
         let mut messages = st.history.clone();
@@ -614,7 +614,7 @@ impl ChatEngine {
         self.commit_turn(user_message, &out.text);
         let duration = elapsed(start);
         Ok(InferenceResult {
-            text: out.text,
+            text: split_think(&out.text).0,
             duration_secs: duration.as_secs_f64(),
             duration_display: format_duration(duration),
             finish_reason: out.finish_reason,

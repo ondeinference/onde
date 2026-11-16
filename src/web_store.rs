@@ -92,6 +92,11 @@ pub async fn delete_model(config: &GgufModelConfig) -> Result<bool, InferenceErr
 }
 
 /// Read a cached file fully into memory, downloading it first if missing.
+///
+/// Peak wasm memory is roughly three times the file size: the JS `ArrayBuffer`,
+/// the `Vec` copied out of it, and the tensors candle builds from the GGUF.
+/// That is the ceiling on which presets fit in a tab, and the read repeats on
+/// every load, cached or not.
 pub(crate) async fn load_file(repo: &str, file: &str) -> Result<Vec<u8>, InferenceError> {
     let url = model_url(repo, file);
     ensure_cached(&url, &mut |_, _| {}).await.map_err(other)?;
