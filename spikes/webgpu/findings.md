@@ -18,7 +18,7 @@ below are from [run 44087888201](https://github.com/ondeinference/onde/actions/r
 | Playwright | 1.65.1 (see `package-lock.json`) |
 | model | bartowski Qwen2.5-0.5B-Instruct Q4_K_M, SHA-256 `6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653`, checked in CI |
 | wllama | 3.13.0 (llama.cpp WebGPU backend) |
-| tokenizer | Qwen/Qwen2.5-0.5B-Instruct `tokenizer.json` (unpinned `main`; the job log prints its SHA-256) |
+| tokenizer | Qwen/Qwen2.5-0.5B-Instruct `tokenizer.json` from `main`, SHA-256 `c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539`, checked in CI (the same hash in all 22 downloads of runs 44087888201 and 44142779991) |
 
 ## Fork patches and the errors that needed them
 
