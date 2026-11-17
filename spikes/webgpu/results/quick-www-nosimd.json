@@ -1,0 +1,76 @@
+{
+  "result": {
+    "runs": [
+      {
+        "prompt_tokens": 179,
+        "generated_tokens": 24,
+        "prefill_ms": 31380.29999999702,
+        "ttft_ms": 31380.29999999702,
+        "decode_ms": 5253.800000011921,
+        "decode_tps": 4.377783699407631,
+        "turn_tps": 0.6551273267254865,
+        "total_ms": 36634.10000000894,
+        "yielded": false,
+        "tokens": [
+          4498,
+          4752,
+          264,
+          3482,
+          3766,
+          429,
+          8473,
+          264,
+          4128,
+          1614,
+          11368,
+          4766,
+          279,
+          6929,
+          11,
+          279,
+          882,
+          7391,
+          389,
+          35764,
+          264,
+          3405,
+          646,
+          387
+        ],
+        "text": "When building a web application that runs a language model entirely inside the browser, the time spent on answering a question can be",
+        "first_top5": [
+          [
+            4498,
+            18.78445
+          ],
+          [
+            70151,
+            18.593775
+          ],
+          [
+            1249,
+            17.578217
+          ],
+          [
+            785,
+            17.570257
+          ],
+          [
+            95456,
+            17.33196
+          ]
+        ],
+        "warmup": false
+      }
+    ],
+    "read_ms": 194.29999999701977,
+    "seeded": false,
+    "sha256": "6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653",
+    "wasm_bytes": 4738322,
+    "wasm_init_ms": 19.299999997019768,
+    "load_ms": 702.9000000059605,
+    "wasm_memory_bytes": 1542324224,
+    "wasm_memory_bytes_after": 1542324224
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36"
+}

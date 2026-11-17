@@ -1,0 +1,40 @@
+[package]
+name = "spike-wgpu-candle"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Throwaway spike (Spike A). Not part of the onde workspace.
+# candle comes from the FerrisMind fork at bde164da with patches/*.patch applied.
+# CI checks it out next to onde, so from this crate the checkout is at
+# ../../../../ferrismind-candle (see .github/workflows/webgpu-spike.yml).
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "native-bench"
+path = "src/bin/native_bench.rs"
+
+[dependencies]
+candle-core = { path = "../../../../ferrismind-candle/candle-core", default-features = false, features = ["wgpu"] }
+candle-nn = { path = "../../../../ferrismind-candle/candle-nn", default-features = false, features = ["wgpu"] }
+candle-transformers = { path = "../../../../ferrismind-candle/candle-transformers", default-features = false, features = ["wgpu"] }
+tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

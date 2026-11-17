@@ -1,0 +1,7 @@
+{
+  "system": "You are a concise, accurate technical assistant.",
+  "user": "I am building a small web application that runs a language model entirely inside the browser, with no server involved. The model is a quantized transformer with about five hundred million parameters, stored in a single file of roughly four hundred megabytes. It is downloaded once, kept in the browser's Cache Storage, and loaded into memory inside a Web Worker so the page stays responsive. I want to understand where the time goes when the model answers a question. Please explain the difference between the prefill phase and the decode phase of autoregressive generation, say which of the two is usually limited by memory bandwidth and which by compute, and describe how a GPU changes that picture compared with a single CPU thread using SIMD. Keep the explanation practical, and finish with three concrete things I should measure.",
+  "max_new_tokens": 24,
+  "warmup_runs": 0,
+  "measured_runs": 1
+}

@@ -1,0 +1,6 @@
+node_modules/
+target/
+target-*/
+*/www/pkg/
+*/www-nosimd/pkg/
+model/
