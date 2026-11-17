@@ -26,6 +26,21 @@ for (const d of nativeDirs) for (const cfg of CFGS) {
   const r = jsonl(path.join(root, d, `cpu-${cfg}.jsonl`)).find((x) => !x.warmup);
   if (r && !ref[cfg]) ref[cfg] = r.tokens;
 }
+const refText = {};
+for (const d of nativeDirs) for (const cfg of CFGS) {
+  const r = jsonl(path.join(root, d, `cpu-${cfg}.jsonl`)).find((x) => !x.warmup);
+  if (r && !refText[cfg]) refText[cfg] = r.text;
+}
+// Harnesses that cannot expose token ids (wllama) are compared on text: the
+// length of the common prefix, in characters, out of the first 60.
+function matchText(cfg, text) {
+  const r = refText[cfg];
+  if (!r || !text) return "no ref";
+  const n = Math.min(60, r.length, text.length);
+  let i = 0;
+  while (i < n && r[i] === text[i]) i++;
+  return i === n ? `text ${n}/${n} chars` : `text ${i}/${n} chars`;
+}
 function match(cfg, tokens) {
   const r = ref[cfg];
   if (!r || !tokens) return "no ref";
@@ -58,7 +73,7 @@ for (const d of nativeDirs) {
 for (const d of dirs("cell-")) {
   const cell = json(path.join(root, d, "cell.json")) || {};
   const runner = d.includes("ubuntu") ? "ubuntu-latest" : d.includes("macos") ? "macos-26" : "?";
-  const label = `${cell.harness || d} (wasm${cell.drain > 1 ? `, drain/${cell.drain}` : ""})`;
+  const label = `${cell.harness || d} (wasm${cell.drain > 1 ? `, drain/${cell.drain}` : ""}${cell.extra ? ", " + cell.extra.replace(/^&/, "") : ""})`;
   let top = null, lastFail = null;
   for (const cfg of CFGS) {
     const r = json(path.join(root, d, `${cfg}.json`));
@@ -77,7 +92,7 @@ for (const d of dirs("cell-")) {
   rows.push([label, runner, cell.browser || "?", top ? top.cfg : "none",
     first ? num(mean(runs.map((x) => x.prefill_ms)), 0) : "–", first ? num(mean(runs.map((x) => x.ttft_ms)), 0) : "–",
     first ? num(mean(runs.map((x) => x.decode_tps)), 1) : "–", t ? num(t.result.load_ms, 0) : "–", num(peak, 2),
-    first ? match(top.cfg, first.tokens) : "–", `${status}; ${adapter}`]);
+    first ? (first.tokens ? match(top.cfg, first.tokens) : matchText(top.cfg, first.text)) : "–", `${status}; ${adapter}`]);
 }
 
 const out = [];

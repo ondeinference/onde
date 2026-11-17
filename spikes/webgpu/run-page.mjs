@@ -51,7 +51,7 @@ try {
       return { available: true, vendor: i.vendor, architecture: i.architecture, device: i.device, description: i.description,
         isFallbackAdapter: a.isFallbackAdapter, maxBufferSize: a.limits.maxBufferSize };
     }).catch((e) => ({ available: false, reason: "probe threw: " + e.message }));
-    await page.evaluate(() => window.__start && window.__start());
+    await page.evaluate(() => { window.__start && window.__start(); }); // not awaited: wllama's start is long-running
     await page.waitForFunction(() => window.__result || window.__error, null, { timeout, polling: 1000 });
     res = { ...res, ...(await page.evaluate(() => ({ result: window.__result, error: window.__error, partial: window.__partial }))) };
     res.userAgent = await page.evaluate(() => navigator.userAgent);

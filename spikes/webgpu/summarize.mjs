@@ -13,4 +13,4 @@ console.log("| yield | n | prompt | prefill ms | TTFT ms | decode tok/s | turn t
 for (const [y, g] of Object.entries(groups))
   console.log(`| ${y} | ${g.length} | ${g[0].prompt_tokens} | ${stat(g.map((x) => x.prefill_ms))} | ${stat(g.map((x) => x.ttft_ms))} | ${stat(g.map((x) => x.decode_tps))} | ${stat(g.map((x) => x.turn_tps))} |`);
 const first = res.runs.find((x) => !x.warmup);
-console.log("first 20 tokens:", JSON.stringify(first.tokens.slice(0, 20)));
+console.log(first.tokens ? "first 20 tokens: " + JSON.stringify(first.tokens.slice(0, 20)) : "text: " + JSON.stringify((first.text || "").slice(0, 120)));
