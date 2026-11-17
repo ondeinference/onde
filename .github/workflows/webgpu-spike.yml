@@ -235,9 +235,10 @@ jobs:
           pattern: cell-*
           path: artifacts
       - uses: actions/download-artifact@v8
+        continue-on-error: true
         with:
-          pattern: native-*
-          path: artifacts
+          name: native-macos-26
+          path: artifacts/native-macos-26
       - name: Build the table
         run: |
           node spikes/webgpu/report.mjs artifacts > summary.md
