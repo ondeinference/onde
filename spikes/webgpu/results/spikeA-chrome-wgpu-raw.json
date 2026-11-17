@@ -1,0 +1,4 @@
+{
+  "error": "wgpu batch failed validation: wgpu uncaptured error: Error while parsing WGSL: :32:24 error: value -340282349999999991754788743781432688640.0 cannot be represented as 'f32'\nconst FLOAT_MIN: f32 = -3.4028235e38;\n                       ^^^^^^^^^^^^^\n\n\n - While calling [Device \"candle-wgpu\"].CreateShaderModule([ShaderModuleDescriptor \"\"candle-wgpu-reduce-strided\"\"]).\n",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36"
+}

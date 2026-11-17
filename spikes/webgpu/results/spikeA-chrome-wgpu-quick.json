@@ -1,0 +1,123 @@
+{
+  "result": {
+    "runs": [
+      {
+        "prompt_tokens": 179,
+        "generated_tokens": 24,
+        "prefill_ms": 442.79999999993015,
+        "ttft_ms": 442.79999999993015,
+        "decode_ms": 2999.0999999999767,
+        "decode_tps": 7.668967356873788,
+        "turn_tps": 6.972892878933337,
+        "total_ms": 3441.899999999907,
+        "yielded": false,
+        "tokens": [
+          4498,
+          4752,
+          264,
+          3482,
+          3766,
+          429,
+          8473,
+          264,
+          4128,
+          1614,
+          11368,
+          4766,
+          279,
+          6929,
+          11,
+          279,
+          882,
+          7391,
+          389,
+          3078,
+          460,
+          46719,
+          9471,
+          646
+        ],
+        "text": "When building a web application that runs a language model entirely inside the browser, the time spent on autoregressive generation can",
+        "first_top5": [
+          [
+            4498,
+            18.817415
+          ],
+          [
+            70151,
+            18.803116
+          ],
+          [
+            1249,
+            17.783482
+          ],
+          [
+            785,
+            17.666052
+          ],
+          [
+            14374,
+            17.451746
+          ]
+        ],
+        "warmup": false
+      }
+    ],
+    "gpu": {
+      "available": true,
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "0x0000",
+      "description": "Apple M4",
+      "features": [
+        "depth32float-stencil8",
+        "chromium-experimental-subgroup-matrix",
+        "rg11b10ufloat-renderable",
+        "bgra8unorm-storage",
+        "texture-formats-tier1",
+        "texture-compression-bc",
+        "dual-source-blending",
+        "core-features-and-limits",
+        "float32-filterable",
+        "indirect-first-instance",
+        "texture-compression-astc-sliced-3d",
+        "float32-blendable",
+        "atomic-vec2u-min-max",
+        "subgroup-size-control",
+        "texture-compression-unaligned",
+        "texture-compression-astc",
+        "texture-compression-etc2",
+        "depth-clip-control",
+        "texture-compression-bc-sliced-3d",
+        "texture-formats-tier2",
+        "clip-distances",
+        "timestamp-query",
+        "shader-f16",
+        "primitive-index",
+        "texture-component-swizzle",
+        "subgroups"
+      ],
+      "maxStorageBufferBindingSize": 4294967292,
+      "maxBufferSize": 4294967292,
+      "maxComputeWorkgroupStorageSize": 32768,
+      "maxComputeInvocationsPerWorkgroup": 1024
+    },
+    "read_ms": 111.09999999997672,
+    "seeded": false,
+    "sha256": "6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653",
+    "wasm_bytes": 6165753,
+    "wasm_init_ms": 17.599999999976717,
+    "load_ms": 420.9000000000233,
+    "wasm_memory_bytes": 1030488064,
+    "wasm_memory_bytes_after": 1030488064
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "guard": {
+    "peak_rss_gb": 1.783,
+    "peak_process": "renderer",
+    "killed": null,
+    "seconds": 5.5,
+    "max_rss_gb": 4,
+    "max_seconds": 120
+  }
+}
