@@ -22,4 +22,12 @@ if [ "$got" != "$want" ]; then
   exit 1
 fi
 echo "model.gguf sha256 ok ($got)"
-echo "tokenizer.json sha256 $(shasum -a 256 "$dir/tokenizer.json" | cut -d' ' -f1)"
+
+want_tok=c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539
+got_tok=$(shasum -a 256 "$dir/tokenizer.json" | cut -d' ' -f1)
+if [ "$got_tok" != "$want_tok" ]; then
+  echo "tokenizer sha256 mismatch: got $got_tok, want $want_tok" >&2
+  rm -f "$dir/tokenizer.json"
+  exit 1
+fi
+echo "tokenizer.json sha256 ok ($got_tok)"
