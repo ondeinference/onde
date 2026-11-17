@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const modelDir = path.resolve(process.env.MODEL_DIR || path.join(root, "model"));
 const port = Number(process.argv[2] || 8123);
-const isolated = process.argv.includes("--isolated");
+const isolated = process.argv.includes("--isolated") || process.env.ISOLATED === "1";
 const types = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript",
   ".wasm": "application/wasm", ".json": "application/json", ".gguf": "application/octet-stream" };
 

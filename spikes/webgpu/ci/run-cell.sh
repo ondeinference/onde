@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # One browser cell: serve the harness and climb bench-tiny -> bench-quick ->
 # bench, stopping at the first rung that fails (error, guard kill, timeout).
-#   run-cell.sh <harness> <chrome|webkit> <out-dir> [drain-every]
+#   run-cell.sh <harness> <chrome|webkit> <out-dir> [drain-every] [extra-query]
 # Expects MODEL_DIR (model.gguf + tokenizer.json) and the built www/pkg.
 set -uo pipefail
 harness="$1"; browser="$2"; here="$(cd "$(dirname "$0")/.." && pwd)"
 drain="${4:-1}"
+extra="${5:-}"
+[ "$harness" = wllama ] && export ISOLATED=1  # multi-thread wasm needs cross-origin isolation
 mkdir -p "$3"
 out="$(cd "$3" && pwd)"
 cd "$here"
@@ -24,7 +26,7 @@ for cfg in bench-tiny bench-quick bench; do
   # Fresh Chrome profile per rung so Cache Storage seeding is exercised each time.
   rm -rf "$RUNNER_TEMP/profile-chrome"
   if MAX_SECONDS="$(cap "$cfg")" PROFILE_DIR="$RUNNER_TEMP/profile-chrome" \
-     node run-page.mjs "/$harness/www/index.html?cfg=$cfg&drain=$drain" "$browser" --out "$out/$cfg.json" 2> "$out/$cfg.log"; then
+     node run-page.mjs "/$harness/www/index.html?cfg=$cfg&drain=$drain$extra" "$browser" --out "$out/$cfg.json" 2> "$out/$cfg.log"; then
     reached=$cfg
     echo "$cfg passed"
   else
@@ -34,5 +36,5 @@ for cfg in bench-tiny bench-quick bench; do
   fi
   echo "::endgroup::"
 done
-echo "{\"harness\":\"$harness\",\"browser\":\"$browser\",\"runner\":\"${RUNNER_OS:-?}\",\"drain\":$drain,\"reached\":\"$reached\"}" > "$out/cell.json"
+echo "{\"harness\":\"$harness\",\"browser\":\"$browser\",\"runner\":\"${RUNNER_OS:-?}\",\"drain\":$drain,\"extra\":\"$extra\",\"reached\":\"$reached\"}" > "$out/cell.json"
 [ "$reached" = bench ]
