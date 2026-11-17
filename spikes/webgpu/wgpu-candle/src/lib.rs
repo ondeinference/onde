@@ -13,7 +13,8 @@ use std::io::Cursor;
 use tokenizers::Tokenizer;
 
 pub const PREFILL_CHUNK: usize = 64;
-/// Drain the GPU queue every N decode tokens (spike plan: start at 1).
+/// Default: drain the GPU queue after every decode token. CI varies this
+/// (1, 8, 32) to see how much decode speed the drain costs.
 pub const DECODE_DRAIN_EVERY: usize = 1;
 
 /// Wait until all submitted GPU work finished and let the fork recycle its
@@ -87,6 +88,7 @@ pub async fn run<F, Fut>(
     max_new: usize,
     now: &dyn Fn() -> f64,
     do_yield: bool,
+    drain_every: usize,
     yield_now: F,
 ) -> Result<RunResult, String>
 where
@@ -155,7 +157,7 @@ where
             .map_err(e)?;
         logits = model.forward(&input, pos).map_err(e)?;
         pos += 1;
-        if generated.len() % DECODE_DRAIN_EVERY == 0 {
+        if generated.len() % drain_every.max(1) == 0 {
             drain(device).await?;
         }
         row = logits.squeeze(0).map_err(e)?;
@@ -248,6 +250,7 @@ mod web {
             prompt: String,
             max_new: usize,
             do_yield: bool,
+            drain_every: usize,
         ) -> Result<String, JsValue> {
             let r = super::run(
                 &mut self.model,
@@ -257,6 +260,7 @@ mod web {
                 max_new,
                 &perf_now,
                 do_yield,
+                drain_every,
                 yield_to_event_loop,
             )
             .await

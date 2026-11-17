@@ -160,22 +160,28 @@ jobs:
           if-no-files-found: warn
 
   browser:
-    name: ${{ matrix.harness }} / ${{ matrix.browser }} / ${{ matrix.os }}
+    name: ${{ matrix.harness }} / ${{ matrix.browser }} / ${{ matrix.os }} / drain ${{ matrix.drain }}
     needs: build
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # Rung caps are 4 + 7 + 15 min, plus setup; 20 cut off a cell mid-bench.
+    timeout-minutes: 35
     # One failing cell must not hide the others.
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-26, harness: cpu-baseline, browser: chrome, chrome_args: "" }
-          - { os: macos-26, harness: cpu-baseline, browser: webkit, chrome_args: "" }
-          - { os: macos-26, harness: wgpu-candle, browser: chrome, chrome_args: "" }
-          - { os: macos-26, harness: wgpu-candle, browser: webkit, chrome_args: "" }
-          - { os: ubuntu-latest, harness: cpu-baseline, browser: chrome, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
-          - { os: ubuntu-latest, harness: wgpu-candle, browser: chrome, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          - { os: macos-26, harness: cpu-baseline, browser: chrome, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: cpu-baseline, browser: webkit, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 1, chrome_args: "" }
+          - { os: ubuntu-latest, harness: cpu-baseline, browser: chrome, drain: 1, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          - { os: ubuntu-latest, harness: wgpu-candle, browser: chrome, drain: 1, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          # Decode drain cadence for the GPU harness: how much speed does draining every token cost?
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 8, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 32, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 8, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 32, chrome_args: "" }
     steps:
       - uses: actions/checkout@v6
         with:
@@ -208,7 +214,7 @@ jobs:
         env:
           MODEL_DIR: ${{ github.workspace }}/model
           CHROME_ARGS: ${{ matrix.chrome_args }}
-        run: onde/spikes/webgpu/ci/run-cell.sh ${{ matrix.harness }} ${{ matrix.browser }} cell-out
+        run: onde/spikes/webgpu/ci/run-cell.sh ${{ matrix.harness }} ${{ matrix.browser }} cell-out ${{ matrix.drain }}
       - name: Record the cell
         if: always()
         run: |
@@ -218,7 +224,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: cell-${{ matrix.os }}-${{ matrix.harness }}-${{ matrix.browser }}
+          name: cell-${{ matrix.os }}-${{ matrix.harness }}-${{ matrix.browser }}-drain${{ matrix.drain }}
           path: cell-out
           if-no-files-found: warn
 
