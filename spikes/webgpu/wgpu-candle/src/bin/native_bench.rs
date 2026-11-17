@@ -24,11 +24,12 @@ fn main() {
     let max_new = cfg["max_new_tokens"].as_u64().unwrap() as usize;
     let warm = cfg["warmup_runs"].as_u64().unwrap();
     let runs = cfg["measured_runs"].as_u64().unwrap();
+    let drain_every: usize = std::env::var("DRAIN_EVERY").ok().and_then(|v| v.parse().ok()).unwrap_or(DECODE_DRAIN_EVERY);
     let t0 = std::time::Instant::now();
     let now = move || t0.elapsed().as_secs_f64() * 1000.0;
     for i in 0..(warm + runs) {
         let r = pollster::block_on(run(
-            &mut model, &tok, &device, &prompt, max_new, &now, false, || async {},
+            &mut model, &tok, &device, &prompt, max_new, &now, false, drain_every, || async {},
         ))
         .expect("run");
         let mut v = serde_json::to_value(&r).unwrap();

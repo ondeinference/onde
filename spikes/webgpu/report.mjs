@@ -58,7 +58,7 @@ for (const d of nativeDirs) {
 for (const d of dirs("cell-")) {
   const cell = json(path.join(root, d, "cell.json")) || {};
   const runner = d.includes("ubuntu") ? "ubuntu-latest" : d.includes("macos") ? "macos-26" : "?";
-  const label = `${cell.harness || d} (wasm)`;
+  const label = `${cell.harness || d} (wasm${cell.drain > 1 ? `, drain/${cell.drain}` : ""})`;
   let top = null, lastFail = null;
   for (const cfg of CFGS) {
     const r = json(path.join(root, d, `${cfg}.json`));
@@ -86,6 +86,12 @@ out.push("|---|---|---|---|---|---|---|---|---|---|---|");
 for (const r of rows) out.push("| " + r.join(" | ") + " |");
 out.push("");
 out.push("Hosted runners: macos-26 is an Apple Silicon VM with a paravirtualized GPU, ubuntu-latest has no GPU (WebGPU is software SwiftShader). Neither measures a real Mac's GPU; compare paths within a runner, not against local numbers.");
+out.push("");
+out.push("GPU events (device lost, uncaptured errors) per cell:");
+for (const { d, cfg, r } of detail) {
+  const ev = r.result?.gpu_events || r.partial?.gpu_events || [];
+  if (ev.length) out.push(`- ${d} / ${cfg}: \`${JSON.stringify(ev).slice(0, 500)}\``);
+}
 out.push("");
 for (const { d, cfg, r } of detail) {
   const f = path.join(root, d, `${cfg}.json`);
