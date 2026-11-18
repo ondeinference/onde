@@ -1,3 +1,27 @@
+## 1.5.0
+
+Onde runs in the browser. On `wasm32-unknown-unknown`, `ChatEngine` is now a real engine instead of a stub, so a web app can run a GGUF model on the CPU with no native build and no server round-trip.
+
+### Browser engine
+
+* On `wasm32-unknown-unknown`, `ChatEngine` runs GGUF Qwen2.5 and Qwen3 on the CPU through candle, single-threaded, with no COOP/COEP headers needed. Other wasm targets (wasi, emscripten) and unknown targets keep the stub.
+* The tokenizer is loaded from `tok_model_id`, and the qwen25 and qwen3 presets set it on web as they already do on Android.
+* Generation builds a ChatML prompt, samples from `SamplingConfig`, and yields to the event loop between tokens, so a cancel or a dropped stream is seen promptly. `send_message` returns the reply with Qwen3's `<think>` block stripped.
+* Tool calling reports `Unsupported`. The public signatures match the native engine, so `ed-agent` and the SDKs compile unchanged.
+
+### Model store
+
+* New `web_store` module. `download_model` fetches from Hugging Face with a progress callback, and `is_cached`, `delete_model` and `model_url` round it out. Files live in a Cache Storage bucket (`onde-models-v1`) that works from a window or from a worker.
+
+### Build
+
+* `build.rs` gains the `onde_web` cfg that gates the engine. Build web hosts with `+simd128`, and run the engine in a Web Worker.
+* `tests/web_smoke.rs` downloads Qwen 2.5 0.5B in headless Chrome and checks a streamed reply. It runs only when `ONDE_WEB_SMOKE` is set, so CI compiles it without running it.
+
+### Packaging
+
+* No native API or behaviour changes. The published `onde` crate surface is identical to `1.4.0` on every native target, and the new dependencies are wasm-only.
+
 ## 1.4.0
 
 Onde now generates images as well as text. FLUX.1 Schnell joins the catalogue behind an opt-in `diffusion` feature, and the crate, README and docs now describe Onde as on-device AI for text and images.

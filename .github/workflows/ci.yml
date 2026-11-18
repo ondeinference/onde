@@ -408,8 +408,10 @@ jobs:
           key: linux-x86_64
       - run: cargo check --target x86_64-unknown-linux-gnu
 
-  # Compiles against the stub engine so its signatures cannot drift from the
-  # real ChatEngine (ed-agent builds against both).
+  # Builds the browser engine (src/inference/web) for wasm32-unknown-unknown, so
+  # its signatures cannot drift from the native ChatEngine (ed-agent builds
+  # against both). The headless-browser smoke test in tests/web_smoke.rs
+  # downloads a 380 MB model, so CI only compiles it; run it locally.
   check-wasm32:
     name: Check (wasm32)
     needs: toolchain
@@ -434,6 +436,7 @@ jobs:
       - run: cargo check --target wasm32-unknown-unknown --lib
       - run: cargo check --target wasm32-unknown-unknown --lib --features diffusion
       - run: cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
+      - run: cargo clippy --target wasm32-unknown-unknown --test web_smoke -- -D warnings
 
   check-android:
     name: Check (Android arm64)
