@@ -22,12 +22,23 @@
 //!
 //! ## wasm32
 //!
-//! On `wasm32` the crate compiles against the stub [`inference::ChatEngine`]
-//! (every call returns an "unsupported" error), without UniFFI, `hf_cache` or
-//! `pulse`. The UniFFI FFI wrapper is native-only because no SDK reaches wasm
-//! through UniFFI. `hf_cache` and `pulse` depend on the filesystem, OS threads
-//! and `SystemTime`; browser equivalents (an OPFS model store and a
-//! `spawn_local` Pulse) arrive with the web engine.
+//! On `wasm32-unknown-unknown` the crate has a real browser engine:
+//! [`inference::ChatEngine`] runs GGUF Qwen2.5 and Qwen3 models on the CPU
+//! through candle, single-threaded, so it needs no COOP/COEP headers. Build the
+//! host with `RUSTFLAGS="-C target-feature=+simd128"` for speed, and run the
+//! engine in a Web Worker, because a forward pass blocks its thread. Tool
+//! calling is not available there, and WebGPU is not used yet.
+//!
+//! The `web_store` module downloads model files from Hugging Face and keeps
+//! them in the Cache Storage API (bucket `onde-models-v1`), which works from
+//! a window and from a worker alike. Call `web_store::download_model` first to
+//! show progress; `ChatEngine::load_gguf_model` then reads from the cache.
+//!
+//! Other wasm and unknown targets (wasi, emscripten) compile against a stub
+//! `ChatEngine` whose calls all return an "unsupported" error. On every wasm32
+//! target there is no UniFFI, `hf_cache` or `pulse`: the FFI wrapper is
+//! native-only, and the other two depend on the filesystem, OS threads and
+//! `SystemTime`.
 //!
 //! ## Image generation (feature `diffusion`)
 //!
@@ -67,6 +78,8 @@ pub mod hf_cache;
 pub mod inference;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod pulse;
+#[cfg(onde_web)]
+pub mod web_store;
 
 #[cfg_attr(not(onde_native), allow(dead_code))]
 static PANIC_HOOK_ONCE: std::sync::Once = std::sync::Once::new();

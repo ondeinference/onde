@@ -60,8 +60,13 @@ pub mod engine;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;
 pub mod models;
+#[cfg(any(onde_web, test))]
+#[cfg_attr(not(onde_web), allow(dead_code))]
+pub(crate) mod text;
 pub mod token;
 pub mod types;
+#[cfg(onde_web)]
+mod web;
 
 // Re-export the most commonly used items at the `inference::` level for
 // ergonomic imports like `use onde::inference::{ChatEngine, ChatMessage, ...}`.
