@@ -1,3 +1,7 @@
+## 1.5.0
+
+- No changes to this SDK. The release adds the Rust crate's browser engine for wasm32, which these bindings don't use.
+
 ## 1.4.0
 
 - No changes to this SDK. The release carries the Rust crate's new opt-in `diffusion` feature, which these bindings do not enable.
