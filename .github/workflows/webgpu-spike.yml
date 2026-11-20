@@ -1,0 +1,266 @@
+name: WebGPU spike
+
+# Throwaway experiment (spikes/webgpu): can onde's browser engine use the GPU
+# through WebGPU? Everything builds and runs on GitHub-hosted runners only
+# (macos-26, ubuntu-latest). Never add self-hosted labels here.
+#
+# macos-26 is an Apple Silicon VM with a paravirtualized GPU, ubuntu-latest has
+# no GPU (WebGPU falls back to software SwiftShader). Numbers compare paths
+# against each other; they do not measure a real Mac's GPU.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [spike/webgpu]
+    paths:
+      - "spikes/webgpu/**"
+      - ".github/workflows/webgpu-spike.yml"
+
+concurrency:
+  group: webgpu-spike-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  FERRISMIND_CANDLE_REV: bde164da9269619aeb16d5b18f8267e25d188fa4
+  WASM_BINDGEN_VERSION: 0.2.130
+  WLLAMA_VERSION: 3.13.0
+  MODEL_CACHE_KEY: model-qwen2.5-0.5b-q4km-6eb923e7-v1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build wasm harnesses
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: onde
+      - uses: actions/checkout@v6
+        with:
+          repository: FerrisMind/candle
+          ref: ${{ env.FERRISMIND_CANDLE_REV }}
+          path: ferrismind-candle
+      - name: Apply fork patches
+        working-directory: ferrismind-candle
+        run: |
+          for p in ../onde/spikes/webgpu/patches/*.patch; do
+            echo "applying $p"
+            git apply --verbose "$p"
+          done
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            onde/spikes/webgpu/cpu-baseline
+            onde/spikes/webgpu/wgpu-candle
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-${{ env.WASM_BINDGEN_VERSION }}-${{ runner.os }}
+      - name: Install wasm-bindgen-cli
+        run: command -v wasm-bindgen || cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+      - name: Build cpu-baseline (wasm, simd128)
+        working-directory: onde/spikes/webgpu/cpu-baseline
+        env:
+          RUSTFLAGS: -C target-feature=+simd128
+        run: |
+          cargo build --release --lib --target wasm32-unknown-unknown 2>&1 | tee "$GITHUB_WORKSPACE/build-cpu-baseline.log"
+          wasm-bindgen --target web --out-dir www/pkg target/wasm32-unknown-unknown/release/spike_cpu_baseline.wasm
+      - name: Build wgpu-candle (wasm, simd128)
+        working-directory: onde/spikes/webgpu/wgpu-candle
+        env:
+          RUSTFLAGS: -C target-feature=+simd128 --cfg=web_sys_unstable_apis
+        run: |
+          cargo build --release --lib --target wasm32-unknown-unknown 2>&1 | tee "$GITHUB_WORKSPACE/build-wgpu-candle.log"
+          wasm-bindgen --target web --out-dir www/pkg target/wasm32-unknown-unknown/release/spike_wgpu_candle.wasm
+      - name: Stage packages
+        run: |
+          for h in cpu-baseline wgpu-candle; do
+            mkdir -p "stage/$h/www"
+            cp -r "onde/spikes/webgpu/$h/www/pkg" "stage/$h/www/pkg"
+          done
+          ls -lR stage | head -40
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wasm-pkg
+          path: stage
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: build-logs
+          path: build-*.log
+          if-no-files-found: ignore
+
+  native:
+    name: Native benches (macos-26)
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: onde
+      - uses: actions/checkout@v6
+        with:
+          repository: FerrisMind/candle
+          ref: ${{ env.FERRISMIND_CANDLE_REV }}
+          path: ferrismind-candle
+      - name: Apply fork patches
+        working-directory: ferrismind-candle
+        run: |
+          for p in ../onde/spikes/webgpu/patches/*.patch; do git apply --verbose "$p"; done
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/cache@v4
+        with:
+          path: model
+          key: ${{ env.MODEL_CACHE_KEY }}
+      - name: Fetch model
+        run: onde/spikes/webgpu/ci/fetch-model.sh model
+      - name: Metal toolchain (Xcode 26 ships it as a separate component)
+        continue-on-error: true
+        run: xcodebuild -downloadComponent MetalToolchain
+      - name: Build candle CPU
+        working-directory: onde/spikes/webgpu/cpu-baseline
+        env:
+          CARGO_TARGET_DIR: target-native-cpu
+        run: cargo build --release --bin native-bench
+      - name: Build candle Metal
+        continue-on-error: true
+        working-directory: onde/spikes/webgpu/cpu-baseline
+        env:
+          CARGO_TARGET_DIR: target-native-metal
+        run: cargo build --release --bin native-bench --features metal
+      - name: Build FerrisMind wgpu (Metal backend)
+        continue-on-error: true
+        working-directory: onde/spikes/webgpu/wgpu-candle
+        env:
+          CARGO_TARGET_DIR: target-native
+        run: cargo build --release --bin native-bench
+      - name: Run
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+        run: onde/spikes/webgpu/ci/native.sh native-out
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-macos-26
+          path: native-out
+          if-no-files-found: warn
+
+  browser:
+    name: ${{ matrix.harness }} / ${{ matrix.browser }} / ${{ matrix.os }} / drain ${{ matrix.drain }}${{ matrix.tag }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    # Rung caps are 4 + 7 + 15 min, plus setup; 20 cut off a cell mid-bench.
+    timeout-minutes: 35
+    # One failing cell must not hide the others.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-26, harness: cpu-baseline, browser: chrome, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: cpu-baseline, browser: webkit, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 1, chrome_args: "" }
+          - { os: ubuntu-latest, harness: cpu-baseline, browser: chrome, drain: 1, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          - { os: ubuntu-latest, harness: wgpu-candle, browser: chrome, drain: 1, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          # Decode drain cadence for the GPU harness: how much speed does draining every token cost?
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 8, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: chrome, drain: 32, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 8, chrome_args: "" }
+          - { os: macos-26, harness: wgpu-candle, browser: webkit, drain: 32, chrome_args: "" }
+          # Spike B: wllama (llama.cpp WebGPU). Default offloads all layers; ngl=0 is its CPU path.
+          - { os: macos-26, harness: wllama, browser: chrome, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wllama, browser: webkit, drain: 1, chrome_args: "" }
+          - { os: macos-26, harness: wllama, browser: chrome, drain: 1, extra: "&ngl=0", tag: "-ngl0", chrome_args: "" }
+          - { os: ubuntu-latest, harness: wllama, browser: chrome, drain: 1, chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+          - { os: ubuntu-latest, harness: wllama, browser: chrome, drain: 1, extra: "&ngl=0", tag: "-ngl0", chrome_args: "--enable-unsafe-swiftshader --use-angle=swiftshader" }
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: onde
+      - uses: actions/download-artifact@v8
+        with:
+          name: wasm-pkg
+          path: onde/spikes/webgpu
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        working-directory: onde/spikes/webgpu
+        run: |
+          npm ci
+          if [ "${{ matrix.harness }}" = wllama ]; then
+            # Pinned; its wasm is fetched from jsDelivr at the same version (not in the npm package).
+            npm install --no-save --no-package-lock @wllama/wllama@$WLLAMA_VERSION
+          fi
+          if [ "${{ matrix.browser }}" = webkit ]; then
+            npx playwright install --with-deps webkit
+          elif [ "$RUNNER_OS" = Linux ]; then
+            npx playwright install --with-deps chrome
+          elif [ ! -d "/Applications/Google Chrome.app" ]; then
+            npx playwright install chrome
+          fi
+      - uses: actions/cache@v4
+        with:
+          path: model
+          key: ${{ env.MODEL_CACHE_KEY }}
+      - name: Fetch model
+        run: onde/spikes/webgpu/ci/fetch-model.sh model
+      - name: Run bench-tiny, then bench-quick, then bench
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+          CHROME_ARGS: ${{ matrix.chrome_args }}
+        run: onde/spikes/webgpu/ci/run-cell.sh ${{ matrix.harness }} ${{ matrix.browser }} cell-out ${{ matrix.drain }} "${{ matrix.extra }}"
+      - name: Record the cell
+        if: always()
+        run: |
+          # run-cell.sh records the highest rung reached; make sure the artifact has a name to hang on.
+          mkdir -p cell-out
+          [ -f cell-out/cell.json ] || echo '{"harness":"${{ matrix.harness }}","browser":"${{ matrix.browser }}","reached":"none"}' > cell-out/cell.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cell-${{ matrix.os }}-${{ matrix.harness }}-${{ matrix.browser }}-drain${{ matrix.drain }}${{ matrix.tag }}
+          path: cell-out
+          if-no-files-found: warn
+
+  summary:
+    name: Summary
+    needs: [native, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cell-*
+          path: artifacts
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: native-macos-26
+          path: artifacts/native-macos-26
+      - name: Build the table
+        run: |
+          node spikes/webgpu/report.mjs artifacts > summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: summary
+          path: summary.md

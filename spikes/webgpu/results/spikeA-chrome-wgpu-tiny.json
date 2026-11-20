@@ -1,0 +1,107 @@
+{
+  "result": {
+    "runs": [
+      {
+        "prompt_tokens": 30,
+        "generated_tokens": 8,
+        "prefill_ms": 118.59999999997672,
+        "ttft_ms": 118.59999999997672,
+        "decode_ms": 300.4000000000233,
+        "decode_tps": 23.302263648466905,
+        "turn_tps": 19.093078758949883,
+        "total_ms": 419,
+        "yielded": false,
+        "tokens": [
+          3966,
+          315,
+          279,
+          32875,
+          304,
+          279,
+          12941,
+          1849
+        ],
+        "text": "One of the planets in the solar system",
+        "first_top5": [
+          [
+            3966,
+            20.850082
+          ],
+          [
+            785,
+            20.581383
+          ],
+          [
+            33610,
+            16.525309
+          ],
+          [
+            26716,
+            16.402382
+          ],
+          [
+            43824,
+            16.102125
+          ]
+        ],
+        "warmup": false
+      }
+    ],
+    "gpu": {
+      "available": true,
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "0x0000",
+      "description": "Apple M4",
+      "features": [
+        "depth32float-stencil8",
+        "chromium-experimental-subgroup-matrix",
+        "rg11b10ufloat-renderable",
+        "bgra8unorm-storage",
+        "texture-formats-tier1",
+        "texture-compression-bc",
+        "dual-source-blending",
+        "core-features-and-limits",
+        "float32-filterable",
+        "indirect-first-instance",
+        "texture-compression-astc-sliced-3d",
+        "float32-blendable",
+        "atomic-vec2u-min-max",
+        "subgroup-size-control",
+        "texture-compression-unaligned",
+        "texture-compression-astc",
+        "texture-compression-etc2",
+        "depth-clip-control",
+        "texture-compression-bc-sliced-3d",
+        "texture-formats-tier2",
+        "clip-distances",
+        "timestamp-query",
+        "shader-f16",
+        "primitive-index",
+        "texture-component-swizzle",
+        "subgroups"
+      ],
+      "maxStorageBufferBindingSize": 4294967292,
+      "maxBufferSize": 4294967292,
+      "maxComputeWorkgroupStorageSize": 32768,
+      "maxComputeInvocationsPerWorkgroup": 1024
+    },
+    "read_ms": 185.19999999995343,
+    "seeded": false,
+    "sha256": "6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653",
+    "wasm_bytes": 6165753,
+    "wasm_init_ms": 19.199999999953434,
+    "load_ms": 418.0999999999767,
+    "wasm_memory_bytes": 1030488064,
+    "wasm_memory_bytes_after": 1030488064
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "guard": {
+    "peak_rss_gb": 1.768,
+    "peak_process": "renderer",
+    "killed": null,
+    "seconds": 2.5,
+    "max_rss_gb": 4,
+    "max_seconds": 120
+  }
+}

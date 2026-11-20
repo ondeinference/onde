@@ -1,0 +1,6 @@
+{
+  "name": "onde-webgpu-spike",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "playwright": "^1.57.0" }
+}

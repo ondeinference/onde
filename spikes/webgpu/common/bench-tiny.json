@@ -1,0 +1,7 @@
+{
+  "system": "You are a concise, accurate technical assistant.",
+  "user": "Name one planet in the solar system.",
+  "max_new_tokens": 8,
+  "warmup_runs": 0,
+  "measured_runs": 1
+}
