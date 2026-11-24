@@ -1,3 +1,7 @@
+## 1.5.1
+
+- No changes to this SDK. The release adds `@ondeinference/web`, a new npm package for running Onde in the browser.
+
 ## 1.5.0
 
 - No changes to this SDK. The release adds the Rust crate's browser engine for wasm32, which these bindings don't use.
