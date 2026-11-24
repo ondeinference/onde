@@ -1,0 +1,190 @@
+name: SDK web
+
+# Builds @ondeinference/web (sdk/web), packs it, installs the tarball into a
+# Vite app and runs it in headless Chrome on GitHub-hosted runners. Never add
+# self-hosted labels here: the WebGPU path once exhausted a laptop's memory,
+# and browser GPU runs stay on hosted VMs.
+#
+# The CPU smoke test gates. The WebGPU one is informational
+# (continue-on-error) until wllama's GPU output is confirmed on real hardware:
+# macos-26 has a paravirtualized GPU, so its text and speed are not a verdict.
+
+on:
+  push:
+    branches: [main, development]
+    paths:
+      - "sdk/web/**"
+      - ".github/workflows/sdk-web.yml"
+  pull_request:
+    paths:
+      - "sdk/web/**"
+      - ".github/workflows/sdk-web.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: sdk-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_PACK_VERSION: 0.14.0
+  WLLAMA_VERSION: 3.13.0
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: echo "channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: sdk/web/rust
+          key: sdk-web
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@${{ env.WASM_PACK_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rust lint
+        working-directory: sdk/web/rust
+        env:
+          RUSTFLAGS: -C target-feature=+simd128
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
+      - name: Build wasm
+        working-directory: sdk/web
+        run: ./scripts/build-wasm.sh --locked
+      - name: Build TypeScript
+        working-directory: sdk/web
+        run: |
+          npm ci
+          npm run build
+      - name: Pack
+        working-directory: sdk/web
+        run: |
+          npm pack
+          tar tzf ondeinference-web-*.tgz | sort
+          if tar tzf ondeinference-web-*.tgz | grep -E '^package/(rust|test|src|node_modules)/'; then
+            echo "::error::the tarball carries files it should not"; exit 1
+          fi
+      # The main entry must bundle without the optional @wllama/wllama peer.
+      - name: Bundle the CPU entry without wllama
+        run: |
+          app="$RUNNER_TEMP/cpu-only"
+          mkdir -p "$app"
+          cd "$app"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund vite@8.3.8 "$GITHUB_WORKSPACE"/sdk/web/ondeinference-web-*.tgz
+          printf '<script type="module">import { createOnde } from "@ondeinference/web"; window.onde = createOnde;</script>\n' > index.html
+          npx vite build
+          ls dist/assets
+          compgen -G 'dist/assets/*.wasm' >/dev/null || { echo "::error::Vite did not emit the wasm"; exit 1; }
+          compgen -G 'dist/assets/worker-*.js' >/dev/null || { echo "::error::Vite did not emit the worker"; exit 1; }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdk-web-tarball
+          path: sdk/web/ondeinference-web-*.tgz
+          if-no-files-found: error
+
+  smoke-cpu:
+    name: Smoke (CPU, Chrome, ubuntu)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: sdk-web-tarball
+          path: tarball
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the smoke app from the tarball
+        working-directory: sdk/web/test/app
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-audit --no-fund "@wllama/wllama@$WLLAMA_VERSION" "$GITHUB_WORKSPACE"/tarball/ondeinference-web-*.tgz
+          npm run build
+      - name: Install Playwright
+        working-directory: sdk/web
+        run: npm ci
+      - name: Run
+        working-directory: sdk/web/test
+        env:
+          MAX_SECONDS: "900"
+          MAX_RSS_GB: "4"
+        run: |
+          node serve.mjs app/dist 8123 &
+          node run.mjs "engine=cpu" --out result-cpu.json
+          node check.mjs cpu result-cpu.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: smoke-cpu
+          path: sdk/web/test/result-cpu.json
+          if-no-files-found: ignore
+
+  smoke-webgpu:
+    name: Smoke (WebGPU, Chrome, macos-26, informational)
+    needs: [build, smoke-cpu]
+    runs-on: macos-26
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: sdk-web-tarball
+          path: tarball
+      - uses: actions/download-artifact@v8
+        with:
+          name: smoke-cpu
+          path: sdk/web/test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the smoke app from the tarball
+        working-directory: sdk/web/test/app
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-audit --no-fund "@wllama/wllama@$WLLAMA_VERSION" "$GITHUB_WORKSPACE"/tarball/ondeinference-web-*.tgz
+          npm run build
+      - name: Install Playwright
+        working-directory: sdk/web
+        run: npm ci
+      - name: Run
+        working-directory: sdk/web/test
+        env:
+          MAX_SECONDS: "600"
+          MAX_RSS_GB: "4"
+        run: |
+          node serve.mjs app/dist 8123 &
+          status=0
+          node run.mjs "engine=webgpu" --out result-webgpu.json || status=$?
+          node check.mjs compare result-cpu.json result-webgpu.json
+          exit $status
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: smoke-webgpu
+          path: sdk/web/test/result-webgpu.json
+          if-no-files-found: ignore

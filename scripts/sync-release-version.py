@@ -35,6 +35,10 @@ RN_PACKAGE_JSON = REPO_ROOT / "sdk/react-native/package.json"
 RN_PACKAGE_LOCK = REPO_ROOT / "sdk/react-native/package-lock.json"
 RN_RUST_CARGO = REPO_ROOT / "sdk/react-native/rust/Cargo.toml"
 RN_CHANGELOG = REPO_ROOT / "sdk/react-native/CHANGELOG.md"
+WEB_PACKAGE_JSON = REPO_ROOT / "sdk/web/package.json"
+WEB_PACKAGE_LOCK = REPO_ROOT / "sdk/web/package-lock.json"
+WEB_RUST_CARGO = REPO_ROOT / "sdk/web/rust/Cargo.toml"
+WEB_CHANGELOG = REPO_ROOT / "sdk/web/CHANGELOG.md"
 KOTLIN_PROPS = REPO_ROOT / "sdk/kotlin/gradle.properties"
 KOTLIN_CHANGELOG = REPO_ROOT / "sdk/kotlin/CHANGELOG.md"
 SWIFT_CHANGELOG = REPO_ROOT / "sdk/swift/CHANGELOG.md"
@@ -53,6 +57,7 @@ CHANGELOGS = (
     KOTLIN_CHANGELOG,
     DART_CHANGELOG,
     RN_CHANGELOG,
+    WEB_CHANGELOG,
 )
 
 # Cargo.lock entries carrying a release version, and the packages to patch in
@@ -64,6 +69,8 @@ CHANGELOGS = (
 # dependent on the network. Run `make relock` when dependencies actually change.
 LOCKFILES = (
     (REPO_ROOT / "Cargo.lock", ("onde", "onde-react-native")),
+    # sdk/web/rust is wasm-only and sits outside the workspace, with its own lock.
+    (REPO_ROOT / "sdk/web/rust/Cargo.lock", ("onde-web",)),
 )
 
 # A freshly bumped changelog section carries this placeholder. `--check` refuses
@@ -194,6 +201,9 @@ def propagate(version):
             RN_PACKAGE_JSON,
             RN_PACKAGE_LOCK,
             RN_RUST_CARGO,
+            WEB_PACKAGE_JSON,
+            WEB_PACKAGE_LOCK,
+            WEB_RUST_CARGO,
             KOTLIN_PROPS,
         )
     }
@@ -221,12 +231,17 @@ def propagate(version):
     )
 
     set_cargo_package_version(RN_RUST_CARGO, version)
+    set_cargo_package_version(WEB_RUST_CARGO, version)
 
-    update_json_versions(RN_PACKAGE_JSON, version, [("version",)])
     # lockfileVersion 3 records the root package version twice.
-    update_json_versions(
-        RN_PACKAGE_LOCK, version, [("version",), ("packages", "", "version")]
-    )
+    for package_json, package_lock in (
+        (RN_PACKAGE_JSON, RN_PACKAGE_LOCK),
+        (WEB_PACKAGE_JSON, WEB_PACKAGE_LOCK),
+    ):
+        update_json_versions(package_json, version, [("version",)])
+        update_json_versions(
+            package_lock, version, [("version",), ("packages", "", "version")]
+        )
 
     changed = []
     for path, original in before.items():
@@ -273,19 +288,23 @@ def check(version):
     else:
         expect(KOTLIN_PROPS, props.group(1).strip(), "VERSION_NAME")
 
-    expect(RN_RUST_CARGO, cargo_package_version(RN_RUST_CARGO), "[package] version")
+    for rust_cargo in (RN_RUST_CARGO, WEB_RUST_CARGO):
+        expect(rust_cargo, cargo_package_version(rust_cargo), "[package] version")
 
-    expect(
-        RN_PACKAGE_JSON, json.loads(read_text(RN_PACKAGE_JSON)).get("version"), "version"
-    )
-
-    lock = json.loads(read_text(RN_PACKAGE_LOCK))
-    expect(RN_PACKAGE_LOCK, lock.get("version"), "version")
-    expect(
-        RN_PACKAGE_LOCK,
-        lock.get("packages", {}).get("", {}).get("version"),
-        'packages[""].version',
-    )
+    for package_json, package_lock in (
+        (RN_PACKAGE_JSON, RN_PACKAGE_LOCK),
+        (WEB_PACKAGE_JSON, WEB_PACKAGE_LOCK),
+    ):
+        expect(
+            package_json, json.loads(read_text(package_json)).get("version"), "version"
+        )
+        lock = json.loads(read_text(package_lock))
+        expect(package_lock, lock.get("version"), "version")
+        expect(
+            package_lock,
+            lock.get("packages", {}).get("", {}).get("version"),
+            'packages[""].version',
+        )
 
     for lock_path, names in LOCKFILES:
         for name in names:
