@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "1.5.0"
+version = "1.5.1"
 edition = "2021"
 description = "On-device AI inference: LLM chat, tool calling and image generation, on every platform."
 license = "MIT OR Apache-2.0"

@@ -1,3 +1,18 @@
+## 1.5.1
+
+Onde has a browser SDK on npm: `@ondeinference/web`. The `onde` crate itself is unchanged from 1.5.0.
+
+### Web SDK
+
+* `@ondeinference/web` runs Qwen 2.5 0.5B Instruct (Q4_K_M, about 380 MB) in a web page, on the CPU, in a Web Worker. The engine is [vectoron](https://crates.io/crates/vectoron) compiled to wasm with simd128. The model is downloaded once into the same Cache Storage bucket (`onde-models-v1`) the crate's `web_store` uses.
+* `createOnde()` returns an `Onde` with `download`, `load`, `send`, `stream`, `reset`, `cancel` and `dispose`. `load` takes sampling options, and a `temperature` of 0 is greedy.
+* An experimental WebGPU engine (wllama 3.13.0, llama.cpp's WebGPU backend) lives at `@ondeinference/web/webgpu`. It is opt-in. `engine: "auto"` falls back to the CPU engine if it does not load. It stays experimental until its output is checked on real Apple Silicon.
+
+### Build and release
+
+* `sdk-web.yml` builds and packs the package, then runs the packed tarball through a Vite app in headless Chrome on GitHub-hosted runners.
+* `release-sdk-npm.yml` publishes `@ondeinference/web` alongside `@ondeinference/react-native`, and `make patch`/`make verify` cover its version files.
+
 ## 1.5.0
 
 Onde runs in the browser. On `wasm32-unknown-unknown`, `ChatEngine` is now a real engine instead of a stub, so a web app can run a GGUF model on the CPU with no native build and no server round-trip.
