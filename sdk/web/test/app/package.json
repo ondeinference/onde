@@ -1,0 +1,12 @@
+{
+  "name": "onde-web-smoke-app",
+  "private": true,
+  "type": "module",
+  "description": "Installs the packed @ondeinference/web tarball and bundles it with Vite, the way an app would. CI only.",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}

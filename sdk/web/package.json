@@ -1,0 +1,81 @@
+{
+  "name": "@ondeinference/web",
+  "version": "1.5.0",
+  "description": "Run LLMs in the browser with Onde Inference. Qwen 2.5 on the CPU through WebAssembly, with an experimental WebGPU engine. No server, no API key.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu/index.d.ts",
+      "default": "./dist/webgpu/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "wasm/onde_web.js",
+    "wasm/onde_web.d.ts",
+    "wasm/onde_web_bg.wasm",
+    "wasm/onde_web_bg.wasm.d.ts",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "sideEffects": [
+    "./dist/cpu/worker.js"
+  ],
+  "scripts": {
+    "build:wasm": "./scripts/build-wasm.sh",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "prepack": "test -f wasm/onde_web_bg.wasm || (echo 'Run npm run build:wasm first' && exit 1)",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "llm",
+    "inference",
+    "browser",
+    "webassembly",
+    "wasm",
+    "webgpu",
+    "on-device",
+    "ai",
+    "qwen",
+    "gguf",
+    "rust"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "author": "Onde Inference <hello@ondeinference.com>",
+  "homepage": "https://ondeinference.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ondeinference/onde.git",
+    "directory": "sdk/web"
+  },
+  "bugs": {
+    "url": "https://github.com/ondeinference/onde/issues"
+  },
+  "peerDependencies": {
+    "@wllama/wllama": "3.13.0"
+  },
+  "peerDependenciesMeta": {
+    "@wllama/wllama": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@wllama/wllama": "3.13.0",
+    "playwright": "1.65.1",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
