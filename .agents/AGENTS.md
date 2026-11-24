@@ -36,7 +36,8 @@ onde/
 ├── sdk/
 │   ├── dart/                     # Flutter/Dart package + example app + FRB Rust bridge (rust/ is a workspace member)
 │   ├── kotlin/                   # Kotlin Multiplatform package (Android + JVM)
-│   └── react-native/             # Expo module wrapping the Rust core for iOS/Android (rust/ is a workspace member)
+│   ├── react-native/             # Expo module wrapping the Rust core for iOS/Android (rust/ is a workspace member)
+│   └── web/                      # @ondeinference/web: vectoron wasm engine (rust/, outside the workspace, own Cargo.lock) + TypeScript wrapper
 ├── generated/                    # UniFFI-generated headers and Swift glue (git-ignored)
 ├── uniffi-bindgen/               # Bindgen binary crate, workspace member (pinned uniffi =0.31.0)
 ├── .github/
@@ -44,13 +45,14 @@ onde/
 │   │   ├── release-sdk-swift.yml         # CI: tag push → build XCFramework → GitHub Release → update onde-swift
 │   │   ├── release-sdk-kotlin.yml        # CI: tag push → build Android/JVM artifacts → publish to Maven Central
 │   │   ├── release-sdk-dart.yml          # CI: tag push → publish Flutter package to pub.dev
-│   │   ├── release-sdk-npm.yml           # CI: tag push → publish React Native package to npm
+│   │   ├── release-sdk-npm.yml           # CI: tag push → publish React Native and web packages to npm
+│   │   ├── sdk-web.yml                   # CI: build, pack and smoke-test @ondeinference/web in headless Chrome
 │   │   └── release-sdk-rust.yml          # CI: tag push → publish Rust crate to crates.io
 │   └── scripts/
 │       └── build-swift-xcframework.sh    # Local/CI XCFramework assembly script
 ├── .cargo/config.toml            # Target-specific rustflags (fp16, linker overrides)
 ├── Cargo.toml                    # Workspace root (members: ., uniffi-bindgen, sdk/dart/rust, sdk/react-native/rust) + platform-conditional mistralrs deps
-├── Cargo.lock                    # The only lockfile; one target/ at the repo root serves every member
+├── Cargo.lock                    # The workspace lockfile; one target/ at the repo root serves every member (sdk/web/rust has its own)
 ├── build.rs                      # tvOS ___chkstk_darwin assembly stub
 ├── scripts/
 │   └── tvos_chkstk.s             # No-op arm64 stub for missing tvOS symbol
@@ -587,6 +589,8 @@ Triggered on **semver tag push** or `workflow_dispatch`.
    - `sdk/kotlin/gradle.properties`
    - `sdk/dart/pubspec.yaml`
    - `sdk/react-native/package.json`
+   - `sdk/web/package.json` and `sdk/web/rust/Cargo.toml`
+   (`make patch`/`minor`/`major` propagates all of them; `make verify` checks them.)
 2. Merge release branches with `--no-ff`. Do not fast-forward multi-commit feature branches.
 3. Commit, tag, and push the release.
 4. CI publishes all five SDKs:
@@ -594,7 +598,7 @@ Triggered on **semver tag push** or `workflow_dispatch`.
    - Swift Package Index / GitHub Releases (`onde-swift`)
    - Maven Central (`com.ondeinference:onde-inference`)
    - pub.dev (`onde_inference`)
-   - npm (`@ondeinference/react-native`)
+   - npm (`@ondeinference/react-native`, `@ondeinference/web`)
 5. Verify the registries after publish, especially Maven Central indexing and the generated Swift release assets.
 
 > **Note:** `onde-swift/Package.swift` is updated automatically by CI. For local development only, switch it to the `path:` form documented in the file header, then switch it back before committing.
