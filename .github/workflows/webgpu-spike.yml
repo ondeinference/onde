@@ -90,7 +90,7 @@ jobs:
             mkdir -p "stage/$h/www"
             cp -r "onde/spikes/webgpu/$h/www/pkg" "stage/$h/www/pkg"
           done
-          ls -lR stage | head -40
+          find stage -type f | head -40
       - uses: actions/upload-artifact@v7
         with:
           name: wasm-pkg
@@ -206,7 +206,7 @@ jobs:
           npm ci
           if [ "${{ matrix.harness }}" = wllama ]; then
             # Pinned; its wasm is fetched from jsDelivr at the same version (not in the npm package).
-            npm install --no-save --no-package-lock @wllama/wllama@$WLLAMA_VERSION
+            npm install --no-save --no-package-lock "@wllama/wllama@$WLLAMA_VERSION"
           fi
           if [ "${{ matrix.browser }}" = webkit ]; then
             npx playwright install --with-deps webkit
