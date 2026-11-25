@@ -12,9 +12,13 @@ on:
   workflow_dispatch:
   push:
     branches: [spike/webgpu]
+    # The CPU engine comparison (engine-bench.yml) has its own files; changing
+    # them doesn't rerun the GPU matrix. After editing this file, dispatch it.
     paths:
       - "spikes/webgpu/**"
-      - ".github/workflows/webgpu-spike.yml"
+      - "!spikes/webgpu/vectoron-cpu/**"
+      - "!spikes/webgpu/report.mjs"
+      - "!spikes/webgpu/ci/engine-native.sh"
 
 concurrency:
   group: webgpu-spike-${{ github.ref }}
