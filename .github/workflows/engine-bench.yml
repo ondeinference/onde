@@ -13,6 +13,7 @@ on:
     paths:
       - "spikes/webgpu/cpu-baseline/**"
       - "spikes/webgpu/vectoron-cpu/**"
+      - "spikes/webgpu/vectoron-dev/**"
       - "spikes/webgpu/common/**"
       - "spikes/webgpu/ci/**"
       - "spikes/webgpu/*.mjs"
@@ -50,18 +51,20 @@ jobs:
           workspaces: |
             spikes/webgpu/cpu-baseline
             spikes/webgpu/vectoron-cpu
+            spikes/webgpu/vectoron-dev
       - uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/wasm-bindgen
           key: wasm-bindgen-${{ env.WASM_BINDGEN_VERSION }}-${{ runner.os }}
       - name: Install wasm-bindgen-cli
         run: command -v wasm-bindgen || cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
-      - name: Build both (wasm, simd128)
+      - name: Build the three (wasm, simd128)
         env:
           RUSTFLAGS: -C target-feature=+simd128
         run: |
-          for h in cpu-baseline vectoron-cpu; do
-            lib="spike_${h//-/_}"
+          # vectoron-dev keeps vectoron-cpu's library name, so the page is the same.
+          for h in cpu-baseline vectoron-cpu vectoron-dev; do
+            lib="spike_${h//-/_}"; [ "$h" = vectoron-dev ] && lib=spike_vectoron_cpu
             (cd "spikes/webgpu/$h" &&
               cargo build --locked --release --lib --target wasm32-unknown-unknown &&
               wasm-bindgen --target web --out-dir www/pkg "target/wasm32-unknown-unknown/release/$lib.wasm")
@@ -104,6 +107,11 @@ jobs:
         env:
           CARGO_TARGET_DIR: target-native
         run: cargo build --locked --release --bin native-bench
+      - name: Build vectoron dev
+        working-directory: spikes/webgpu/vectoron-dev
+        env:
+          CARGO_TARGET_DIR: target-native
+        run: cargo build --locked --release --bin native-bench
       - name: Run
         env:
           MODEL_DIR: ${{ github.workspace }}/model
@@ -119,7 +127,7 @@ jobs:
     name: ${{ matrix.browser }} (${{ matrix.os }})
     needs: build
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 55
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -159,11 +167,16 @@ jobs:
         env:
           MODEL_DIR: ${{ github.workspace }}/model
         run: spikes/webgpu/ci/run-cell.sh cpu-baseline ${{ matrix.browser }} cell-candle 1 "&yield=0"
-      - name: vectoron
+      - name: vectoron 0.2
         if: success() || failure()
         env:
           MODEL_DIR: ${{ github.workspace }}/model
         run: spikes/webgpu/ci/run-cell.sh vectoron-cpu ${{ matrix.browser }} cell-vectoron 1 "&yield=0"
+      - name: vectoron dev
+        if: success() || failure()
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+        run: spikes/webgpu/ci/run-cell.sh vectoron-dev ${{ matrix.browser }} cell-vectoron-dev 1 "&yield=0"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -175,6 +188,12 @@ jobs:
         with:
           name: cell-${{ matrix.os }}-vectoron-${{ matrix.browser }}
           path: cell-vectoron
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cell-${{ matrix.os }}-vectoron-dev-${{ matrix.browser }}
+          path: cell-vectoron-dev
           if-no-files-found: warn
 
   summary:

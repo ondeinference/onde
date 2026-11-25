@@ -55,7 +55,7 @@ const detail = [];
 // --- native rows
 for (const d of nativeDirs) {
   const runner = d.replace(/^native-/, "");
-  for (const dev of ["cpu", "metal", "wgpu", "vectoron"]) {
+  for (const dev of ["cpu", "metal", "wgpu", "vectoron", "vectoron-dev"]) {
     // A workflow only writes files for the devices it runs.
     if (!fs.existsSync(path.join(root, d, `${dev}-bench-tiny.jsonl`))) continue;
     let top = null;
@@ -64,7 +64,7 @@ for (const d of nativeDirs) {
       if (runs.length) top = { cfg, runs };
     }
     const err = (read(path.join(root, d, `${dev}-bench-tiny.err`)) || "").trim().split("\n").slice(-2).join(" ").slice(0, 160);
-    const label = { cpu: "candle CPU (native)", metal: "candle Metal (native)", wgpu: "FerrisMind wgpu (native)", vectoron: "vectoron CPU (native)" }[dev];
+    const label = { cpu: "candle CPU (native)", metal: "candle Metal (native)", wgpu: "FerrisMind wgpu (native)", vectoron: "vectoron 0.2 CPU (native)", "vectoron-dev": "vectoron dev CPU (native)" }[dev];
     if (!top) { rows.push([label, runner, "–", "none", "–", "–", "–", "–", "–", "–", `failed: ${err || "no output"}`]); continue; }
     const r = top.runs;
     const load = (read(path.join(root, d, `${dev}-${top.cfg}.err`)) || "").match(/load_ms=([\d.]+)/);

@@ -16,7 +16,8 @@ bench() { # <label> <binary> <cfg> [device]
 for cfg in bench-tiny bench-quick bench; do
   bench cpu      "$here/cpu-baseline/target-native-cpu/release/native-bench" "$cfg" cpu
   bench vectoron "$here/vectoron-cpu/target-native/release/native-bench"     "$cfg"
+  bench vectoron-dev "$here/vectoron-dev/target-native/release/native-bench" "$cfg"
 done
 grep -H . "$out"/*.exit
 # Fail only if neither engine produced the full bench.
-[ -s "$out/cpu-bench.jsonl" ] || [ -s "$out/vectoron-bench.jsonl" ]
+[ -s "$out/cpu-bench.jsonl" ] || [ -s "$out/vectoron-bench.jsonl" ] || [ -s "$out/vectoron-dev-bench.jsonl" ]

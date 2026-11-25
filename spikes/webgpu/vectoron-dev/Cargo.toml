@@ -1,0 +1,44 @@
+[package]
+name = "spike-vectoron-dev"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Throwaway spike. The same harness as ../vectoron-cpu (its sources are used
+# in place), built against an unreleased vectoron commit instead of the crates.io
+# release, so one workflow run measures both. Not part of the onde workspace.
+[workspace]
+
+# Keeps the library name the page's worker.js imports.
+[lib]
+name = "spike_vectoron_cpu"
+path = "../vectoron-cpu/src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "native-bench"
+path = "../vectoron-cpu/src/bin/native_bench.rs"
+
+[dependencies]
+vectoron = "0.2"
+tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.130"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.4"
+
+# Moves with the vectoron change under test.
+[patch.crates-io]
+vectoron = { git = "https://github.com/setoelkahfi/vectoron", rev = "e8b1cfd5dba92d1b08e0745c9e9f880211c0d3c5" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
