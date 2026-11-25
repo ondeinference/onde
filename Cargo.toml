@@ -102,12 +102,13 @@ mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features 
 [target.'cfg(target_os = "windows")'.dependencies]
 mistralrs = { version = "0.9.5", package = "onde-mistralrs" }
 
-# Browser engine: candle on CPU (wasm SIMD), tokenizers without onig, and the
+# Browser engine: vectoron on CPU (wasm SIMD), tokenizers without onig, and the
 # JS glue for fetch and Cache Storage. This table must match the `onde_web` cfg
 # in build.rs (wasm32 with target_os = "unknown").
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
-candle-core = { version = "0.11.1", default-features = false }
-candle-transformers = { version = "0.11.1", default-features = false }
+# TODO before release: switch to `vectoron = "0.3"` once it is on crates.io;
+# `make lint-publish` rejects the git dependency.
+vectoron = { git = "https://github.com/setoelkahfi/vectoron", rev = "d15c2288ec4de3f8dc83f24154ce7e32f632f475" }
 tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

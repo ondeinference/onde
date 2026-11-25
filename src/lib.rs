@@ -24,7 +24,8 @@
 //!
 //! On `wasm32-unknown-unknown` the crate has a real browser engine:
 //! [`inference::ChatEngine`] runs GGUF Qwen2.5 and Qwen3 models on the CPU
-//! through candle, single-threaded, so it needs no COOP/COEP headers. Build the
+//! through [vectoron](https://crates.io/crates/vectoron), single-threaded, so
+//! it needs no COOP/COEP headers. Build the
 //! host with `RUSTFLAGS="-C target-feature=+simd128"` for speed, and run the
 //! engine in a Web Worker, because a forward pass blocks its thread. Tool
 //! calling is not available there, and WebGPU is not used yet.
