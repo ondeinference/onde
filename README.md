@@ -44,8 +44,8 @@ Onde is already shipping in real apps on the App Store and Google Play. Chat run
 **[Siti AI](https://github.com/ondeinference/siti)** is the flagship open reference app — a private, on-device assistant built on Onde, open source under Apache-2.0. Its source is a complete, readable example of wiring the engine into a shipping [Tauri](https://tauri.app) app across macOS, iOS, and Android.
 
 <p align="left">
-  <a href="https://apps.apple.com/se/app/siti-ai/id6780047972" target="_blank"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download Siti AI on the App Store" height="48" align="middle"></a>
-  <a href="https://play.google.com/store/apps/details?id=ai.siti.Siti" target="_blank"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get Siti AI on Google Play" height="70" align="middle"></a>
+  <a href="https://apps.apple.com/se/app/siti-ai/id6780047972"><img src="./assets/badges/app-store.svg" alt="Download Siti AI on the App Store" height="40"></a>
+  <a href="https://play.google.com/store/apps/details?id=ai.siti.Siti"><img src="./assets/badges/google-play.png" alt="Get Siti AI on Google Play" height="40"></a>
 </p>
 
 Onde ships in apps by Seto Elkahfi, distributed by Splitfire AB.
