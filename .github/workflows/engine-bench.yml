@@ -8,7 +8,8 @@ name: Engine bench
 on:
   workflow_dispatch:
   push:
-    branches: [spike/webgpu]
+    # This branch and the ones stacked on it run it before they merge.
+    branches: [spike/webgpu, "spike/webgpu-*"]
     paths:
       - "spikes/webgpu/cpu-baseline/**"
       - "spikes/webgpu/vectoron-cpu/**"
