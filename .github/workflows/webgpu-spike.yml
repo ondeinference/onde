@@ -17,6 +17,7 @@ on:
     paths:
       - "spikes/webgpu/**"
       - "!spikes/webgpu/vectoron-cpu/**"
+      - "!spikes/webgpu/vectoron-dev/**"
       - "!spikes/webgpu/report.mjs"
       - "!spikes/webgpu/ci/engine-native.sh"
 
