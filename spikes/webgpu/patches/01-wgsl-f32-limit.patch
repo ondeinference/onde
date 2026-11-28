@@ -1,0 +1,30 @@
+diff --git a/candle-wgpu-kernels/src/shaders/arg_reduce_rows_strided.wgsl b/candle-wgpu-kernels/src/shaders/arg_reduce_rows_strided.wgsl
+index 08c9c187..1c5b9a5a 100644
+--- a/candle-wgpu-kernels/src/shaders/arg_reduce_rows_strided.wgsl
++++ b/candle-wgpu-kernels/src/shaders/arg_reduce_rows_strided.wgsl
+@@ -29,8 +29,8 @@ struct Params {
+ @group(0) @binding(2)
+ var<uniform> params: Params;
+ 
+-const FLOAT_MIN: f32 = -3.4028235e38;
+-const FLOAT_MAX: f32 = 3.4028235e38;
++const FLOAT_MIN: f32 = -3.4028234e38;
++const FLOAT_MAX: f32 = 3.4028234e38;
+ 
+ struct Pair {
+     value: f32,
+diff --git a/candle-wgpu-kernels/src/shaders/reduce_rows_strided.wgsl b/candle-wgpu-kernels/src/shaders/reduce_rows_strided.wgsl
+index 1e0accd8..6103b42c 100644
+--- a/candle-wgpu-kernels/src/shaders/reduce_rows_strided.wgsl
++++ b/candle-wgpu-kernels/src/shaders/reduce_rows_strided.wgsl
+@@ -28,8 +28,8 @@ struct Params {
+ @group(0) @binding(2)
+ var<uniform> params: Params;
+ 
+-const FLOAT_MIN: f32 = -3.4028235e38;
+-const FLOAT_MAX: f32 = 3.4028235e38;
++const FLOAT_MIN: f32 = -3.4028234e38;
++const FLOAT_MAX: f32 = 3.4028234e38;
+ 
+ var<workgroup> shared_val: array<f32, WG_SIZE>;
+ 

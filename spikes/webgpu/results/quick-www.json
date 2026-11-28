@@ -1,0 +1,76 @@
+{
+  "result": {
+    "runs": [
+      {
+        "prompt_tokens": 179,
+        "generated_tokens": 24,
+        "prefill_ms": 13823.10000000894,
+        "ttft_ms": 13823.10000000894,
+        "decode_ms": 2041.8999999910593,
+        "decode_tps": 11.264018806063328,
+        "turn_tps": 1.5127639457926252,
+        "total_ms": 15865,
+        "yielded": false,
+        "tokens": [
+          70151,
+          279,
+          882,
+          7391,
+          553,
+          279,
+          4128,
+          1614,
+          2337,
+          3078,
+          460,
+          46719,
+          9471,
+          374,
+          16587,
+          369,
+          73042,
+          5068,
+          323,
+          22573,
+          98939,
+          13,
+          6771,
+          594
+        ],
+        "text": "Understanding the time spent by the language model during autoregressive generation is crucial for optimizing performance and ensuring responsiveness. Let's",
+        "first_top5": [
+          [
+            70151,
+            18.68084
+          ],
+          [
+            4498,
+            18.613981
+          ],
+          [
+            1249,
+            17.658533
+          ],
+          [
+            785,
+            17.605629
+          ],
+          [
+            14374,
+            17.256521
+          ]
+        ],
+        "warmup": false
+      }
+    ],
+    "read_ms": 319.70000000298023,
+    "seeded": false,
+    "sha256": "6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653",
+    "wasm_bytes": 4991404,
+    "wasm_init_ms": 22,
+    "load_ms": 568.9000000059605,
+    "wasm_memory_bytes": 1542324224,
+    "wasm_memory_bytes_after": 1542324224
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36"
+}

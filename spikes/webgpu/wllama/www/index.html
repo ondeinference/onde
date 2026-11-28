@@ -1,0 +1,57 @@
+<!doctype html><meta charset="utf-8"><title>wllama</title><pre id="log"></pre>
+<script type="module">
+  // Spike B: wllama (llama.cpp compiled to wasm, with its WebGPU backend).
+  // Same GGUF and Cache Storage entry as the candle harnesses. Query: cfg=<bench json>, ngl=<n_gpu_layers>.
+  import { Wllama } from "/node_modules/@wllama/wllama/esm/index.js";
+  import WasmFromCDN from "/node_modules/@wllama/wllama/esm/wasm-from-cdn.js";
+  import { loadModel, loadBench, chatml } from "/common/store.js";
+
+  const log = (s) => { document.getElementById("log").textContent += s + "\n"; console.log(s); };
+  const q = new URLSearchParams(location.search);
+  const out = { runs: [], harness: "wllama", n_gpu_layers: q.get("ngl") ?? "default", isolated: self.crossOriginIsolated };
+  window.__partial = out;
+
+  window.__start = async () => {
+    try {
+      const cfg = await loadBench();
+      const prompt = chatml(cfg.system, cfg.user);
+      const model = await loadModel();
+      out.read_ms = model.readMs; out.seeded = model.seeded; out.sha256 = model.sha;
+      const wllama = new Wllama(WasmFromCDN);
+      const params = {};
+      if (q.has("ngl")) params.n_gpu_layers = Number(q.get("ngl"));
+      const l0 = performance.now();
+      await wllama.loadModel([new Blob([model.gguf])], params);
+      out.load_ms = performance.now() - l0;
+      try { out.context_info = await wllama.getLoadedContextInfo?.(); } catch (e) { out.context_info = String(e); }
+      for (let i = 0; i < cfg.warmup_runs + cfg.measured_runs; i++) {
+        const t0 = performance.now();
+        let tFirst = null, tLast = null, chunks = 0, text = "";
+        await wllama.createCompletion({
+          prompt, max_tokens: cfg.max_new_tokens, temperature: 0, stream: true,
+          onData: (c) => {
+            const t = c.choices?.[0]?.text ?? "";
+            if (!t) return;
+            tLast = performance.now();
+            if (tFirst === null) tFirst = tLast;
+            chunks++; text += t;
+          },
+        });
+        const total = performance.now() - t0;
+        const r = {
+          warmup: i < cfg.warmup_runs, yielded: false, prompt_tokens: null,
+          generated_tokens: chunks, // one streamed chunk per token, approximate
+          prefill_ms: tFirst === null ? null : tFirst - t0, ttft_ms: tFirst === null ? null : tFirst - t0,
+          decode_tps: chunks > 1 ? (chunks - 1) / ((tLast - tFirst) / 1000) : 0,
+          turn_tps: chunks / (total / 1000), total_ms: total, text, tokens: null,
+        };
+        out.runs.push(r);
+        log(`run ${i}: ttft ${r.ttft_ms?.toFixed(0)} ms, decode ${r.decode_tps.toFixed(2)} tok/s`);
+      }
+      window.__result = out;
+    } catch (e) {
+      window.__partial = out;
+      window.__error = String((e && e.stack) || e);
+    }
+  };
+</script>
