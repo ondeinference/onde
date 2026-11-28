@@ -663,33 +663,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "candle-core"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d11c8be87cfbaef9ebb62fb3f850d1fc8e00cc1d11d393fdbe55a4d5c2cdb325"
-dependencies = [
- "byteorder",
- "float8",
- "gemm 0.19.0",
- "half",
- "libc",
- "libm",
- "memmap2",
- "num-traits",
- "num_cpus",
- "parking_lot",
- "rand 0.9.5",
- "rand_distr 0.5.1",
- "rayon",
- "safetensors 0.8.0",
- "thiserror 2.0.20",
- "tokenizers 0.23.2",
- "yoke 0.8.3",
- "zerocopy",
- "zip 9.6.0",
-]
-
-[[package]]
 name = "candle-metal-kernels"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -702,41 +675,6 @@ dependencies = [
  "objc2-metal",
  "once_cell",
  "thiserror 2.0.20",
- "tracing",
-]
-
-[[package]]
-name = "candle-nn"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "437fabe77547c2447c7bdf3cc946e19db29a2832440176b419f77c80b0a9a05e"
-dependencies = [
- "candle-core",
- "half",
- "libc",
- "num-traits",
- "rayon",
- "safetensors 0.8.0",
- "serde",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "candle-transformers"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b1e1abeac23d7df4f94e8a3852b3dbb661d332e37c3bef479507bac867187b2"
-dependencies = [
- "byteorder",
- "candle-core",
- "candle-nn",
- "fancy-regex 0.19.2",
- "num-traits",
- "rand 0.9.5",
- "rayon",
- "serde",
- "serde_json",
- "serde_plain",
  "tracing",
 ]
 
@@ -995,15 +933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "constant_time_eq"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9eb6feb175df65d0a3ccd3e73484e940d0ac664e8034f0519fd49a93db3071d9"
-dependencies = [
- "rustversion",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1196,12 +1125,6 @@ checksum = "704a3c26996a80471189265814dbc2c257598b96b8a7feae2d31ace646bb9782"
 dependencies = [
  "memchr",
 ]
-
-[[package]]
-name = "daachorse"
-version = "3.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5614204febbc33cc07a2806aa6440b904ac012b68eecc37f4493ea4a76455a3d"
 
 [[package]]
 name = "darling"
@@ -1759,28 +1682,6 @@ name = "fancy-regex"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e24cb5a94bcae1e5408b0effca5cd7172ea3c5755049c5f3af4cd283a165298"
-dependencies = [
- "bit-set 0.8.0",
- "regex-automata",
- "regex-syntax",
-]
-
-[[package]]
-name = "fancy-regex"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72cf461f865c862bb7dc573f643dd6a2b6842f7c30b07882b56bd148cc2761b8"
-dependencies = [
- "bit-set 0.8.0",
- "regex-automata",
- "regex-syntax",
-]
-
-[[package]]
-name = "fancy-regex"
-version = "0.19.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d301f5bf187b3c295fce6468d3875037a0bccc5f6b151c63cac2f85babf21912"
 dependencies = [
  "bit-set 0.8.0",
  "regex-automata",
@@ -3585,18 +3486,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nix"
-version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77730ed34f01f4990cb2ea67fec715ecebc6fab9a6396cf83c5529b13f581bdc"
-dependencies = [
- "bitflags 2.13.1",
- "cfg-if",
- "cfg_aliases",
- "libc",
-]
-
-[[package]]
 name = "no_std_io2"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3859,8 +3748,6 @@ name = "onde"
 version = "1.5.1"
 dependencies = [
  "anyhow",
- "candle-core",
- "candle-transformers",
  "cc",
  "dotenvy",
  "hf-hub",
@@ -3878,6 +3765,7 @@ dependencies = [
  "tokio",
  "tsync",
  "uniffi",
+ "vectoron",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
@@ -3911,7 +3799,7 @@ dependencies = [
  "tokenizers 0.22.2",
  "yoke 0.8.3",
  "zerocopy",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -4207,7 +4095,7 @@ dependencies = [
  "itoa",
  "landlock",
  "libc",
- "nix 0.31.3",
+ "nix",
  "seccompiler",
  "serde",
  "thiserror 2.0.20",
@@ -6629,39 +6517,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokenizers"
-version = "0.23.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7afbf6e88718afcc138bad01d6ccc3051dbbc3b2ce9793d8b8a3aeb610969cfc"
-dependencies = [
- "ahash",
- "compact_str",
- "daachorse",
- "dary_heap",
- "derive_builder",
- "esaxx-rs",
- "fancy-regex 0.17.0",
- "getrandom 0.3.4",
- "itertools",
- "log",
- "macro_rules_attribute",
- "monostate",
- "paste",
- "rand 0.9.5",
- "rayon",
- "rayon-cond",
- "regex",
- "regex-syntax",
- "serde",
- "serde_json",
- "spm_precompiled",
- "thiserror 2.0.20",
- "unicode-normalization-alignments",
- "unicode-segmentation",
- "unicode_categories",
-]
-
-[[package]]
 name = "tokio"
 version = "1.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6978,12 +6833,6 @@ name = "typed-path"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
-
-[[package]]
-name = "typed-path"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e"
 
 [[package]]
 name = "typenum"
@@ -7358,6 +7207,16 @@ name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
+
+[[package]]
+name = "vectoron"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bd2169817b93d82a3c6ff9c69b005e6d86bd7c93129973dc41713639d0153ed"
+dependencies = [
+ "half",
+ "thiserror 2.0.20",
+]
 
 [[package]]
 name = "version_check"
@@ -8231,20 +8090,6 @@ name = "zeroize"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
-dependencies = [
- "zeroize_derive",
-]
-
-[[package]]
-name = "zeroize_derive"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
 
 [[package]]
 name = "zerotrie"
@@ -8288,25 +8133,7 @@ dependencies = [
  "crc32fast",
  "indexmap 2.14.2",
  "memchr",
- "typed-path 0.12.3",
-]
-
-[[package]]
-name = "zip"
-version = "9.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80cc68510ea7553c30a69c732de5278e94183f68765af6c642dbccefd6ec777e"
-dependencies = [
- "constant_time_eq",
- "crc32fast",
- "getrandom 0.4.3",
- "indexmap 2.14.2",
- "libc",
- "memchr",
- "nix 0.32.0",
- "typed-path 0.13.0",
- "windows-sys 0.61.2",
- "zeroize",
+ "typed-path",
 ]
 
 [[package]]

@@ -1,0 +1,65 @@
+name: Web engine smoke
+
+# Runs tests/web_smoke.rs, the crate's browser ChatEngine, in headless Chrome:
+# it downloads Qwen 2.5 0.5B, loads it, and checks a streamed reply. ci.yml
+# only compiles that test, because it fetches about 380 MB, so this runs when
+# the browser engine or its dependencies change. GitHub-hosted runners only.
+
+on:
+  push:
+    branches: [main, development]
+    paths: &paths
+      - "src/inference/web/**"
+      - "src/inference/text.rs"
+      - "src/inference/types.rs"
+      - "src/web_store.rs"
+      - "tests/web_smoke.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/web-smoke.yml"
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+concurrency:
+  group: web-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_PACK_VERSION: 0.14.0
+
+jobs:
+  smoke:
+    name: Chrome (wasm32)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: echo "channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-bin: false
+          key: web-smoke
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@${{ env.WASM_PACK_VERSION }}
+      - name: Run the smoke test
+        env:
+          # Read at build time; without it the test returns immediately.
+          ONDE_WEB_SMOKE: "1"
+          RUSTFLAGS: -C target-feature=+simd128
+          WASM_BINDGEN_TEST_TIMEOUT: "1500"
+        run: |
+          wasm-pack test --headless --chrome --release \
+            --chromedriver "$CHROMEWEBDRIVER/chromedriver" \
+            -- --test web_smoke

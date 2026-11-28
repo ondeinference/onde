@@ -4,32 +4,31 @@
 //! Browser `ChatEngine` for `wasm32-unknown-unknown`.
 //!
 //! Same public signatures as the native engine, so hosts such as `ed-agent`
-//! compile unchanged. Inference runs on the CPU through candle (build the host
+//! compile unchanged. Inference runs on the CPU through vectoron (build the host
 //! with `RUSTFLAGS="-C target-feature=+simd128"` for speed), single-threaded,
 //! so it needs no cross-origin isolation. Run it in a Web Worker: loading a
 //! model and every token's forward pass block the thread they run on. Between
 //! tokens the generation loop yields to the event loop, so messages (such as a
 //! cancel) and dropped streams are noticed promptly.
 //!
+//! The key/value cache is kept between turns: a prompt only runs the tokens
+//! after its longest common prefix with the previous one.
+//!
 //! Supported: GGUF Qwen2.5 (`qwen2`) and Qwen3 (`qwen3`) models, with the
 //! tokenizer loaded from `GgufModelConfig::tok_model_id`. Files come from
 //! [`crate::web_store`]. Tool calling is not available on web.
 
 use std::cell::RefCell;
-use std::io::Cursor;
 use std::rc::Rc;
 
-use candle_core::quantized::gguf_file;
-use candle_core::{Device, Tensor};
-use candle_transformers::generation::{LogitsProcessor, Sampling};
-use candle_transformers::models::{quantized_qwen2, quantized_qwen3};
 use tokenizers::Tokenizer;
 use tokio::sync::mpsc;
+use vectoron::{QwenModel, Sampler, SamplerConfig};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 
 use super::engine::split_think;
-use super::text::{apply_penalties, chatml_prompt};
+use super::text::chatml_prompt;
 use super::types::*;
 use crate::web_store;
 
@@ -84,29 +83,11 @@ fn elapsed(start_ms: f64) -> std::time::Duration {
 
 // ── Model plumbing ───────────────────────────────────────────────────────────
 
-enum Weights {
-    Qwen2(quantized_qwen2::ModelWeights),
-    Qwen3(quantized_qwen3::ModelWeights),
-}
-
-impl Weights {
-    fn forward(&mut self, input: &Tensor, pos: usize) -> candle_core::Result<Tensor> {
-        match self {
-            Weights::Qwen2(m) => m.forward(input, pos),
-            Weights::Qwen3(m) => m.forward(input, pos),
-        }
-    }
-
-    fn clear_kv_cache(&mut self) {
-        match self {
-            Weights::Qwen2(m) => m.clear_kv_cache(),
-            Weights::Qwen3(m) => m.clear_kv_cache(),
-        }
-    }
-}
-
 struct Loaded {
-    weights: Weights,
+    model: QwenModel,
+    /// The tokens whose keys and values are in the model's cache, so the next
+    /// prompt only runs what differs.
+    cached: Vec<u32>,
     tokenizer: Tokenizer,
     config: GgufModelConfig,
     /// Token ids that end a reply.
@@ -150,24 +131,16 @@ impl Drop for BusyGuard {
     }
 }
 
-fn sampling_for(s: &SamplingConfig) -> Sampling {
-    let temperature = s.temperature.unwrap_or(0.7);
-    if temperature <= 1e-7 {
-        return Sampling::ArgMax;
-    }
-    match (s.top_k, s.top_p) {
-        (Some(k), Some(p)) => Sampling::TopKThenTopP {
-            k: k as usize,
-            p,
-            temperature,
-        },
-        (Some(k), None) => Sampling::TopK {
-            k: k as usize,
-            temperature,
-        },
-        (None, Some(p)) => Sampling::TopP { p, temperature },
-        (None, None) => Sampling::All { temperature },
-    }
+fn sampler_for(s: &SamplingConfig, seed: u64) -> Sampler {
+    let temperature = s.temperature.unwrap_or(0.7) as f32;
+    Sampler::new(SamplerConfig {
+        temperature,
+        top_k: s.top_k.map(|k| k as usize),
+        top_p: s.top_p.map(|p| p as f32),
+        frequency_penalty: s.frequency_penalty.unwrap_or(0.0),
+        presence_penalty: s.presence_penalty.unwrap_or(0.0),
+        seed,
+    })
 }
 
 /// Turns a stream of token ids into text without splitting multi-byte
@@ -236,6 +209,31 @@ struct Generated {
     cancelled: bool,
 }
 
+fn context_length(state: &Rc<RefCell<State>>) -> Result<usize, InferenceError> {
+    let st = state.borrow();
+    let loaded = st.loaded.as_ref().ok_or(InferenceError::NoModelLoaded)?;
+    Ok(loaded.model.config().context_length)
+}
+
+/// Runs `tokens` at `pos` on the loaded model, leaving the last position's
+/// logits in `logits` and `cached` matching the model's cache.
+fn forward(
+    state: &Rc<RefCell<State>>,
+    tokens: &[u32],
+    pos: usize,
+    logits: &mut Vec<f32>,
+) -> Result<(), InferenceError> {
+    let mut st = state.borrow_mut();
+    let loaded = st.loaded.as_mut().ok_or(InferenceError::NoModelLoaded)?;
+    loaded
+        .model
+        .forward_into(tokens, pos, logits)
+        .map_err(inference_err)?;
+    loaded.cached.truncate(pos);
+    loaded.cached.extend_from_slice(tokens);
+    Ok(())
+}
+
 /// Run one generation. `tx` receives each text piece as it is decoded; if its
 /// receiver is dropped, generation stops and `cancelled` is set.
 async fn generate_text(
@@ -260,24 +258,28 @@ async fn generate_text(
 
     let max_tokens = sampling.max_tokens.unwrap_or(512) as usize;
     let seed = (now_ms() as u64) ^ ((js_sys::Math::random() * 4_294_967_296.0) as u64);
-    let mut processor = LogitsProcessor::from_sampling(seed, sampling_for(sampling));
-    let frequency = sampling.frequency_penalty.unwrap_or(0.0);
-    let presence = sampling.presence_penalty.unwrap_or(0.0);
+    let mut sampler = sampler_for(sampling, seed);
 
-    // Prefill. The whole conversation is re-read each turn, so start from an
-    // empty KV cache. Chunked, with a yield between chunks.
-    state
-        .borrow_mut()
-        .loaded
-        .as_mut()
-        .ok_or(InferenceError::NoModelLoaded)?
-        .weights
-        .clear_kv_cache();
+    // Prefill. Reuse the cached positions this prompt shares with the last
+    // one, but always run at least its final token, for its logits. Chunked,
+    // with a yield between chunks.
+    let mut pos = {
+        let mut st = state.borrow_mut();
+        let loaded = st.loaded.as_mut().ok_or(InferenceError::NoModelLoaded)?;
+        let shared = loaded
+            .cached
+            .iter()
+            .zip(&prompt_ids)
+            .take_while(|(a, b)| a == b)
+            .count()
+            .min(prompt_ids.len() - 1);
+        loaded.cached.truncate(shared);
+        shared
+    };
     yield_to_event_loop().await;
 
-    let mut logits = None;
-    let mut pos = 0usize;
-    for chunk in prompt_ids.chunks(PREFILL_CHUNK) {
+    let mut logits = Vec::new();
+    for chunk in prompt_ids[pos..].chunks(PREFILL_CHUNK) {
         if tx.is_some_and(|tx| tx.is_closed()) {
             return Ok(Generated {
                 text: String::new(),
@@ -287,19 +289,10 @@ async fn generate_text(
                 cancelled: true,
             });
         }
-        let input = Tensor::new(chunk, &Device::Cpu)
-            .and_then(|t| t.unsqueeze(0))
-            .map_err(inference_err)?;
-        let out = {
-            let mut st = state.borrow_mut();
-            let loaded = st.loaded.as_mut().ok_or(InferenceError::NoModelLoaded)?;
-            loaded.weights.forward(&input, pos).map_err(inference_err)?
-        };
+        forward(state, chunk, pos, &mut logits)?;
         pos += chunk.len();
-        logits = Some(out);
         yield_to_event_loop().await;
     }
-    let mut logits = logits.ok_or_else(|| inference_err("empty prompt"))?;
 
     let mut stream = TokenStream::new();
     let mut text = String::new();
@@ -308,14 +301,7 @@ async fn generate_text(
     let mut cancelled = false;
 
     for _ in 0..max_tokens {
-        let mut row = logits.squeeze(0).map_err(inference_err)?;
-        if frequency != 0.0 || presence != 0.0 {
-            let mut values = row.to_vec1::<f32>().map_err(inference_err)?;
-            apply_penalties(&mut values, &generated, frequency, presence);
-            row = Tensor::from_vec(values.clone(), values.len(), &Device::Cpu)
-                .map_err(inference_err)?;
-        }
-        let next = processor.sample(&row).map_err(inference_err)?;
+        let next = sampler.sample(&mut logits, &generated);
 
         let (is_eos, piece) = {
             let st = state.borrow();
@@ -352,14 +338,11 @@ async fn generate_text(
             break;
         }
 
-        let input = Tensor::new(&[next], &Device::Cpu)
-            .and_then(|t| t.unsqueeze(0))
-            .map_err(inference_err)?;
-        logits = {
-            let mut st = state.borrow_mut();
-            let loaded = st.loaded.as_mut().ok_or(InferenceError::NoModelLoaded)?;
-            loaded.weights.forward(&input, pos).map_err(inference_err)?
-        };
+        if pos >= context_length(state)? {
+            // The context is full: end the reply like a spent token budget.
+            break;
+        }
+        forward(state, &[next], pos, &mut logits)?;
         pos += 1;
     }
 
@@ -447,8 +430,7 @@ impl ChatEngine {
     ) -> Result<std::time::Duration, InferenceError> {
         let start = now_ms();
         let id = config.model_id.to_ascii_lowercase();
-        let qwen3 = id.contains("qwen3");
-        if !qwen3 && !id.contains("qwen2.5") {
+        if !id.contains("qwen3") && !id.contains("qwen2.5") {
             return Err(unsupported_on_web(&format!(
                 "Loading {} (only Qwen2.5 and Qwen3 GGUF models run in the browser)",
                 config.model_id
@@ -467,22 +449,10 @@ impl ChatEngine {
         let tokenizer = Tokenizer::from_bytes(tokenizer_bytes).map_err(build_err)?;
         let gguf = web_store::load_file(&config.model_id, file).await?;
 
-        // Parsing the file and copying its tensors blocks for a few seconds.
+        // Parsing the file blocks, mostly on the tokenizer vocabulary it
+        // carries. The weights are used in place, not copied.
         yield_to_event_loop().await;
-        let mut cursor = Cursor::new(gguf);
-        let content = gguf_file::Content::read(&mut cursor).map_err(build_err)?;
-        let weights = if qwen3 {
-            Weights::Qwen3(
-                quantized_qwen3::ModelWeights::from_gguf(content, &mut cursor, &Device::Cpu)
-                    .map_err(build_err)?,
-            )
-        } else {
-            Weights::Qwen2(
-                quantized_qwen2::ModelWeights::from_gguf(content, &mut cursor, &Device::Cpu)
-                    .map_err(build_err)?,
-            )
-        };
-        drop(cursor);
+        let model = QwenModel::load(gguf).map_err(build_err)?;
 
         let eos: Vec<u32> = ["<|im_end|>", "<|endoftext|>"]
             .iter()
@@ -501,7 +471,8 @@ impl ChatEngine {
         });
         let mut st = self.state.borrow_mut();
         st.loaded = Some(Loaded {
-            weights,
+            model,
+            cached: Vec::new(),
             tokenizer,
             config,
             eos,
