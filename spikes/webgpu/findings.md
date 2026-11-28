@@ -142,6 +142,46 @@ runs:
 - drain/32 bench: `A valid external Instance reference no longer exists` at ~496 s
 - drain/8 bench: `A valid external Instance reference no longer exists` at ~847 s
 
+## CPU engines: candle and vectoron
+
+Added after the spike. The question was whether vectoron, the engine behind
+`@ondeinference/web`, could replace candle in onde's browser engine.
+`vectoron-cpu` is `cpu-baseline` with vectoron in place of candle: same prompt,
+prefill chunk, greedy decode loop and release profile. `engine-bench.yml`
+runs both in one job per runner and browser. Run 45602570325, `bench.json`
+(179-token prompt, 128 new tokens, mean of 3 runs after 1 warmup), wasm
+simd128, no event-loop yields. vectoron is at `d15c228`, which is 0.3.0 apart
+from a test helper and the manifest.
+
+| wasm | candle prefill / decode | vectoron 0.2 | vectoron 0.3 |
+|---|---|---|---|
+| macos-26 Chrome | 31.0 s / 4.5 tok/s | 10.8 s / 2.4 | 7.7 s / 10.3 |
+| macos-26 WebKit | 35.0 s / 4.6 | 9.9 s / 3.2 | 6.9 s / 12.2 |
+| ubuntu Chrome | 44.6 s / 3.6 | 11.0 s / 1.7 | 10.2 s / 7.4 |
+
+Peak Chrome RSS: 2.0 to 2.3 GB for candle, 1.0 to 1.3 GB for vectoron.
+
+Natively (CPU, one process), candle still decodes faster on macos-26: 20.3
+against 18.5 tok/s for vectoron 0.3, and 5.7 s against 4.5 s of prefill. That
+is candle using NEON and threads. It does not apply to the single-threaded web
+engine.
+
+vectoron 0.2 read the prompt 3 to 4 times faster than candle but decoded at
+about half its speed, because it dequantized every weight block to `f32` with
+scalar code on each token. 0.3 quantizes the activations to 8 bits and
+multiplies in integers, which is where the decode gain comes from.
+
+The first generated token differs between the engines on this prompt. It is
+a near-tie, not a bug: the top two logits are 70151 (18.68) and 4498 (18.61)
+in candle, and 4498 (18.73) and 70151 (18.68) in vectoron, with the same top
+five. The report's "first 20 tokens vs native CPU" column is therefore not a
+useful check across engines. Correctness is covered by vectoron's own tests:
+its `f32` path reproduces candle's greedy tokens on Qwen2.5-0.5B and
+Qwen3-0.6B, and the integer kernels agree with it.
+
+Follow-ups left open: wasm threads (they need COOP/COEP, which the web engine
+avoids), and an `f16` key/value cache.
+
 ## Recommendation
 
 **Use wllama (llama.cpp WebGPU) as the GPU acceleration path.** It is the only

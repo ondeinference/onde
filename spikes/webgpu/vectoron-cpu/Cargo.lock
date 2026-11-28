@@ -770,9 +770,9 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
 name = "vectoron"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5680ef06667c0a668beb30176d1efc7758a5084a4be0964ce5c9500e9e679fa5"
+checksum = "8bd2169817b93d82a3c6ff9c69b005e6d86bd7c93129973dc41713639d0153ed"
 dependencies = [
  "half",
  "thiserror",
