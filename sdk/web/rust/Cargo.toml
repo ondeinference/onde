@@ -12,8 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # GGUF loading, the Qwen2 forward pass and sampling, on the CPU.
-# TODO before release: switch to "0.3" once it is on crates.io.
-vectoron = { git = "https://github.com/setoelkahfi/vectoron", rev = "d15c2288ec4de3f8dc83f24154ce7e32f632f475" }
+vectoron = "0.3"
 tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
