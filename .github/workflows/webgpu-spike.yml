@@ -8,13 +8,12 @@ name: WebGPU spike
 # no GPU (WebGPU falls back to software SwiftShader). Numbers compare paths
 # against each other; they do not measure a real Mac's GPU.
 
+# Manual only. The spike is finished and its results are in findings.md, and
+# the matrix is 15 cells on hosted macOS runners, two of which fail by design
+# (SwiftShader lacks shader-f16, wllama on WebKit fails an I/O read), so
+# running it on every push only turned each new head red.
 on:
   workflow_dispatch:
-  push:
-    branches: [spike/webgpu]
-    paths:
-      - "spikes/webgpu/**"
-      - ".github/workflows/webgpu-spike.yml"
 
 concurrency:
   group: webgpu-spike-${{ github.ref }}
