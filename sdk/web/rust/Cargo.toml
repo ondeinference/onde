@@ -1,6 +1,6 @@
 [package]
 name = "onde-web"
-version = "1.5.1"
+version = "1.6.0"
 edition = "2021"
 rust-version = "1.94"
 description = "The wasm engine behind the @ondeinference/web npm package."
@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # GGUF loading, the Qwen2 forward pass and sampling, on the CPU.
-vectoron = "0.2"
+vectoron = "0.3"
 tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

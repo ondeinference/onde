@@ -1,17 +1,31 @@
-## 1.5.1
+## 1.6.0
 
-Onde has a browser SDK on npm: `@ondeinference/web`. The `onde` crate itself is unchanged from 1.5.0.
+The browser engine in the `onde` crate now runs on vectoron instead of candle, and `@ondeinference/web` is on npm.
+
+### Browser engine
+
+* On `wasm32-unknown-unknown`, `ChatEngine` loads GGUF files with [vectoron](https://crates.io/crates/vectoron) 0.3 and multiplies quantized weights in integers. candle is no longer a dependency there. The public API and the supported models (Qwen2.5 and Qwen3) are unchanged.
+* In onde's engine benchmark on GitHub-hosted runners (Qwen2.5-0.5B, a 179-token prompt, headless Chrome and WebKit), reading the prompt went from 31 to 45 s to 7 to 10 s, and generating went from 3.6 to 4.6 tok/s to 7.4 to 12.2 tok/s. Peak Chrome memory fell from about 2.0 to 2.3 GB to 1.0 to 1.3 GB.
+* The key/value cache now survives between turns. A follow-up message runs only the tokens after the prefix it shares with the previous prompt, where it used to reread the whole conversation.
+* A reply that fills the model's context window now ends with `finish_reason` `"length"`.
+* Replies can differ from earlier releases at near-ties, because activations are rounded to 8 bits.
 
 ### Web SDK
 
-* `@ondeinference/web` runs Qwen 2.5 0.5B Instruct (Q4_K_M, about 380 MB) in a web page, on the CPU, in a Web Worker. The engine is [vectoron](https://crates.io/crates/vectoron) compiled to wasm with simd128. The model is downloaded once into the same Cache Storage bucket (`onde-models-v1`) the crate's `web_store` uses.
+* `@ondeinference/web` runs Qwen 2.5 0.5B Instruct (Q4_K_M, about 380 MB) in a web page, on the CPU, in a Web Worker, on the same vectoron engine. The model is downloaded once into the same Cache Storage bucket (`onde-models-v1`) the crate's `web_store` uses.
 * `createOnde()` returns an `Onde` with `download`, `load`, `send`, `stream`, `reset`, `cancel` and `dispose`. `load` takes sampling options, and a `temperature` of 0 is greedy.
 * An experimental WebGPU engine (wllama 3.13.0, llama.cpp's WebGPU backend) lives at `@ondeinference/web/webgpu`. It is opt-in. `engine: "auto"` falls back to the CPU engine if it does not load. It stays experimental until its output is checked on real Apple Silicon.
+* Version 1.5.1 of the package was published by hand ahead of this release. 1.6.0 is the first one published by the release workflow.
 
 ### Build and release
 
 * `sdk-web.yml` builds and packs the package, then runs the packed tarball through a Vite app in headless Chrome on GitHub-hosted runners.
 * `release-sdk-npm.yml` publishes `@ondeinference/web` alongside `@ondeinference/react-native`, and `make patch`/`make verify` cover its version files.
+* `web-smoke.yml` runs the crate's `tests/web_smoke.rs` in headless Chrome, so the browser engine is exercised in CI.
+
+### Packaging
+
+* No native API or behaviour changes. The published `onde` crate surface is identical to `1.5.0` on every native target, and the dependency change is wasm-only.
 
 ## 1.5.0
 

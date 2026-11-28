@@ -1,6 +1,6 @@
 [package]
 name = "onde"
-version = "1.5.1"
+version = "1.6.0"
 edition = "2021"
 description = "On-device AI inference: LLM chat, tool calling and image generation, on every platform."
 license = "MIT OR Apache-2.0"
@@ -102,12 +102,11 @@ mistralrs-core = { version = "0.9.6", package = "onde-mistralrs-core", features 
 [target.'cfg(target_os = "windows")'.dependencies]
 mistralrs = { version = "0.9.5", package = "onde-mistralrs" }
 
-# Browser engine: candle on CPU (wasm SIMD), tokenizers without onig, and the
+# Browser engine: vectoron on CPU (wasm SIMD), tokenizers without onig, and the
 # JS glue for fetch and Cache Storage. This table must match the `onde_web` cfg
 # in build.rs (wasm32 with target_os = "unknown").
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
-candle-core = { version = "0.11.1", default-features = false }
-candle-transformers = { version = "0.11.1", default-features = false }
+vectoron = "0.3"
 tokenizers = { version = "0.22", default-features = false, features = ["unstable_wasm"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

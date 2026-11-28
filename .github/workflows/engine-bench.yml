@@ -1,0 +1,199 @@
+name: Engine bench
+
+# candle against vectoron on the CPU, in the browser (wasm simd128, one
+# thread) and natively, with the WebGPU spike's harness, configs and model.
+# Both engines run back to back in the same job, so each pair of rows comes
+# from one machine. GitHub-hosted runners only: never add self-hosted labels.
+
+on:
+  workflow_dispatch:
+  push:
+    # This branch and the ones stacked on it run it before they merge.
+    branches: [spike/webgpu, "spike/webgpu-*"]
+    paths:
+      - "spikes/webgpu/cpu-baseline/**"
+      - "spikes/webgpu/vectoron-cpu/**"
+      - "spikes/webgpu/common/**"
+      - "spikes/webgpu/ci/**"
+      - "spikes/webgpu/*.mjs"
+      - ".github/workflows/engine-bench.yml"
+
+concurrency:
+  group: engine-bench-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_BINDGEN_VERSION: 0.2.130
+  MODEL_CACHE_KEY: model-qwen2.5-0.5b-q4km-6eb923e7-v1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build wasm harnesses
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            spikes/webgpu/cpu-baseline
+            spikes/webgpu/vectoron-cpu
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-${{ env.WASM_BINDGEN_VERSION }}-${{ runner.os }}
+      - name: Install wasm-bindgen-cli
+        run: command -v wasm-bindgen || cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+      - name: Build both (wasm, simd128)
+        env:
+          RUSTFLAGS: -C target-feature=+simd128
+        run: |
+          for h in cpu-baseline vectoron-cpu; do
+            lib="spike_${h//-/_}"
+            (cd "spikes/webgpu/$h" &&
+              cargo build --locked --release --lib --target wasm32-unknown-unknown &&
+              wasm-bindgen --target web --out-dir www/pkg "target/wasm32-unknown-unknown/release/$lib.wasm")
+            mkdir -p "stage/$h/www"
+            cp -r "spikes/webgpu/$h/www/pkg" "stage/$h/www/pkg"
+          done
+          ls -l stage/*/www/pkg
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wasm-pkg
+          path: stage
+          if-no-files-found: error
+
+  native:
+    name: Native (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/cache@v4
+        with:
+          path: model
+          key: ${{ env.MODEL_CACHE_KEY }}
+      - name: Fetch model
+        run: spikes/webgpu/ci/fetch-model.sh model
+      - name: Build candle
+        working-directory: spikes/webgpu/cpu-baseline
+        env:
+          CARGO_TARGET_DIR: target-native-cpu
+        run: cargo build --locked --release --bin native-bench
+      - name: Build vectoron
+        working-directory: spikes/webgpu/vectoron-cpu
+        env:
+          CARGO_TARGET_DIR: target-native
+        run: cargo build --locked --release --bin native-bench
+      - name: Run
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+        run: spikes/webgpu/ci/engine-native.sh native-out
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-${{ matrix.os }}
+          path: native-out
+          if-no-files-found: warn
+
+  browser:
+    name: ${{ matrix.browser }} (${{ matrix.os }})
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-26, browser: chrome }
+          - { os: macos-26, browser: webkit }
+          - { os: ubuntu-latest, browser: chrome }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: wasm-pkg
+          path: spikes/webgpu
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        working-directory: spikes/webgpu
+        run: |
+          npm ci
+          if [ "${{ matrix.browser }}" = webkit ]; then
+            npx playwright install --with-deps webkit
+          elif [ "$RUNNER_OS" = Linux ]; then
+            npx playwright install --with-deps chrome
+          elif [ ! -d "/Applications/Google Chrome.app" ]; then
+            npx playwright install chrome
+          fi
+      - uses: actions/cache@v4
+        with:
+          path: model
+          key: ${{ env.MODEL_CACHE_KEY }}
+      - name: Fetch model
+        run: spikes/webgpu/ci/fetch-model.sh model
+      # yield=0: the engines are compared without the event-loop yields, which
+      # cost both the same and double the run time.
+      - name: candle
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+        run: spikes/webgpu/ci/run-cell.sh cpu-baseline ${{ matrix.browser }} cell-candle 1 "&yield=0"
+      - name: vectoron
+        if: success() || failure()
+        env:
+          MODEL_DIR: ${{ github.workspace }}/model
+        run: spikes/webgpu/ci/run-cell.sh vectoron-cpu ${{ matrix.browser }} cell-vectoron 1 "&yield=0"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cell-${{ matrix.os }}-candle-${{ matrix.browser }}
+          path: cell-candle
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cell-${{ matrix.os }}-vectoron-${{ matrix.browser }}
+          path: cell-vectoron
+          if-no-files-found: warn
+
+  summary:
+    name: Summary
+    needs: [native, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "{cell,native}-*"
+          path: artifacts
+      - name: Build the table
+        run: |
+          node spikes/webgpu/report.mjs artifacts > summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: summary
+          path: summary.md
