@@ -1,6 +1,6 @@
-## 1.5.1
+## 1.6.0
 
-- No changes to this SDK. The release adds `@ondeinference/web`, a new npm package for running Onde in the browser.
+- No changes to this SDK. The release moves the Rust crate's browser engine to vectoron and adds `@ondeinference/web`, neither of which these bindings use.
 
 ## 1.5.0
 

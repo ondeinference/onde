@@ -3745,7 +3745,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "onde"
-version = "1.5.1"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "cc",
@@ -4116,7 +4116,7 @@ dependencies = [
 
 [[package]]
 name = "onde-react-native"
-version = "1.5.1"
+version = "1.6.0"
 dependencies = [
  "jni 0.21.1",
  "log",
