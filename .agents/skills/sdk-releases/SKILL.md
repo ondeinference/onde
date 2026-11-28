@@ -261,6 +261,27 @@ Environment name field on that npm page is the usual way to cause it.
 The job also upgrades npm before publishing: Node 22 ships npm 10, and trusted
 publishing needs 11.5.1 or newer.
 
+The same workflow publishes `@ondeinference/web` (`sdk/web`) through its own
+`validate-web` and `publish-web` jobs. It needs its own trusted publisher, at
+npmjs.com/package/@ondeinference/web/access, naming the same repo and workflow.
+npm only offers that page once a package exists, so a new package gets one
+manual first publish (`npm publish --access public`, which asks for your 2FA
+code), and the trusted publisher is added after it.
+
+### npm package settings
+
+Set these on each package's access page.
+
+| Setting | Value | Why |
+|---|---|---|
+| Publishing access | Require two-factor authentication and disallow bypass 2fa tokens | The page says every option works with OIDC trusted publishers, so the strictest one costs nothing. No stored token is involved. |
+| Trusted publisher, Allowed actions: Allow `npm publish` | **Checked** | The jobs run plain `npm publish`. With it unchecked only `npm stage publish` is allowed, and the publish step fails. |
+| Trusted publisher, Allowed actions: Allow `npm dist-tag` | Unchecked | Nothing in the workflows runs `npm dist-tag`; `npm publish` sets `latest` itself. |
+
+A new version can show as "Validating" for a few minutes after the first
+publish. `npm view` returns a 404 until it clears, so check the package's
+Version History on npmjs.com before assuming the publish failed or retrying it.
+
 ---
 
 ## CI Pipeline: Dart SDK
